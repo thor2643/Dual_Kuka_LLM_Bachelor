@@ -1,0 +1,12 @@
+Metadata-Version: 2.1
+Name: robotiq-3f-gripper-ros2-control
+Version: 0.1.0
+Summary: ROS2 Package for controlling the Robotiq 3 finger gripper
+Home-page: UNKNOWN
+Maintainer: Andreas Hovaldt
+Maintainer-email: andreas.hovaldt@gmail.com
+License: MIT
+Platform: UNKNOWN
+
+UNKNOWN
+

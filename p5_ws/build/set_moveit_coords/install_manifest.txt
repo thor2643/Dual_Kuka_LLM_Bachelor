@@ -1,0 +1,17 @@
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/launch/set_moveit_coords.launch.py
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/lib/set_moveit_coords/robot_controller_service
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/ament_index/resource_index/package_run_dependencies/set_moveit_coords
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/ament_index/resource_index/parent_prefix_path/set_moveit_coords
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/environment/ament_prefix_path.sh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/environment/ament_prefix_path.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/environment/path.sh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/environment/path.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/local_setup.bash
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/local_setup.sh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/local_setup.zsh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/local_setup.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/package.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/ament_index/resource_index/packages/set_moveit_coords
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/cmake/set_moveit_coordsConfig.cmake
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/cmake/set_moveit_coordsConfig-version.cmake
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/set_moveit_coords/share/set_moveit_coords/package.xml

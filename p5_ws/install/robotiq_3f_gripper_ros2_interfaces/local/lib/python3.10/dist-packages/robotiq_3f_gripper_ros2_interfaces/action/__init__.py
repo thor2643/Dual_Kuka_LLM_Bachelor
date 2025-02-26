@@ -1,0 +1,1 @@
+from robotiq_3f_gripper_ros2_interfaces.action._robotiq3_f_gripper_output_goal import Robotiq3FGripperOutputGoal  # noqa: F401

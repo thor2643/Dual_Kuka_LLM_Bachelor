@@ -1,0 +1,233 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-defddb2e209791799d59.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17
+					]
+				},
+				{
+					"build" : "moveit_msgs__py",
+					"jsonFile" : "directory-moveit_msgs__py-Release-bce784b2c6e75fef00e6.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_msgs/moveit_msgs__py",
+					"targetIndexes" : 
+					[
+						4
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1
+					],
+					"name" : "moveit_msgs",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_build_moveit_msgs_egg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_build_moveit_msgs_egg-Release-d22a83a6b3732795c422.json",
+					"name" : "ament_cmake_python_build_moveit_msgs_egg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_copy_moveit_msgs::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_copy_moveit_msgs-Release-a7ca11e90e577419b68f.json",
+					"name" : "ament_cmake_python_copy_moveit_msgs",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs-Release-02bb8a6fe870f9df4385.json",
+					"name" : "moveit_msgs",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__cpp-Release-b5339cfbaa2115a10132.json",
+					"name" : "moveit_msgs__cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "moveit_msgs__py::@0ba2befdb8cc23766da7",
+					"jsonFile" : "target-moveit_msgs__py-Release-e6ac8dffaaaa17380e38.json",
+					"name" : "moveit_msgs__py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_generator_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_generator_c-Release-d36f0b849d8173a4799c.json",
+					"name" : "moveit_msgs__rosidl_generator_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_generator_py::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_generator_py-Release-49ff47d1246ca8fb3856.json",
+					"name" : "moveit_msgs__rosidl_generator_py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_c-Release-67d5a703e9f12243cde2.json",
+					"name" : "moveit_msgs__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_c__pyext-Release-903ced796228c380b57d.json",
+					"name" : "moveit_msgs__rosidl_typesupport_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_cpp-Release-0112c6712b4246edf249.json",
+					"name" : "moveit_msgs__rosidl_typesupport_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_fastrtps_c-Release-0499ec1aa6f12322948c.json",
+					"name" : "moveit_msgs__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_fastrtps_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_fastrtps_c__pyext-Release-c7b04a3434ad108e3f49.json",
+					"name" : "moveit_msgs__rosidl_typesupport_fastrtps_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_fastrtps_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_fastrtps_cpp-Release-bf7ecf2d5bfd3edc2c6c.json",
+					"name" : "moveit_msgs__rosidl_typesupport_fastrtps_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_introspection_c-Release-726006c31b8d5fbf9d4e.json",
+					"name" : "moveit_msgs__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_introspection_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_introspection_c__pyext-Release-370c8a0096f4e056655a.json",
+					"name" : "moveit_msgs__rosidl_typesupport_introspection_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs__rosidl_typesupport_introspection_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs__rosidl_typesupport_introspection_cpp-Release-78fd2d9db7dd61b1604d.json",
+					"name" : "moveit_msgs__rosidl_typesupport_introspection_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "moveit_msgs_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-moveit_msgs_uninstall-Release-91d444f6d62b05a0ba54.json",
+					"name" : "moveit_msgs_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-Release-f225ee96ff299247edfc.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_msgs",
+		"source" : "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit_msgs"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

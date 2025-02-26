@@ -1,0 +1,5 @@
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/lbr_fri_idl/rosidl_adapter/lbr_fri_idl:msg/LBRCommand.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/lbr_fri_idl/rosidl_adapter/lbr_fri_idl:msg/LBRJointPositionCommand.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/lbr_fri_idl/rosidl_adapter/lbr_fri_idl:msg/LBRState.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/lbr_fri_idl/rosidl_adapter/lbr_fri_idl:msg/LBRTorqueCommand.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/lbr_fri_idl/rosidl_adapter/lbr_fri_idl:msg/LBRWrenchCommand.idl

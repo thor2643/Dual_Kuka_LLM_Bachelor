@@ -1,0 +1,79 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-febb1c40c7ce5b65e5ef.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "set_moveit_coords",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "robot_controller_service::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-robot_controller_service-Release-37859a133a978c503dca.json",
+					"name" : "robot_controller_service",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "set_moveit_coords_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-set_moveit_coords_uninstall-Release-1832315cf09d1c9632a4.json",
+					"name" : "set_moveit_coords_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-Release-ff9f44032426b8cd7724.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords",
+		"source" : "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/set_moveit_coords"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

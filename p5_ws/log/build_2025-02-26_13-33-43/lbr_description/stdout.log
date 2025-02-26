@@ -1,0 +1,141 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.10 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+-- Found ament_cmake_pytest: 1.3.10 (/opt/ros/humble/share/ament_cmake_pytest/cmake)
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/lbr_description
+-- Install configuration: "Release"
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/config
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/config/config.rviz
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/gazebo
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/gazebo/lbr_gazebo.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_0.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_3.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_1.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_6.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_7.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_5.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_2.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/visual/link_4.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_4.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_7.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_1.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_0.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_6.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_5.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_3.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/iiwa7/collision/link_2.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/gripper_mounting_plate
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/gripper_mounting_plate/gripper_mounting_plate.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/visual
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_3.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_1.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_2.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/visual/palm.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision/link_2.STL
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision/palm_with_finger_cutouts.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision/link_1.STL
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision/link_3.STL
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision/palm.STL
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision/link_0.STL
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq-3f-gripper_articulated/collision/palm_with_finger_cutouts.scad
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/realsense
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/realsense/d435.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/realsense/plug_collision.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/realsense/d455.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/realsense/l515.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/realsense/plug.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/realsense/d415.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/camera_mount
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/camera_mount/Camera_Mount_V2_v2.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/calibration_tip
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/calibration_tip/calli_tip.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/table
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/table/visual
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/table/visual/base_link_low_polly.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/table/collision
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/table/collision/iiwa7_table_collision.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual/robotiq_arg2f_85_pad.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual/robotiq_arg2f_85_outer_knuckle.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual/robotiq_arg2f_85_inner_finger.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual/robotiq_gripper_coupling.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual/robotiq_arg2f_85_inner_knuckle.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual/robotiq_arg2f_85_outer_finger.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/visual/robotiq_arg2f_85_base_link.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/collision
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/collision/robotiq_arg2f_85_base_link.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/collision/robotiq_arg2f_85_outer_knuckle.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/collision/robotiq_arg2f_base_link.stl
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/collision/robotiq_arg2f_85_inner_finger.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/collision/robotiq_arg2f_85_inner_knuckle.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/meshes/robotiq_2f_85_gripper/collision/robotiq_arg2f_85_outer_finger.dae
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/dual_arm
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/dual_arm/dual_arm.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/dual_arm/dual_arm_w_gazebo.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table/iiwa7_table.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table/joint_limits.yaml
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table/iiwa7_table_description.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7/iiwa7.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7/iiwa7_description.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7/joint_limits.yaml
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7/iiwa7_description_macro.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-2f-85-gripper
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-2f-85-gripper/robotiq_arg2f_85_model_macro.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-2f-85-gripper/robotiq_arg2f.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-2f-85-gripper/robotiq_arg2f_transmission.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-2f-85-gripper/robotiq_arg2f_85_model.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table_cali
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table_cali/iiwa7_table_cali.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table_cali/joint_limits.yaml
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/iiwa7_table_cali/iiwa7_table_cali_description.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/realsense
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/realsense/_materials.urdf.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/realsense/_usb_plug.urdf.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/realsense/_d435.urdf.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/table
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/table/materials.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/table/kuka_table.urdf
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/table/kuka_table.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-3f-gripper
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-3f-gripper/robotiq-3f-gripper_finger_articulated_macro.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-3f-gripper/robotiq-3f-gripper_articulated_macro.xacro
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/environment/lbr_description.dsv
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/ament_index/resource_index/package_run_dependencies/lbr_description
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/ament_index/resource_index/parent_prefix_path/lbr_description
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/environment/ament_prefix_path.sh
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/environment/ament_prefix_path.dsv
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/environment/path.sh
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/environment/path.dsv
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/local_setup.bash
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/local_setup.sh
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/local_setup.zsh
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/local_setup.dsv
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/package.dsv
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/ament_index/resource_index/packages/lbr_description
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/cmake/lbr_descriptionConfig.cmake
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/cmake/lbr_descriptionConfig-version.cmake
+-- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/package.xml

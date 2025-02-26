@@ -1,0 +1,10 @@
+{
+  "package_name": "lbr_fri_idl",
+  "non_idl_tuples": [
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/lbr_fri/lbr_fri_idl:msg/LBRCommand.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/lbr_fri/lbr_fri_idl:msg/LBRJointPositionCommand.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/lbr_fri/lbr_fri_idl:msg/LBRState.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/lbr_fri/lbr_fri_idl:msg/LBRTorqueCommand.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/lbr_fri/lbr_fri_idl:msg/LBRWrenchCommand.msg"
+  ]
+}

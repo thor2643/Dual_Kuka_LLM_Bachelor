@@ -1,0 +1,604 @@
+[0.042s] Invoking command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/set_moveit_coords:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robutler_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/project_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner_testutils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_runtime:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_cali_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/dual_arm_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_control_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_plugins:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_simple_controller_manager:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_servo:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_visualization:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_hybrid_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_benchmarks:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_warehouse:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_robot_interaction:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_perception:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_pg70_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_move_group:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_ompl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_occupancy_map_monitor:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_ikfast_manipulator_plugin:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_chomp:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_kinematics:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_chomp_optimizer_adapter:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/chomp_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_core:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/parameter_traits:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2_stack:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_right:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_left:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_idl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/fri_client_sdk:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/yolo_world:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/object_detector:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/janise:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/gui_package:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_configs_utils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library_py:/opt/ros/humble LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits/lib:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/lib:${LD_LIBRARY_PATH} PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/bin:${PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/local/lib/python3.10/dist-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core
+[0.151s] -- The CXX compiler identification is GNU 11.4.0
+[0.165s] -- Detecting CXX compiler ABI info
+[0.303s] -- Detecting CXX compiler ABI info - done
+[0.307s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.308s] -- Detecting CXX compile features
+[0.308s] -- Detecting CXX compile features - done
+[0.309s] -- Found moveit_common: 2.5.5 (/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common/share/moveit_common/cmake)
+[0.316s] -- Found ament_cmake: 1.3.10 (/opt/ros/humble/share/ament_cmake/cmake)
+[0.533s] -- Found Python3: /usr/bin/python3 (found version "3.10.12") found components: Interpreter 
+[0.765s] -- Found angles: 1.15.0 (/opt/ros/humble/share/angles/cmake)
+[0.817s] -- Found Bullet: /usr/lib/x86_64-linux-gnu/libBulletDynamics.so (Required is at least version "2.87") 
+[0.821s] -- Found common_interfaces: 4.2.4 (/opt/ros/humble/share/common_interfaces/cmake)
+[0.829s] -- Found eigen_stl_containers: 1.0.0 (/opt/ros/humble/share/eigen_stl_containers/cmake)
+[0.845s] -- Found eigen3_cmake_module: 0.1.1 (/opt/ros/humble/share/eigen3_cmake_module/cmake)
+[0.854s] -- Found Eigen3: TRUE (found version "3.4.0") 
+[0.880s] -- Found generate_parameter_library: 0.3.7 (/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library/share/generate_parameter_library/cmake)
+[0.890s] -- Found parameter_traits: 0.3.7 (/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits/share/parameter_traits/cmake)
+[0.965s] -- Found rosidl_generator_c: 3.1.5 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[0.978s] -- Found rosidl_adapter: 3.1.5 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[0.994s] -- Found rosidl_generator_cpp: 3.1.5 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[1.024s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.054s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.143s] -- Found rmw_implementation_cmake: 6.1.2 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[1.152s] -- Found rmw_fastrtps_cpp: 6.2.7 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[1.320s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[1.356s] -- Found FastRTPS: /opt/ros/humble/include  
+[1.437s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.444s] -- Looking for C++ include pthread.h
+[1.581s] -- Looking for C++ include pthread.h - found
+[1.582s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[1.732s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[1.734s] -- Found Threads: TRUE  
+[1.841s] -- Found rclcpp_lifecycle: 16.0.10 (/opt/ros/humble/share/rclcpp_lifecycle/cmake)
+[1.869s] -- Found geometric_shapes: 2.1.3 (/opt/ros/humble/share/geometric_shapes/cmake)
+[1.936s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: filesystem 
+[2.169s] -- library: /usr/lib/x86_64-linux-gnu/libcurl.so
+[2.277s] -- Found kdl_parser: 2.6.4 (/opt/ros/humble/share/kdl_parser/cmake)
+[2.295s] -- Ensuring Eigen3 include directory is part of orocos-kdl CMake target
+[2.299s] -- Found moveit_msgs: 2.2.1 (/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/share/moveit_msgs/cmake)
+[2.431s] -- Found pluginlib: 5.1.0 (/opt/ros/humble/share/pluginlib/cmake)
+[2.475s] -- Found srdfdom: 2.0.5 (/opt/ros/humble/share/srdfdom/cmake)
+[2.511s] -- Found tf2_eigen: 0.25.8 (/opt/ros/humble/share/tf2_eigen/cmake)
+[2.619s] -- Found tf2_geometry_msgs: 0.25.8 (/opt/ros/humble/share/tf2_geometry_msgs/cmake)
+[2.631s] -- Found tf2_kdl: 0.25.8 (/opt/ros/humble/share/tf2_kdl/cmake)
+[2.742s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.74.0/BoostConfig.cmake (found version "1.74.0") found components: chrono date_time filesystem iostreams program_options regex serialization system thread 
+[2.744s] --  *** Building MoveIt 2.5.5-Alpha ***
+[2.753s] -- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY
+[2.891s] -- Performing Test COMPILER_HAS_HIDDEN_VISIBILITY - Success
+[2.892s] -- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY
+[3.035s] -- Performing Test COMPILER_HAS_HIDDEN_INLINE_VISIBILITY - Success
+[3.036s] -- Performing Test COMPILER_HAS_DEPRECATED_ATTR
+[3.181s] -- Performing Test COMPILER_HAS_DEPRECATED_ATTR - Success
+[3.210s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.217s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.279s] -- The C compiler identification is GNU 11.4.0
+[3.291s] -- Detecting C compiler ABI info
+[3.413s] -- Detecting C compiler ABI info - done
+[3.420s] -- Check for working C compiler: /usr/bin/cc - skipped
+[3.420s] -- Detecting C compile features
+[3.420s] -- Detecting C compile features - done
+[3.461s] -- Found ament_cmake_gmock: 1.3.10 (/opt/ros/humble/share/ament_cmake_gmock/cmake)
+[3.474s] -- Found gmock sources under '/opt/ros/humble/src/gmock_vendor': C++ tests using 'Google Mock' will be built
+[3.478s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.479s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.510s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.510s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.578s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.579s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.611s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[3.612s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.613s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.653s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.654s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.683s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.692s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.718s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.718s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.732s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.753s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.777s] -- Found ament_cmake_gtest: 1.3.10 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+[3.777s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.833s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.870s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.904s] -- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+[3.911s] -- Found ament_lint_auto: 0.12.11 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[3.971s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[3.972s] -- Configured cppcheck include dirs: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/exceptions/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/collision_detection/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/collision_detection_fcl/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/collision_detection_bullet/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/constraint_samplers/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/controller_manager/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/distance_field/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/collision_distance_field/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/dynamics_solver/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/kinematics_base/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/kinematics_metrics/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/robot_model/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/transforms/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/robot_state/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/robot_trajectory/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/kinematic_constraints/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/macros/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/online_signal_smoothing/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/planning_interface/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/planning_request_adapter/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/planning_scene/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/sensor_manager/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/trajectory_processing/include;/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/utils/include
+[3.972s] -- Configured cppcheck exclude dirs and/or files: 
+[3.975s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[3.978s] -- Added test 'xmllint' to check XML markup files
+[3.982s] -- Configuring done
+[4.658s] -- Generating done
+[4.847s] -- Build files have been written to: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core
+[4.885s] Invoked command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core' returned '0': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/set_moveit_coords:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robutler_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/project_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner_testutils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_runtime:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_cali_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/dual_arm_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_control_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_plugins:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_simple_controller_manager:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_servo:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_visualization:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_hybrid_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_benchmarks:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_warehouse:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_robot_interaction:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_perception:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_pg70_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_move_group:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_ompl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_occupancy_map_monitor:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_ikfast_manipulator_plugin:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_chomp:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_kinematics:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_chomp_optimizer_adapter:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/chomp_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_core:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/parameter_traits:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2_stack:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_right:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_left:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_idl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/fri_client_sdk:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/yolo_world:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/object_detector:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/janise:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/gui_package:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_configs_utils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library_py:/opt/ros/humble LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits/lib:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/lib:${LD_LIBRARY_PATH} PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/bin:${PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/local/lib/python3.10/dist-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core
+[4.885s] Invoking command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/set_moveit_coords:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robutler_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/project_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner_testutils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_runtime:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_cali_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/dual_arm_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_control_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_plugins:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_simple_controller_manager:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_servo:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_visualization:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_hybrid_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_benchmarks:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_warehouse:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_robot_interaction:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_perception:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_pg70_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_move_group:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_ompl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_occupancy_map_monitor:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_ikfast_manipulator_plugin:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_chomp:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_kinematics:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_chomp_optimizer_adapter:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/chomp_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_core:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/parameter_traits:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2_stack:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_right:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_left:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_idl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/fri_client_sdk:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/yolo_world:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/object_detector:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/janise:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/gui_package:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_configs_utils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library_py:/opt/ros/humble LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits/lib:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/lib:${LD_LIBRARY_PATH} PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/bin:${PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/local/lib/python3.10/dist-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --build /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core -- -j4 -l4
+[5.004s] [  0%] [32mBuilding CXX object transforms/CMakeFiles/moveit_transforms.dir/src/transforms.cpp.o[0m
+[5.004s] [  0%] [32mBuilding CXX object exceptions/CMakeFiles/moveit_exceptions.dir/src/exceptions.cpp.o[0m
+[5.006s] [  0%] [32mBuilding CXX object kinematics_base/CMakeFiles/moveit_kinematics_base.dir/src/kinematics_base.cpp.o[0m
+[5.008s] [  1%] [32mBuilding CXX object distance_field/CMakeFiles/moveit_distance_field.dir/src/distance_field.cpp.o[0m
+[5.849s] [  2%] [32m[1mLinking CXX shared library libmoveit_exceptions.so[0m
+[6.115s] [  2%] Built target moveit_exceptions
+[6.116s] [  3%] [32mBuilding CXX object utils/CMakeFiles/moveit_utils.dir/src/lexical_casts.cpp.o[0m
+[6.664s] [  3%] [32mBuilding CXX object utils/CMakeFiles/moveit_utils.dir/src/message_checks.cpp.o[0m
+[7.935s] [  4%] [32mBuilding CXX object utils/CMakeFiles/moveit_utils.dir/src/rclcpp_utils.cpp.o[0m
+[8.240s] [  4%] [32m[1mLinking CXX shared library libmoveit_utils.so[0m
+[9.218s] [  4%] Built target moveit_utils
+[9.253s] [  4%] [32mBuilding CXX object gtest/CMakeFiles/gtest.dir/src/gtest-all.cc.o[0m
+[10.932s] [  5%] [32m[1mLinking CXX shared library libmoveit_kinematics_base.so[0m
+[11.198s] [  5%] Built target moveit_kinematics_base
+[11.246s] [  6%] [32mBuilding CXX object gtest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o[0m
+[12.497s] [  6%] [32m[1mLinking CXX static library libgtest_main.a[0m
+[12.552s] [  6%] Built target gtest_main
+[12.567s] [  6%] [32mBuilding CXX object distance_field/CMakeFiles/moveit_distance_field.dir/src/find_internal_points.cpp.o[0m
+[13.412s] [  7%] [32mBuilding CXX object distance_field/CMakeFiles/moveit_distance_field.dir/src/propagation_distance_field.cpp.o[0m
+[14.073s] [  8%] [32m[1mLinking CXX shared library libmoveit_transforms.so[0m
+[14.296s] [  8%] Built target moveit_transforms
+[14.339s] [  8%] [32mBuilding CXX object gmock/CMakeFiles/gmock.dir/opt/ros/humble/src/gtest_vendor/src/gtest-all.cc.o[0m
+[14.360s] [  8%] [32mBuilding CXX object gmock/CMakeFiles/gmock_main.dir/src/gmock_main.cc.o[0m
+[15.977s] [  9%] [32m[1mLinking CXX static library libgmock_main.a[0m
+[16.038s] [  9%] Built target gmock_main
+[16.055s] [ 10%] [32mBuilding CXX object gmock/CMakeFiles/gmock.dir/src/gmock-all.cc.o[0m
+[19.296s] [ 11%] [32m[1mLinking CXX static library libgtest.a[0m
+[19.383s] [ 11%] Built target gtest
+[19.425s] [ 11%] [32mBuilding CXX object online_signal_smoothing/CMakeFiles/moveit_smoothing_base.dir/src/smoothing_base_class.cpp.o[0m
+[20.150s] [ 12%] [34m[1mRunning `/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library_py/bin/generate_parameter_library_cpp /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core/online_signal_smoothing/moveit_butterworth_parameters/include//moveit_butterworth_parameters.hpp /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/moveit/moveit2/moveit_core/online_signal_smoothing/src/butterworth_parameters.yaml `[0m
+[20.411s] [ 12%] Built target moveit_butterworth_parameters
+[20.452s] [ 12%] [32mBuilding CXX object transforms/CMakeFiles/test_transforms.dir/test/test_transforms.cpp.o[0m
+[22.544s] [ 12%] [32m[1mLinking CXX shared library libmoveit_distance_field.so[0m
+[22.851s] [ 12%] Built target moveit_distance_field
+[22.886s] [ 13%] [32mBuilding CXX object version/CMakeFiles/moveit_version.dir/version.cpp.o[0m
+[22.938s] [ 14%] [32m[1mLinking CXX executable moveit_version[0m
+[23.034s] [ 14%] Built target moveit_version
+[23.084s] [ 15%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/aabb.cpp.o[0m
+[23.092s] [ 16%] [32m[1mLinking CXX shared library libmoveit_smoothing_base.so[0m
+[23.683s] [ 16%] Built target moveit_smoothing_base
+[23.704s] [ 16%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/fixed_joint_model.cpp.o[0m
+[24.042s] [ 17%] [32m[1mLinking CXX static library libgmock.a[0m
+[24.160s] [ 17%] Built target gmock
+[24.211s] [ 18%] [32mBuilding CXX object distance_field/CMakeFiles/test_voxel_grid.dir/test/test_voxel_grid.cpp.o[0m
+[24.255s] [ 19%] [32m[1mLinking CXX executable test_transforms[0m
+[24.624s] [ 19%] Built target test_transforms
+[24.660s] [ 19%] [32mBuilding CXX object distance_field/CMakeFiles/test_distance_field.dir/test/test_distance_field.cpp.o[0m
+[25.564s] [ 20%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/floating_joint_model.cpp.o[0m
+[26.538s] [ 21%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/joint_model.cpp.o[0m
+[29.558s] [ 21%] [32m[1mLinking CXX executable test_voxel_grid[0m
+[29.810s] [ 21%] Built target test_voxel_grid
+[29.840s] [ 21%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/joint_model_group.cpp.o[0m
+[30.187s] [ 22%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/link_model.cpp.o[0m
+[30.191s] [ 22%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/planar_joint_model.cpp.o[0m
+[34.484s] [ 23%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/prismatic_joint_model.cpp.o[0m
+[35.155s] [ 24%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/revolute_joint_model.cpp.o[0m
+[36.915s] [ 25%] [32m[1mLinking CXX executable test_distance_field[0m
+[37.019s] [ 25%] [32mBuilding CXX object robot_model/CMakeFiles/moveit_robot_model.dir/src/robot_model.cpp.o[0m
+[37.331s] [ 25%] Built target test_distance_field
+[45.709s] [ 26%] [32m[1mLinking CXX shared library libmoveit_robot_model.so[0m
+[45.884s] [ 26%] Built target moveit_robot_model
+[45.924s] [ 26%] [32mBuilding CXX object robot_state/CMakeFiles/moveit_robot_state.dir/src/attached_body.cpp.o[0m
+[45.925s] [ 27%] [32mBuilding CXX object robot_state/CMakeFiles/moveit_robot_state.dir/src/conversions.cpp.o[0m
+[45.925s] [ 28%] [32mBuilding CXX object online_signal_smoothing/CMakeFiles/moveit_butterworth_filter.dir/src/butterworth_filter.cpp.o[0m
+[45.927s] [ 29%] [32mBuilding CXX object utils/CMakeFiles/moveit_test_utils.dir/src/robot_model_test_utils.cpp.o[0m
+[49.958s] [ 30%] [32mBuilding CXX object robot_state/CMakeFiles/moveit_robot_state.dir/src/robot_state.cpp.o[0m
+[53.469s] [ 30%] [32m[1mLinking CXX shared library libmoveit_butterworth_filter.so[0m
+[53.700s] [ 30%] Built target moveit_butterworth_filter
+[53.718s] [ 30%] [32mBuilding CXX object robot_state/CMakeFiles/moveit_robot_state.dir/src/cartesian_interpolator.cpp.o[0m
+[56.609s] [ 30%] [32m[1mLinking CXX shared library libmoveit_test_utils.so[0m
+[56.915s] [ 30%] Built target moveit_test_utils
+[56.976s] [ 30%] [32mBuilding CXX object online_signal_smoothing/CMakeFiles/test_butterworth_filter.dir/test/test_butterworth_filter.cpp.o[0m
+[57.895s] [ 31%] [32mBuilding CXX object robot_model/CMakeFiles/test_robot_model.dir/test/test.cpp.o[0m
+[64.240s] [ 31%] [32m[1mLinking CXX executable test_robot_model[0m
+[64.524s] [ 31%] Built target test_robot_model
+[64.569s] [ 32%] [32m[1mLinking CXX executable test_butterworth_filter[0m
+[64.748s] [ 32%] Built target test_butterworth_filter
+[74.217s] [ 33%] [32m[1mLinking CXX shared library libmoveit_robot_state.so[0m
+[74.459s] [ 33%] Built target moveit_robot_state
+[74.528s] [ 34%] [32mBuilding CXX object dynamics_solver/CMakeFiles/moveit_dynamics_solver.dir/src/dynamics_solver.cpp.o[0m
+[74.528s] [ 34%] [32mBuilding CXX object robot_trajectory/CMakeFiles/moveit_robot_trajectory.dir/src/robot_trajectory.cpp.o[0m
+[74.528s] [ 35%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/allvalid/collision_env_allvalid.cpp.o[0m
+[74.528s] [ 35%] [32mBuilding CXX object kinematics_metrics/CMakeFiles/moveit_kinematics_metrics.dir/src/kinematics_metrics.cpp.o[0m
+[81.145s] [ 35%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/collision_common.cpp.o[0m
+[82.399s] [ 36%] [32m[1mLinking CXX shared library libmoveit_dynamics_solver.so[0m
+[82.673s] [ 36%] Built target moveit_dynamics_solver
+[82.721s] [ 37%] [32mBuilding CXX object robot_state/CMakeFiles/test_robot_state.dir/test/robot_state_test.cpp.o[0m
+[86.509s] [ 38%] [32m[1mLinking CXX shared library libmoveit_robot_trajectory.so[0m
+[86.977s] [ 38%] Built target moveit_robot_trajectory
+[87.089s] [ 38%] [32mBuilding CXX object robot_state/CMakeFiles/test_robot_state_benchmark.dir/test/robot_state_benchmark.cpp.o[0m
+[87.302s] [ 39%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/collision_matrix.cpp.o[0m
+[94.627s] [ 39%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/collision_octomap_filter.cpp.o[0m
+[95.575s] [ 40%] [32m[1mLinking CXX executable test_robot_state[0m
+[95.888s] [ 40%] Built target test_robot_state
+[95.928s] [ 40%] [32mBuilding CXX object robot_state/CMakeFiles/test_robot_state_complex.dir/test/test_kinematic_complex.cpp.o[0m
+[96.622s] [ 41%] [32m[1mLinking CXX executable test_robot_state_benchmark[0m
+[96.994s] [ 41%] Built target test_robot_state_benchmark
+[97.503s] [ 41%] [32mBuilding CXX object robot_state/CMakeFiles/test_aabb.dir/test/test_aabb.cpp.o[0m
+[100.160s] [ 42%] [32m[1mLinking CXX shared library libmoveit_kinematics_metrics.so[0m
+[100.539s] [ 42%] Built target moveit_kinematics_metrics
+[100.560s] [ 43%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/collision_tools.cpp.o[0m
+[101.843s] [ 44%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/world.cpp.o[0m
+[106.835s] [ 45%] [32m[1mLinking CXX executable test_robot_state_complex[0m
+[107.183s] [ 45%] [32mBuilding CXX object robot_state/CMakeFiles/test_cartesian_interpolator.dir/test/test_cartesian_interpolator.cpp.o[0m
+[107.251s] [ 45%] Built target test_robot_state_complex
+[107.275s] [ 45%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/world_diff.cpp.o[0m
+[108.098s] [ 46%] [32m[1mLinking CXX executable test_aabb[0m
+[108.463s] [ 46%] Built target test_aabb
+[108.478s] [ 47%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/collision_env.cpp.o[0m
+[110.019s] [ 47%] [32mBuilding CXX object collision_detection/CMakeFiles/moveit_collision_detection.dir/src/collision_plugin_cache.cpp.o[0m
+[110.382s] [ 48%] [32mBuilding CXX object robot_trajectory/CMakeFiles/test_robot_trajectory.dir/test/test_robot_trajectory.cpp.o[0m
+[115.209s] [ 49%] [32m[1mLinking CXX executable test_cartesian_interpolator[0m
+[115.589s] [ 49%] Built target test_cartesian_interpolator
+[115.632s] [ 50%] [32mBuilding CXX object trajectory_processing/CMakeFiles/moveit_trajectory_processing.dir/src/iterative_time_parameterization.cpp.o[0m
+[115.683s] [ 50%] [32mBuilding CXX object trajectory_processing/CMakeFiles/moveit_trajectory_processing.dir/src/iterative_spline_parameterization.cpp.o[0m
+[120.447s] [ 50%] [32m[1mLinking CXX executable test_robot_trajectory[0m
+[120.788s] [ 50%] Built target test_robot_trajectory
+[120.823s] [ 51%] [32mBuilding CXX object planning_interface/CMakeFiles/moveit_planning_interface.dir/src/planning_interface.cpp.o[0m
+[123.660s] [ 52%] [32mBuilding CXX object trajectory_processing/CMakeFiles/moveit_trajectory_processing.dir/src/ruckig_traj_smoothing.cpp.o[0m
+[124.529s] [ 53%] [32mBuilding CXX object trajectory_processing/CMakeFiles/moveit_trajectory_processing.dir/src/trajectory_tools.cpp.o[0m
+[125.448s] [ 53%] [32mBuilding CXX object trajectory_processing/CMakeFiles/moveit_trajectory_processing.dir/src/time_optimal_trajectory_generation.cpp.o[0m
+[127.028s] [ 54%] [32m[1mLinking CXX shared library libmoveit_collision_detection.so[0m
+[127.291s] [ 54%] Built target moveit_collision_detection
+[127.311s] [ 54%] [32mBuilding CXX object planning_interface/CMakeFiles/moveit_planning_interface.dir/src/planning_response.cpp.o[0m
+[133.264s] [ 54%] [32mBuilding CXX object collision_detection_fcl/CMakeFiles/moveit_collision_detection_fcl.dir/src/collision_common.cpp.o[0m
+[135.910s] [ 55%] [32m[1mLinking CXX shared library libmoveit_planning_interface.so[0m
+[136.141s] [ 56%] [32mBuilding CXX object collision_detection/CMakeFiles/test_world.dir/test/test_world.cpp.o[0m
+[136.239s] [ 56%] Built target moveit_planning_interface
+[136.295s] [ 57%] [32mBuilding CXX object collision_detection/CMakeFiles/test_world_diff.dir/test/test_world_diff.cpp.o[0m
+[137.432s] [ 58%] [32m[1mLinking CXX shared library libmoveit_trajectory_processing.so[0m
+[137.858s] [ 58%] Built target moveit_trajectory_processing
+[137.946s] [ 59%] [32mBuilding CXX object collision_detection_fcl/CMakeFiles/moveit_collision_detection_fcl.dir/src/collision_env_fcl.cpp.o[0m
+[143.233s] [ 60%] [32m[1mLinking CXX executable test_world_diff[0m
+[143.513s] [ 60%] Built target test_world_diff
+[144.679s] [ 60%] [32m[1mLinking CXX executable test_world[0m
+[145.154s] [ 60%] Built target test_world
+[148.423s] [ 61%] [32m[1mLinking CXX shared library libmoveit_collision_detection_fcl.so[0m
+[148.875s] [ 61%] Built target moveit_collision_detection_fcl
+[148.933s] [ 62%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/moveit_collision_detection_bullet.dir/src/bullet_integration/bullet_utils.cpp.o[0m
+[155.079s] [ 62%] [32mBuilding CXX object trajectory_processing/CMakeFiles/test_time_parameterization.dir/test/test_time_parameterization.cpp.o[0m
+[156.113s] [ 62%] [32mBuilding CXX object kinematic_constraints/CMakeFiles/moveit_kinematic_constraints.dir/src/kinematic_constraint.cpp.o[0m
+[157.179s] [ 62%] [32mBuilding CXX object collision_detection/CMakeFiles/test_all_valid.dir/test/test_all_valid.cpp.o[0m
+[159.250s] [ 62%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/moveit_collision_detection_bullet.dir/src/bullet_integration/bullet_discrete_bvh_manager.cpp.o[0m
+[165.937s] [ 63%] [32m[1mLinking CXX executable test_time_parameterization[0m
+[166.124s] [ 64%] [32m[1mLinking CXX executable test_all_valid[0m
+[166.386s] [ 64%] Built target test_time_parameterization
+[166.461s] [ 65%] [32mBuilding CXX object trajectory_processing/CMakeFiles/test_time_optimal_trajectory_generation.dir/test/test_time_optimal_trajectory_generation.cpp.o[0m
+[166.551s] [ 65%] Built target test_all_valid
+[166.575s] [ 66%] [32mBuilding CXX object kinematic_constraints/CMakeFiles/moveit_kinematic_constraints.dir/src/utils.cpp.o[0m
+[167.576s] [ 67%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/moveit_collision_detection_bullet.dir/src/bullet_integration/bullet_cast_bvh_manager.cpp.o[0m
+[176.681s] [ 67%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/moveit_collision_detection_bullet.dir/src/collision_env_bullet.cpp.o[0m
+[176.801s] [ 68%] [32mBuilding CXX object trajectory_processing/CMakeFiles/test_ruckig_traj_smoothing.dir/test/test_ruckig_traj_smoothing.cpp.o[0m
+[181.194s] [ 69%] [32m[1mLinking CXX executable test_time_optimal_trajectory_generation[0m
+[181.661s] [ 69%] Built target test_time_optimal_trajectory_generation
+[181.718s] [ 70%] [32mBuilding CXX object collision_detection_fcl/CMakeFiles/test_fcl_collision_env.dir/test/test_fcl_env.cpp.o[0m
+[183.659s] [ 71%] [32m[1mLinking CXX shared library libmoveit_kinematic_constraints.so[0m
+[184.124s] [ 71%] Built target moveit_kinematic_constraints
+[184.209s] [ 72%] [32mBuilding CXX object collision_detection_fcl/CMakeFiles/test_fcl_collision_detection.dir/test/test_fcl_collision_detection_pr2.cpp.o[0m
+[188.430s] [ 73%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/moveit_collision_detection_bullet.dir/src/bullet_integration/bullet_bvh_manager.cpp.o[0m
+[189.258s] [ 73%] [32m[1mLinking CXX executable test_ruckig_traj_smoothing[0m
+[189.833s] [ 73%] Built target test_ruckig_traj_smoothing
+[189.912s] [ 74%] [32mBuilding CXX object collision_detection_fcl/CMakeFiles/test_fcl_collision_detection_panda.dir/test/test_fcl_collision_detection_panda.cpp.o[0m
+[195.779s] [ 75%] [32m[1mLinking CXX executable test_fcl_collision_env[0m
+[196.228s] [ 76%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/moveit_collision_detection_bullet.dir/src/bullet_integration/contact_checker_common.cpp.o[0m
+[196.236s] [ 76%] Built target test_fcl_collision_env
+[196.517s] [ 77%] [32mBuilding CXX object planning_scene/CMakeFiles/moveit_planning_scene.dir/src/planning_scene.cpp.o[0m
+[200.849s] [ 77%] [32m[1mLinking CXX executable test_fcl_collision_detection[0m
+[201.320s] [ 77%] Built target test_fcl_collision_detection
+[201.363s] [ 77%] [32mBuilding CXX object kinematic_constraints/CMakeFiles/test_constraints.dir/test/test_constraints.cpp.o[0m
+[203.224s] [ 77%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/moveit_collision_detection_bullet.dir/src/bullet_integration/ros_bullet_utils.cpp.o[0m
+[203.398s] [ 77%] [32m[1mLinking CXX executable test_fcl_collision_detection_panda[0m
+[203.946s] [ 77%] Built target test_fcl_collision_detection_panda
+[204.055s] [ 77%] [32mBuilding CXX object kinematic_constraints/CMakeFiles/test_orientation_constraints.dir/test/test_orientation_constraints.cpp.o[0m
+[210.798s] [ 78%] [32m[1mLinking CXX shared library libmoveit_collision_detection_bullet.so[0m
+[211.188s] [ 78%] Built target moveit_collision_detection_bullet
+[217.094s] [ 79%] [32m[1mLinking CXX executable test_orientation_constraints[0m
+[217.143s] [ 80%] [32m[1mLinking CXX executable test_constraints[0m
+[217.438s] [ 80%] Built target test_orientation_constraints
+[217.499s] [ 80%] Built target test_constraints
+[221.630s] [ 80%] [32m[1mLinking CXX shared library libmoveit_planning_scene.so[0m
+[222.032s] [ 80%] Built target moveit_planning_scene
+[222.085s] [ 81%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/test_bullet_continuous_collision_checking.dir/test/test_bullet_continuous_collision_checking.cpp.o[0m
+[225.153s] [ 81%] [32mBuilding CXX object collision_distance_field/CMakeFiles/moveit_collision_distance_field.dir/src/collision_distance_field_types.cpp.o[0m
+[226.177s] [ 82%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/test_bullet_collision_detection_panda.dir/test/test_bullet_collision_detection_panda.cpp.o[0m
+[228.591s] [ 83%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/test_bullet_collision_detection.dir/test/test_bullet_collision_detection_pr2.cpp.o[0m
+[234.408s] [ 84%] [32mBuilding CXX object collision_distance_field/CMakeFiles/moveit_collision_distance_field.dir/src/collision_common_distance_field.cpp.o[0m
+[235.736s] [ 85%] [32m[1mLinking CXX executable test_bullet_continuous_collision_checking[0m
+[237.018s] [ 85%] Built target test_bullet_continuous_collision_checking
+[237.090s] [ 85%] [32mBuilding CXX object constraint_samplers/CMakeFiles/moveit_constraint_samplers.dir/src/constraint_sampler.cpp.o[0m
+[237.655s] [ 85%] [32m[1mLinking CXX executable test_bullet_collision_detection_panda[0m
+[238.011s] [ 85%] Built target test_bullet_collision_detection_panda
+[238.033s] [ 85%] [32mBuilding CXX object collision_distance_field/CMakeFiles/moveit_collision_distance_field.dir/src/collision_env_distance_field.cpp.o[0m
+[243.361s] [ 85%] [32m[1mLinking CXX executable test_bullet_collision_detection[0m
+[243.963s] [ 85%] Built target test_bullet_collision_detection
+[243.985s] [ 86%] [32mBuilding CXX object collision_distance_field/CMakeFiles/moveit_collision_distance_field.dir/src/collision_env_hybrid.cpp.o[0m
+[247.023s] [ 87%] [32mBuilding CXX object constraint_samplers/CMakeFiles/moveit_constraint_samplers.dir/src/constraint_sampler_manager.cpp.o[0m
+[247.703s] [ 87%] [32mBuilding CXX object constraint_samplers/CMakeFiles/moveit_constraint_samplers.dir/src/constraint_sampler_tools.cpp.o[0m
+[258.802s] [ 87%] [32mBuilding CXX object planning_request_adapter/CMakeFiles/moveit_planning_request_adapter.dir/src/planning_request_adapter.cpp.o[0m
+[259.201s] [ 88%] [32mBuilding CXX object constraint_samplers/CMakeFiles/moveit_constraint_samplers.dir/src/default_constraint_samplers.cpp.o[0m
+[259.977s] [ 89%] [32m[1mLinking CXX shared library libmoveit_collision_distance_field.so[0m
+[260.255s] [ 89%] Built target moveit_collision_distance_field
+[260.474s] [ 90%] [32mBuilding CXX object planning_scene/CMakeFiles/test_planning_scene.dir/test/test_planning_scene.cpp.o[0m
+[260.623s] [ 90%] [32mBuilding CXX object constraint_samplers/CMakeFiles/moveit_constraint_samplers.dir/src/union_constraint_sampler.cpp.o[0m
+[268.932s] [ 91%] [32m[1mLinking CXX shared library libmoveit_planning_request_adapter.so[0m
+[269.184s] [ 91%] Built target moveit_planning_request_adapter
+[269.232s] [ 92%] [32mBuilding CXX object planning_scene/CMakeFiles/test_collision_objects.dir/test/test_collision_objects.cpp.o[0m
+[271.035s] [ 92%] [32mBuilding CXX object planning_scene/CMakeFiles/test_multi_threaded.dir/test/test_multi_threaded.cpp.o[0m
+[273.919s] [ 93%] [32m[1mLinking CXX shared library libmoveit_constraint_samplers.so[0m
+[275.223s] [ 93%] Built target moveit_constraint_samplers
+[275.260s] [ 93%] [32mBuilding CXX object collision_detection_bullet/CMakeFiles/collision_detector_bullet_plugin.dir/src/collision_detector_bullet_plugin_loader.cpp.o[0m
+[278.571s] [ 93%] [32m[1mLinking CXX executable test_planning_scene[0m
+[279.029s] [ 93%] Built target test_planning_scene
+[279.069s] [ 93%] [32mBuilding CXX object collision_detection_fcl/CMakeFiles/collision_detector_fcl_plugin.dir/src/collision_detector_fcl_plugin_loader.cpp.o[0m
+[281.861s] [ 94%] [32m[1mLinking CXX executable test_multi_threaded[0m
+[282.371s] [ 94%] Built target test_multi_threaded
+[283.204s] [ 94%] [32m[1mLinking CXX executable test_collision_objects[0m
+[283.615s] [ 94%] Built target test_collision_objects
+[284.726s] [ 95%] [32m[1mLinking CXX shared library libcollision_detector_bullet_plugin.so[0m
+[284.941s] [ 95%] Built target collision_detector_bullet_plugin
+[284.998s] [ 96%] [32mBuilding CXX object constraint_samplers/CMakeFiles/test_constraint_samplers.dir/test/pr2_arm_kinematics_plugin.cpp.o[0m
+[284.998s] [ 97%] [32mBuilding CXX object constraint_samplers/CMakeFiles/test_constraint_samplers.dir/test/test_constraint_samplers.cpp.o[0m
+[289.194s] [ 98%] [32m[1mLinking CXX shared library libcollision_detector_fcl_plugin.so[0m
+[289.389s] [ 98%] Built target collision_detector_fcl_plugin
+[289.405s] [ 98%] [32mBuilding CXX object constraint_samplers/CMakeFiles/test_constraint_samplers.dir/test/pr2_arm_ik.cpp.o[0m
+[289.446s] [ 99%] [32mBuilding CXX object collision_distance_field/CMakeFiles/test_collision_distance_field.dir/test/test_collision_distance_field.cpp.o[0m
+[301.367s] [100%] [32m[1mLinking CXX executable test_constraint_samplers[0m
+[301.740s] [100%] Built target test_constraint_samplers
+[302.260s] [100%] [32m[1mLinking CXX executable test_collision_distance_field[0m
+[302.598s] [100%] Built target test_collision_distance_field
+[302.628s] Invoked command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core' returned '0': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/set_moveit_coords:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robutler_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/project_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner_testutils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_runtime:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_cali_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/dual_arm_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_control_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_plugins:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_simple_controller_manager:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_servo:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_visualization:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_hybrid_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_benchmarks:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_warehouse:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_robot_interaction:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_perception:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_pg70_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_move_group:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_ompl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_occupancy_map_monitor:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_ikfast_manipulator_plugin:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_chomp:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_kinematics:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_chomp_optimizer_adapter:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/chomp_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_core:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/parameter_traits:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2_stack:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_right:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_left:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_idl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/fri_client_sdk:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/yolo_world:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/object_detector:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/janise:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/gui_package:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_configs_utils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library_py:/opt/ros/humble LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits/lib:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/lib:${LD_LIBRARY_PATH} PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/bin:${PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/local/lib/python3.10/dist-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --build /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core -- -j4 -l4
+[302.632s] Invoking command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/set_moveit_coords:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robutler_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/project_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner_testutils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_runtime:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_cali_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/dual_arm_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_control_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_plugins:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_simple_controller_manager:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_servo:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_visualization:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_hybrid_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_benchmarks:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_warehouse:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_robot_interaction:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_perception:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_pg70_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_move_group:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_ompl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_occupancy_map_monitor:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_ikfast_manipulator_plugin:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_chomp:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_kinematics:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_chomp_optimizer_adapter:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/chomp_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_core:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/parameter_traits:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2_stack:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_right:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_left:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_idl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/fri_client_sdk:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/yolo_world:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/object_detector:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/janise:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/gui_package:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_configs_utils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library_py:/opt/ros/humble LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits/lib:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/lib:${LD_LIBRARY_PATH} PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/bin:${PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/local/lib/python3.10/dist-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --install /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core
+[302.645s] -- Install configuration: "Release"
+[302.645s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/version.h
+[302.645s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.645s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.645s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_distance_field
+[302.645s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_distance_field/collision_detector_allocator_hybrid.h
+[302.645s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_distance_field/collision_env_hybrid.h
+[302.645s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_distance_field/collision_common_distance_field.h
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_distance_field/collision_distance_field_types.h
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_distance_field/collision_env_distance_field.h
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_distance_field/collision_detector_allocator_distance_field.h
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_collision_distance_field_export.h
+[302.646s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.646s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/constraint_samplers
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/constraint_samplers/constraint_sampler_allocator.h
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/constraint_samplers/constraint_sampler_tools.h
+[302.646s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/constraint_samplers/constraint_sampler_manager.h
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/constraint_samplers/default_constraint_samplers.h
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/constraint_samplers/union_constraint_sampler.h
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/constraint_samplers/constraint_sampler.h
+[302.647s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.647s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/controller_manager
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/controller_manager/controller_manager.h
+[302.647s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.647s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/distance_field
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/distance_field/find_internal_points.h
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/distance_field/voxel_grid.h
+[302.647s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/distance_field/propagation_distance_field.h
+[302.648s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/distance_field/distance_field.h
+[302.648s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.648s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.648s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/dynamics_solver
+[302.648s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/dynamics_solver/dynamics_solver.h
+[302.648s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.648s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.648s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/exceptions
+[302.648s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/exceptions/exceptions.h
+[302.648s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.648s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.648s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/kinematics_base
+[302.649s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/kinematics_base/kinematics_base.h
+[302.649s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_kinematics_base_export.h
+[302.649s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.649s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.649s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/kinematic_constraints
+[302.649s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/kinematic_constraints/kinematic_constraint.h
+[302.649s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/kinematic_constraints/utils.h
+[302.649s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.649s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.649s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/kinematics_metrics
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/kinematics_metrics/kinematics_metrics.h
+[302.650s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.650s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/macros
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/macros/declare_ptr.h
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/macros/class_forward.h
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/macros/console_colors.h
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/macros/deprecation.h
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_butterworth_parameters
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_butterworth_parameters/moveit_butterworth_parameters.hpp
+[302.650s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.650s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/online_signal_smoothing
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/online_signal_smoothing/butterworth_filter.h
+[302.650s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/online_signal_smoothing/smoothing_base_class.h
+[302.651s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_smoothing_base_export.h
+[302.651s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_butterworth_filter_export.h
+[302.651s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.651s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.651s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_interface
+[302.651s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_interface/planning_interface.h
+[302.651s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_interface/planning_request.h
+[302.651s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_interface/planning_response.h
+[302.651s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.651s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.652s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_request_adapter
+[302.652s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_request_adapter/planning_request_adapter.h
+[302.652s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.652s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.652s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_scene
+[302.652s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/planning_scene/planning_scene.h
+[302.652s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_planning_scene_export.h
+[302.653s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.653s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/floating_joint_model.h
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/planar_joint_model.h
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/fixed_joint_model.h
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/joint_model.h
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/link_model.h
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/revolute_joint_model.h
+[302.653s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/prismatic_joint_model.h
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/aabb.h
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/joint_model_group.h
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_model/robot_model.h
+[302.654s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.654s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_state
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_state/attached_body.h
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_state/robot_state.h
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_state/cartesian_interpolator.h
+[302.654s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_state/conversions.h
+[302.655s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.655s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.655s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_trajectory
+[302.655s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/robot_trajectory/robot_trajectory.h
+[302.655s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.655s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.655s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/sensor_manager
+[302.655s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/sensor_manager/sensor_manager.h
+[302.655s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.655s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.655s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/trajectory_processing
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/trajectory_processing/iterative_spline_parameterization.h
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/trajectory_processing/time_optimal_trajectory_generation.h
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/trajectory_processing/iterative_time_parameterization.h
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/trajectory_processing/time_parameterization.h
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/trajectory_processing/trajectory_tools.h
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/trajectory_processing/ruckig_traj_smoothing.h
+[302.656s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.656s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/transforms
+[302.656s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/transforms/transforms.h
+[302.656s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.656s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/utils
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/utils/rclcpp_utils.h
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/utils/message_checks.h
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/utils/lexical_casts.h
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/utils/robot_model_test_utils.h
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/utils/moveit_error_code.h
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/bin/moveit_version
+[302.657s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.657s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.657s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/occupancy_map.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_octomap_filter.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/test_collision_common_panda.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_common.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_env.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/test_collision_common_pr2.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/world.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/allvalid
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/allvalid/collision_detector_allocator_allvalid.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/allvalid/collision_env_allvalid.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/world_diff.h
+[302.658s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_plugin_cache.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_detector_allocator.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_tools.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_plugin.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection/collision_matrix.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_collision_detection_export.h
+[302.659s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.659s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/collision_detector_allocator_bullet.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/collision_detector_bullet_plugin_loader.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration/bullet_utils.h
+[302.659s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration/bullet_discrete_bvh_manager.h
+[302.660s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration/bullet_cast_bvh_manager.h
+[302.660s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration/bullet_bvh_manager.h
+[302.660s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration/contact_checker_common.h
+[302.660s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration/basic_types.h
+[302.662s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/bullet_integration/ros_bullet_utils.h
+[302.662s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_bullet/collision_env_bullet.h
+[302.662s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_collision_detection_bullet_export.h
+[302.662s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include
+[302.662s] -- Up-to-date: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit
+[302.662s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_fcl
+[302.663s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_fcl/collision_common.h
+[302.663s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_fcl/collision_detector_fcl_plugin_loader.h
+[302.663s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_fcl/collision_env_fcl.h
+[302.663s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_fcl/fcl_compat.h
+[302.663s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit/collision_detection_fcl/collision_detector_allocator_fcl.h
+[302.663s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/include/moveit_collision_detection_fcl_export.h
+[302.663s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libcollision_detector_bullet_plugin.so.2.5.5
+[302.664s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libcollision_detector_bullet_plugin.so.2.5.5" to ""
+[302.664s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libcollision_detector_bullet_plugin.so
+[302.664s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_butterworth_filter.so.2.5.5
+[302.664s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_butterworth_filter.so.2.5.5" to ""
+[302.664s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_butterworth_filter.so
+[302.665s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_distance_field.so.2.5.5
+[302.665s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_distance_field.so.2.5.5" to ""
+[302.665s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_distance_field.so
+[302.666s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection.so.2.5.5
+[302.667s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection.so.2.5.5" to ""
+[302.667s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection.so
+[302.667s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection_fcl.so.2.5.5
+[302.667s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection_fcl.so.2.5.5" to ""
+[302.667s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection_fcl.so
+[302.667s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection_bullet.so.2.5.5
+[302.668s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection_bullet.so.2.5.5" to ""
+[302.668s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_collision_detection_bullet.so
+[302.669s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_dynamics_solver.so.2.5.5
+[302.669s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_dynamics_solver.so.2.5.5" to ""
+[302.669s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_dynamics_solver.so
+[302.669s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_constraint_samplers.so.2.5.5
+[302.670s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_constraint_samplers.so.2.5.5" to ""
+[302.670s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_constraint_samplers.so
+[302.670s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_distance_field.so.2.5.5
+[302.671s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_distance_field.so.2.5.5" to ""
+[302.671s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_distance_field.so
+[302.671s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_exceptions.so.2.5.5
+[302.671s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_exceptions.so.2.5.5" to ""
+[302.671s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_exceptions.so
+[302.671s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematics_base.so
+[302.672s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematics_base.so" to ""
+[302.672s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematic_constraints.so.2.5.5
+[302.673s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematic_constraints.so.2.5.5" to ""
+[302.673s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematic_constraints.so
+[302.673s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematics_metrics.so.2.5.5
+[302.674s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematics_metrics.so.2.5.5" to ""
+[302.674s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_kinematics_metrics.so
+[302.674s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_interface.so.2.5.5
+[302.674s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_interface.so.2.5.5" to ""
+[302.674s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_interface.so
+[302.675s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_scene.so.2.5.5
+[302.676s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_scene.so.2.5.5" to ""
+[302.676s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_scene.so
+[302.676s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_request_adapter.so.2.5.5
+[302.676s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_request_adapter.so.2.5.5" to ""
+[302.676s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_planning_request_adapter.so
+[302.676s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_model.so.2.5.5
+[302.677s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_model.so.2.5.5" to ""
+[302.677s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_model.so
+[302.677s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_state.so.2.5.5
+[302.678s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_state.so.2.5.5" to ""
+[302.678s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_state.so
+[302.678s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_trajectory.so.2.5.5
+[302.679s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_trajectory.so.2.5.5" to ""
+[302.679s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_robot_trajectory.so
+[302.679s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_smoothing_base.so.2.5.5
+[302.679s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_smoothing_base.so.2.5.5" to ""
+[302.679s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_smoothing_base.so
+[302.679s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_test_utils.so.2.5.5
+[302.680s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_test_utils.so.2.5.5" to ""
+[302.680s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_test_utils.so
+[302.680s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_trajectory_processing.so.2.5.5
+[302.680s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_trajectory_processing.so.2.5.5" to ""
+[302.681s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_trajectory_processing.so
+[302.681s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_transforms.so.2.5.5
+[302.681s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_transforms.so.2.5.5" to ""
+[302.681s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_transforms.so
+[302.681s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_utils.so.2.5.5
+[302.682s] -- Set runtime path of "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_utils.so.2.5.5" to ""
+[302.682s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/lib/libmoveit_utils.so
+[302.682s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/environment/library_path.sh
+[302.682s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/environment/library_path.dsv
+[302.682s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/collision_detector_fcl_description.xml
+[302.683s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/collision_detector_bullet_description.xml
+[302.683s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/filter_plugin_butterworth.xml
+[302.683s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/ament_index/resource_index/package_run_dependencies/moveit_core
+[302.683s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/ament_index/resource_index/parent_prefix_path/moveit_core
+[302.683s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/environment/ament_prefix_path.sh
+[302.683s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/environment/ament_prefix_path.dsv
+[302.683s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/environment/path.sh
+[302.684s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/environment/path.dsv
+[302.684s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/local_setup.bash
+[302.684s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/local_setup.sh
+[302.684s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/local_setup.zsh
+[302.684s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/local_setup.dsv
+[302.684s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/package.dsv
+[302.685s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/ament_index/resource_index/packages/moveit_core
+[302.685s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/ament_index/resource_index/moveit_core__pluginlib__plugin/moveit_core
+[302.685s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/cmake/export_moveit_coreExport.cmake
+[302.685s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/cmake/export_moveit_coreExport-release.cmake
+[302.686s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/cmake/ConfigExtras.cmake
+[302.686s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/cmake/ament_cmake_export_targets-extras.cmake
+[302.686s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/cmake/ament_cmake_export_dependencies-extras.cmake
+[302.686s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/cmake/moveit_coreConfig.cmake
+[302.686s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/cmake/moveit_coreConfig-version.cmake
+[302.686s] -- Installing: /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_core/share/moveit_core/package.xml
+[302.690s] Invoked command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core' returned '0': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/set_moveit_coords:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robutler_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/realsense2_camera_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/project_interfaces:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner_testutils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_runtime:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_table_cali_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/iiwa7_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/dual_arm_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/pilz_industrial_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_control_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_plugins:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_simple_controller_manager:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_servo:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_visualization:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_hybrid_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning_interface:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_benchmarks:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_warehouse:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_robot_interaction:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_perception:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_pg70_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_moveit_config:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_move_group:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_ompl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_planning:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_ros_occupancy_map_monitor:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_ikfast_manipulator_plugin:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_planners_chomp:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_kinematics:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_chomp_optimizer_adapter:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/chomp_motion_planner:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_core:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/parameter_traits:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_resources_prbt_support:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_msgs:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_common:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2_stack:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_bringup:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_right:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control_left:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_ros2:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_fri_idl:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/lbr_description:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/fri_client_sdk:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/yolo_world:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_3f_gripper_ros2_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/robotiq_2f_85_control:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/object_detector:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/janise:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/gui_package:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/moveit_configs_utils:/home/xdkazer/P5-Kuka-Dual-Arm/p5_ws/install/generate_parameter_library_py:/opt/ros/humble LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/parameter_traits/lib:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/lib:${LD_LIBRARY_PATH} PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/bin:${PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_msgs/local/lib/python3.10/dist-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/generate_parameter_library_py/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/cmake --install /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/moveit_core

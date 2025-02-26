@@ -1,0 +1,33 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/define_object_info__type_support.cpp.o"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/define_object_info__type_support.cpp.o.d"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/execute_move_command__type_support.cpp.o"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/execute_move_command__type_support.cpp.o.d"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/get_current_pose__type_support.cpp.o"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/get_current_pose__type_support.cpp.o.d"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/get_object_info__type_support.cpp.o"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/get_object_info__type_support.cpp.o.d"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/plan_move_command__type_support.cpp.o"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/plan_move_command__type_support.cpp.o.d"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/prompt_janice__type_support.cpp.o"
+  "CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/prompt_janice__type_support.cpp.o.d"
+  "libproject_interfaces__rosidl_typesupport_fastrtps_cpp.pdb"
+  "libproject_interfaces__rosidl_typesupport_fastrtps_cpp.so"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/define_object_info__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/execute_move_command__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/get_current_pose__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/get_object_info__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/plan_move_command__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/dds_fastrtps/prompt_janice__type_support.cpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/define_object_info__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/execute_move_command__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/get_current_pose__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/get_object_info__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/plan_move_command__rosidl_typesupport_fastrtps_cpp.hpp"
+  "rosidl_typesupport_fastrtps_cpp/project_interfaces/srv/detail/prompt_janice__rosidl_typesupport_fastrtps_cpp.hpp"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/project_interfaces__rosidl_typesupport_fastrtps_cpp.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

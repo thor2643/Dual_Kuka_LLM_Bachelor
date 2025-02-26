@@ -1,0 +1,36 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from project_interfaces/srv/GetObjectInfo.srv
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Point.idl"
+
+module project_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "Request")
+    struct GetObjectInfo_Request {
+      @verbatim (language="comment", text=
+        "Name of the object to search for")
+      string object_name;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct GetObjectInfo_Response {
+      @verbatim (language="comment", text=
+        "The number of objects found")
+      int32 object_count;
+
+      @verbatim (language="comment", text=
+        "The center coordinates (X, Y, Z) of each object found")
+      sequence<geometry_msgs::msg::Point> centers;
+
+      @verbatim (language="comment", text=
+        "The orientation of each object (in angle)")
+      sequence<float> orientations;
+
+      @verbatim (language="comment", text=
+        "The grasping width of each object found")
+      sequence<float> grasp_widths;
+    };
+  };
+};

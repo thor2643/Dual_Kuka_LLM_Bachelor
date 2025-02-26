@@ -1,0 +1,37 @@
+[0.688s] Invoking command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/janise': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${CMAKE_PREFIX_PATH} LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../build/janise build --build-base /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build install --record /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/install.log --single-version-externally-managed install_data
+[0.940s] running egg_info
+[0.940s] creating ../../../build/janise/janise.egg-info
+[0.941s] writing ../../../build/janise/janise.egg-info/PKG-INFO
+[0.941s] writing dependency_links to ../../../build/janise/janise.egg-info/dependency_links.txt
+[0.941s] writing entry points to ../../../build/janise/janise.egg-info/entry_points.txt
+[0.941s] writing requirements to ../../../build/janise/janise.egg-info/requires.txt
+[0.941s] writing top-level names to ../../../build/janise/janise.egg-info/top_level.txt
+[0.941s] writing manifest file '../../../build/janise/janise.egg-info/SOURCES.txt'
+[0.943s] reading manifest file '../../../build/janise/janise.egg-info/SOURCES.txt'
+[0.945s] writing manifest file '../../../build/janise/janise.egg-info/SOURCES.txt'
+[0.945s] running build
+[0.945s] running build_py
+[0.945s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build
+[0.945s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib
+[0.945s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise
+[0.945s] copying janise/janise.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise
+[0.945s] copying janise/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise
+[0.946s] running install
+[0.946s] running install_lib
+[0.946s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise
+[0.946s] copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise/janise.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise
+[0.947s] copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise
+[0.947s] byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise/janise.py to janise.cpython-310.pyc
+[0.951s] byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise/__init__.py to __init__.cpython-310.pyc
+[0.951s] running install_data
+[0.951s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index
+[0.951s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index/resource_index
+[0.952s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index/resource_index/packages
+[0.952s] copying resource/janise -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index/resource_index/packages
+[0.952s] copying package.xml -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/janise
+[0.952s] running install_egg_info
+[0.953s] Copying ../../../build/janise/janise.egg-info to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise-0.0.0-py3.10.egg-info
+[0.954s] running install_scripts
+[0.977s] Installing omni_client script to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/janise
+[0.977s] writing list of installed files to '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/install.log'
+[1.024s] Invoked command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/janise' returned '0': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${CMAKE_PREFIX_PATH} LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../build/janise build --build-base /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build install --record /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/install.log --single-version-externally-managed install_data

@@ -1,0 +1,13 @@
+package.xml
+setup.cfg
+setup.py
+../../../build/janise/janise.egg-info/PKG-INFO
+../../../build/janise/janise.egg-info/SOURCES.txt
+../../../build/janise/janise.egg-info/dependency_links.txt
+../../../build/janise/janise.egg-info/entry_points.txt
+../../../build/janise/janise.egg-info/requires.txt
+../../../build/janise/janise.egg-info/top_level.txt
+../../../build/janise/janise.egg-info/zip-safe
+janise/__init__.py
+janise/janise.py
+resource/janise

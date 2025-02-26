@@ -1,0 +1,4 @@
+[console_scripts]
+gripper_client_node = robotiq_2f_85_control.gripper_client:main
+gripper_control_service_node = robotiq_2f_85_control.gripper_service:main
+

@@ -1,0 +1,10 @@
+{
+  "package_name": "realsense2_camera_msgs",
+  "non_idl_tuples": [
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/realsense-ros/realsense2_camera_msgs:msg/IMUInfo.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/realsense-ros/realsense2_camera_msgs:msg/Extrinsics.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/realsense-ros/realsense2_camera_msgs:msg/Metadata.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/realsense-ros/realsense2_camera_msgs:msg/RGBD.msg",
+    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/realsense-ros/realsense2_camera_msgs:srv/DeviceInfo.srv"
+  ]
+}

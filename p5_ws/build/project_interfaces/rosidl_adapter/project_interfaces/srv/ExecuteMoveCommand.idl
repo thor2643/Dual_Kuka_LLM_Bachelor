@@ -1,0 +1,27 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from project_interfaces/srv/ExecuteMoveCommand.srv
+// generated code does not contain a copyright notice
+
+
+module project_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "Request")
+    struct ExecuteMoveCommand_Request {
+      @verbatim (language="comment", text=
+        "Define which arm to use")
+      string arm;
+
+      @verbatim (language="comment", text=
+        "Name of the object to adjust the value for")
+      boolean execute;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct ExecuteMoveCommand_Response {
+      boolean success;
+
+      string log;
+    };
+  };
+};

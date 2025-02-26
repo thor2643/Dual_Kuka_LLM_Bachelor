@@ -1,0 +1,24 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/robotiq_3f_gripper_ros2_interfaces__cpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/action/detail/robotiq3_f_gripper_output_goal__builder.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/action/detail/robotiq3_f_gripper_output_goal__struct.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/action/detail/robotiq3_f_gripper_output_goal__traits.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/action/robotiq3_f_gripper_output_goal.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/detail/robotiq3_f_gripper_input_registers__builder.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/detail/robotiq3_f_gripper_input_registers__struct.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/detail/robotiq3_f_gripper_input_registers__traits.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/detail/robotiq3_f_gripper_output_registers__builder.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/detail/robotiq3_f_gripper_output_registers__struct.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/detail/robotiq3_f_gripper_output_registers__traits.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/robotiq3_f_gripper_input_registers.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/msg/robotiq3_f_gripper_output_registers.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/srv/detail/robotiq3_f_gripper_output_service__builder.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/srv/detail/robotiq3_f_gripper_output_service__struct.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/srv/detail/robotiq3_f_gripper_output_service__traits.hpp"
+  "rosidl_generator_cpp/robotiq_3f_gripper_ros2_interfaces/srv/robotiq3_f_gripper_output_service.hpp"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang )
+  include(CMakeFiles/robotiq_3f_gripper_ros2_interfaces__cpp.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

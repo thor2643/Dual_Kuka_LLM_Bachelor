@@ -1,0 +1,10 @@
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/uninstall.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/set_moveit_coords_uninstall.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/robot_controller_service.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/test.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/edit_cache.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/rebuild_cache.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/list_install_components.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/install.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/install/local.dir
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/set_moveit_coords/CMakeFiles/install/strip.dir

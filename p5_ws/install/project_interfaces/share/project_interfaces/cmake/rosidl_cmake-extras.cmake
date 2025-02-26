@@ -1,0 +1,4 @@
+# generated from rosidl_cmake/cmake/rosidl_cmake-extras.cmake.in
+
+set(project_interfaces_IDL_FILES "srv/GetObjectInfo.idl;srv/PlanMoveCommand.idl;srv/DefineObjectInfo.idl;srv/ExecuteMoveCommand.idl;srv/PromptJanice.idl;srv/GetCurrentPose.idl")
+set(project_interfaces_INTERFACE_FILES "srv/GetObjectInfo.srv;srv/GetObjectInfo_Request.msg;srv/GetObjectInfo_Response.msg;srv/PlanMoveCommand.srv;srv/PlanMoveCommand_Request.msg;srv/PlanMoveCommand_Response.msg;srv/DefineObjectInfo.srv;srv/DefineObjectInfo_Request.msg;srv/DefineObjectInfo_Response.msg;srv/ExecuteMoveCommand.srv;srv/ExecuteMoveCommand_Request.msg;srv/ExecuteMoveCommand_Response.msg;srv/PromptJanice.srv;srv/PromptJanice_Request.msg;srv/PromptJanice_Response.msg;srv/GetCurrentPose.srv;srv/GetCurrentPose_Request.msg;srv/GetCurrentPose_Response.msg")

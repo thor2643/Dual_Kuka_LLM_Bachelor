@@ -1,0 +1,45 @@
+running egg_info
+creating ../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info
+writing ../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/PKG-INFO
+writing dependency_links to ../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/dependency_links.txt
+writing entry points to ../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/entry_points.txt
+writing requirements to ../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/requires.txt
+writing top-level names to ../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/top_level.txt
+writing manifest file '../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/SOURCES.txt'
+reading manifest file '../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/SOURCES.txt'
+writing manifest file '../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control
+copying robotiq_2f_85_control/gripper.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control
+copying robotiq_2f_85_control/gripper_service.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control
+copying robotiq_2f_85_control/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control
+copying robotiq_2f_85_control/gripper_client.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control
+copying robotiq_2f_85_control/Robotiq2F85Driver.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control
+running install
+running install_lib
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control
+copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control/gripper.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control
+copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control/gripper_service.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control
+copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control
+copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control/gripper_client.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control
+copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/build/lib/robotiq_2f_85_control/Robotiq2F85Driver.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control
+byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control/gripper.py to gripper.cpython-310.pyc
+byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control/gripper_service.py to gripper_service.cpython-310.pyc
+byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control/__init__.py to __init__.cpython-310.pyc
+byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control/gripper_client.py to gripper_client.cpython-310.pyc
+byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control/Robotiq2F85Driver.py to Robotiq2F85Driver.cpython-310.pyc
+running install_data
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/share/ament_index
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/share/ament_index/resource_index
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/share/ament_index/resource_index/packages
+copying resource/robotiq_2f_85_control -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/share/ament_index/resource_index/packages
+copying package.xml -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/share/robotiq_2f_85_control
+running install_egg_info
+Copying ../../../../build/robotiq_2f_85_control/robotiq_2f_85_control.egg-info to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/python3.10/site-packages/robotiq_2f_85_control-0.0.0-py3.10.egg-info
+running install_scripts
+Installing gripper_client_node script to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/robotiq_2f_85_control
+Installing gripper_control_service_node script to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_2f_85_control/lib/robotiq_2f_85_control
+writing list of installed files to '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/robotiq_2f_85_control/install.log'

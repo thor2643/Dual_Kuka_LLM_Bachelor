@@ -1,0 +1,37 @@
+[0.808s] Invoking command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/gui_package': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${CMAKE_PREFIX_PATH} LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../build/gui_package build --build-base /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build install --record /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/install.log --single-version-externally-managed install_data
+[1.083s] running egg_info
+[1.084s] creating ../../../build/gui_package/gui_package.egg-info
+[1.084s] writing ../../../build/gui_package/gui_package.egg-info/PKG-INFO
+[1.085s] writing dependency_links to ../../../build/gui_package/gui_package.egg-info/dependency_links.txt
+[1.085s] writing entry points to ../../../build/gui_package/gui_package.egg-info/entry_points.txt
+[1.085s] writing requirements to ../../../build/gui_package/gui_package.egg-info/requires.txt
+[1.085s] writing top-level names to ../../../build/gui_package/gui_package.egg-info/top_level.txt
+[1.085s] writing manifest file '../../../build/gui_package/gui_package.egg-info/SOURCES.txt'
+[1.087s] reading manifest file '../../../build/gui_package/gui_package.egg-info/SOURCES.txt'
+[1.088s] writing manifest file '../../../build/gui_package/gui_package.egg-info/SOURCES.txt'
+[1.089s] running build
+[1.089s] running build_py
+[1.089s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build
+[1.089s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build/lib
+[1.089s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build/lib/gui_package
+[1.089s] copying gui_package/gui.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build/lib/gui_package
+[1.089s] copying gui_package/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build/lib/gui_package
+[1.090s] running install
+[1.090s] running install_lib
+[1.091s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages/gui_package
+[1.091s] copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build/lib/gui_package/gui.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages/gui_package
+[1.091s] copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build/lib/gui_package/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages/gui_package
+[1.092s] byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages/gui_package/gui.py to gui.cpython-310.pyc
+[1.094s] byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages/gui_package/__init__.py to __init__.cpython-310.pyc
+[1.094s] running install_data
+[1.095s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/share/ament_index
+[1.095s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/share/ament_index/resource_index
+[1.095s] creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/share/ament_index/resource_index/packages
+[1.095s] copying resource/gui_package -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/share/ament_index/resource_index/packages
+[1.095s] copying package.xml -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/share/gui_package
+[1.095s] running install_egg_info
+[1.102s] Copying ../../../build/gui_package/gui_package.egg-info to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages/gui_package-0.0.0-py3.10.egg-info
+[1.102s] running install_scripts
+[1.124s] Installing gui_node script to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/gui_package
+[1.125s] writing list of installed files to '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/install.log'
+[1.155s] Invoked command in '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/gui_package' returned '0': AMENT_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces:${CMAKE_PREFIX_PATH} LD_LIBRARY_PATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/gui_package/lib/python3.10/site-packages:/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/project_interfaces/local/lib/python3.10/dist-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../build/gui_package build --build-base /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/build install --record /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/gui_package/install.log --single-version-externally-managed install_data

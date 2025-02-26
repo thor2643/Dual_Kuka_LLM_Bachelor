@@ -1,0 +1,15 @@
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/ament_index/resource_index/package_run_dependencies/moveit_plugins
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/ament_index/resource_index/parent_prefix_path/moveit_plugins
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/environment/ament_prefix_path.sh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/environment/ament_prefix_path.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/environment/path.sh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/environment/path.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/local_setup.bash
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/local_setup.sh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/local_setup.zsh
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/local_setup.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/package.dsv
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/ament_index/resource_index/packages/moveit_plugins
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/cmake/moveit_pluginsConfig.cmake
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/cmake/moveit_pluginsConfig-version.cmake
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/moveit_plugins/share/moveit_plugins/package.xml

@@ -1,0 +1,4 @@
+source;share/set_moveit_coords/local_setup.bash
+source;share/set_moveit_coords/local_setup.dsv
+source;share/set_moveit_coords/local_setup.sh
+source;share/set_moveit_coords/local_setup.zsh

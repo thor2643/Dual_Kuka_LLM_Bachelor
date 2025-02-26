@@ -1,0 +1,5 @@
+# Request
+string arm                              # Define which arm to use
+geometry_msgs/Point position            # The center coordinates (X, Y, Z) of each object found
+geometry_msgs/Quaternion orientation    # Name of the object to search for
+

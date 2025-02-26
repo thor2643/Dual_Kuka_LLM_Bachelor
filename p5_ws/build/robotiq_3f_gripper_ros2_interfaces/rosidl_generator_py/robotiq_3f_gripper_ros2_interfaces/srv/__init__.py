@@ -1,0 +1,1 @@
+from robotiq_3f_gripper_ros2_interfaces.srv._robotiq3_f_gripper_output_service import Robotiq3FGripperOutputService  # noqa: F401

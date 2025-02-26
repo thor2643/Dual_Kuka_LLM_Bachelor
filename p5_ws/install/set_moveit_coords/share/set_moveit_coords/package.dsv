@@ -1,0 +1,8 @@
+source;share/set_moveit_coords/hook/cmake_prefix_path.ps1
+source;share/set_moveit_coords/hook/cmake_prefix_path.dsv
+source;share/set_moveit_coords/hook/cmake_prefix_path.sh
+source;share/set_moveit_coords/local_setup.bash
+source;share/set_moveit_coords/local_setup.dsv
+source;share/set_moveit_coords/local_setup.ps1
+source;share/set_moveit_coords/local_setup.sh
+source;share/set_moveit_coords/local_setup.zsh

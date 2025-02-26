@@ -1,0 +1,21 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from project_interfaces/srv/DefineObjectInfo.srv
+// generated code does not contain a copyright notice
+
+
+module project_interfaces {
+  module srv {
+    @verbatim (language="comment", text=
+      "Request")
+    struct DefineObjectInfo_Request {
+      @verbatim (language="comment", text=
+        "Name of the object to adjust the value for")
+      string object_name;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct DefineObjectInfo_Response {
+      boolean success;
+    };
+  };
+};

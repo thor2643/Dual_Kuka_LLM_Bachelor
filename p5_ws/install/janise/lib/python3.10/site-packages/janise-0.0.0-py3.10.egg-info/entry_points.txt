@@ -1,0 +1,3 @@
+[console_scripts]
+omni_client = janise.janise:main
+

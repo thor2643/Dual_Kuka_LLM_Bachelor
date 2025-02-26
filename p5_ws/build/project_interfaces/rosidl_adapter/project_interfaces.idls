@@ -1,0 +1,6 @@
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/project_interfaces/rosidl_adapter/project_interfaces:srv/GetObjectInfo.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/project_interfaces/rosidl_adapter/project_interfaces:srv/PlanMoveCommand.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/project_interfaces/rosidl_adapter/project_interfaces:srv/DefineObjectInfo.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/project_interfaces/rosidl_adapter/project_interfaces:srv/ExecuteMoveCommand.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/project_interfaces/rosidl_adapter/project_interfaces:srv/PromptJanice.idl
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/project_interfaces/rosidl_adapter/project_interfaces:srv/GetCurrentPose.idl

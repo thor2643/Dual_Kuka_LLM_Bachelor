@@ -1,0 +1,35 @@
+running egg_info
+creating ../../../build/janise/janise.egg-info
+writing ../../../build/janise/janise.egg-info/PKG-INFO
+writing dependency_links to ../../../build/janise/janise.egg-info/dependency_links.txt
+writing entry points to ../../../build/janise/janise.egg-info/entry_points.txt
+writing requirements to ../../../build/janise/janise.egg-info/requires.txt
+writing top-level names to ../../../build/janise/janise.egg-info/top_level.txt
+writing manifest file '../../../build/janise/janise.egg-info/SOURCES.txt'
+reading manifest file '../../../build/janise/janise.egg-info/SOURCES.txt'
+writing manifest file '../../../build/janise/janise.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise
+copying janise/janise.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise
+copying janise/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise
+running install
+running install_lib
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise
+copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise/janise.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise
+copying /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/build/lib/janise/__init__.py -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise
+byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise/janise.py to janise.cpython-310.pyc
+byte-compiling /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise/__init__.py to __init__.cpython-310.pyc
+running install_data
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index/resource_index
+creating /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index/resource_index/packages
+copying resource/janise -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/ament_index/resource_index/packages
+copying package.xml -> /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/share/janise
+running install_egg_info
+Copying ../../../build/janise/janise.egg-info to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/python3.10/site-packages/janise-0.0.0-py3.10.egg-info
+running install_scripts
+Installing omni_client script to /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/janise/lib/janise
+writing list of installed files to '/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/build/janise/install.log'
