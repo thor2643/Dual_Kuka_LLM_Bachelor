@@ -1,13 +1,9 @@
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/control_service_server.py
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/__init__.py
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/control_listener_node.py
-/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/control_action_server.py
-/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/3f_client.py
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/__pycache__/control_service_server.cpython-310.pyc
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/__pycache__/__init__.cpython-310.pyc
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/__pycache__/control_listener_node.cpython-310.pyc
-/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/__pycache__/control_action_server.cpython-310.pyc
-/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/lib/python3.10/site-packages/robotiq_3f_gripper_ros2_control/__pycache__/3f_client.cpython-310.pyc
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/share/ament_index/resource_index/packages/robotiq_3f_gripper_ros2_control
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/share/robotiq_3f_gripper_ros2_control/package.xml
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/robotiq_3f_gripper_ros2_control/share/robotiq_3f_gripper_ros2_control

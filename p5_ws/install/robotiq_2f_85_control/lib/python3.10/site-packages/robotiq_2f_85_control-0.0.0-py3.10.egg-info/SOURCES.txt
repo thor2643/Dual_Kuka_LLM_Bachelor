@@ -14,6 +14,3 @@ robotiq_2f_85_control/__init__.py
 robotiq_2f_85_control/gripper.py
 robotiq_2f_85_control/gripper_client.py
 robotiq_2f_85_control/gripper_service.py
-test/test_copyright.py
-test/test_flake8.py
-test/test_pep257.py

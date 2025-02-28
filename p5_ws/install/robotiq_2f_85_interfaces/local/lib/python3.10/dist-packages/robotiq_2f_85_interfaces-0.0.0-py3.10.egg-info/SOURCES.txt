@@ -4,3 +4,5 @@ robotiq_2f_85_interfaces.egg-info/PKG-INFO
 robotiq_2f_85_interfaces.egg-info/SOURCES.txt
 robotiq_2f_85_interfaces.egg-info/dependency_links.txt
 robotiq_2f_85_interfaces.egg-info/top_level.txt
+robotiq_2f_85_interfaces/srv/__init__.py
+robotiq_2f_85_interfaces/srv/_robotiq2_f85_gripper_command.py

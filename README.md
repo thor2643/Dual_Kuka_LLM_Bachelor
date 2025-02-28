@@ -1,6 +1,9 @@
 # Dual_Kuka_LLM_Bachelor
 This repository contains the source code for our bachelor project in robotics at Aalborg University, and explores the integration of ... to make automation more intuitive for operators. The GitHub contains all the code produced throughout the project period, from ... to ...
 
+This project is a continuation of the work performed during the 5th semester. The GitHub page for the 5th semester project can be found here: 
+- [P5 Project](https://github.com/thor2643/P5-Kuka-Dual-Arm)
+
 ## Quick Start
 This quick-start guide assumes a clean installation of Ubuntu 22.04 LTS (Jammy Jellyfish) along with ROS 2 Humble. If either is not yet set up, you can refer to the following resources:
 - [Ubuntu 22.04 LTS](https://medium.com/@maheshdeshmukh22/how-to-install-ubuntu-22-04-lts-on-virtualbox-in-windows-11-6c259ce8ef60)
@@ -87,7 +90,7 @@ Before starting the installation of this project, we recommend grabbing a snack 
     ```
 
 ## Contributors
-This project was developed by group 565 at Aalborg University, during the 5th semester of Robot Technology. Every member of the group can be found listed below, alongside their GitHub pages:
+This project was developed by group 660 at Aalborg University, during their Robotics Bachelor. Every member of the group can be found listed below, alongside their GitHub pages:
 
 <section id="sec_contributors">
 <table>
@@ -96,7 +99,6 @@ This project was developed by group 565 at Aalborg University, during the 5th se
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/thor2643"><img src="https://avatars.githubusercontent.com/u/66319719?v=4" width="100px;" alt=""/><br/><sub><b>Thor Iversen</b></sub></a></br><a href="gttps://github.com/thor2643" title="">👨‍🌾</a></td>
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/xdKazer"><img src="https://avatars.githubusercontent.com/u/116707938?v=4" width="100px;" alt=""/><br/><sub><b>Kasper Lauritsen</b></sub></a></br><a href="gttps://github.com/xdKazer" title="">🎥</a></td>
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/silasjensen2001"><img src="https://avatars.githubusercontent.com/u/54105795?v=4" width="100px;" alt=""/><br/><sub><b>Silas Jensen</b></sub></a></br><a href="gttps://github.com/silasjensen2001" title="">😎</a></td>
-    <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/DaMalle"><img src="https://avatars.githubusercontent.com/u/58878411?v=4" width="100px;" alt=""/><br/><sub><b>Marcus Friis</b></sub></a></br><a href="gttps://github.com/DaMalle" title="">🤠</a></td>
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/signeskuldbol"><img src="https://avatars.githubusercontent.com/u/117270262?v=4" width="100px;" alt=""/><br/><sub><b>Signe Møller-Skuldbøl</b></sub></a></br><a href="gttps://github.com/signeskuldbol" title="">🌸</a></td>
   </tr>
 </table>

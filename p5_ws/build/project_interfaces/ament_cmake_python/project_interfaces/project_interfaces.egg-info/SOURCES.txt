@@ -4,3 +4,10 @@ project_interfaces.egg-info/PKG-INFO
 project_interfaces.egg-info/SOURCES.txt
 project_interfaces.egg-info/dependency_links.txt
 project_interfaces.egg-info/top_level.txt
+project_interfaces/srv/__init__.py
+project_interfaces/srv/_define_object_info.py
+project_interfaces/srv/_execute_move_command.py
+project_interfaces/srv/_get_current_pose.py
+project_interfaces/srv/_get_object_info.py
+project_interfaces/srv/_plan_move_command.py
+project_interfaces/srv/_prompt_janice.py

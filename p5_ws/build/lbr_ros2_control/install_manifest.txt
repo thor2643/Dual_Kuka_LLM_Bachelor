@@ -11,12 +11,9 @@
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/include/lbr_ros2_control/lbr_torque_command_controller.hpp
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/lib/lbr_ros2_control/liblbr_ros2_control.so
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/config/lbr_system_interface.xacro
-/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/config/lbr_controllers copy.yaml
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/config/lbr_system_parameters_left.yaml
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/config/lbr_system_parameters_right.yaml
-/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/config/lbr_controllers.yaml
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/config/lbr_dual_controllers.yaml
-/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/config/lbr_system_parameters.yaml
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/ament_index/resource_index/package_run_dependencies/lbr_ros2_control
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/ament_index/resource_index/parent_prefix_path/lbr_ros2_control
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_ros2_control/share/lbr_ros2_control/environment/ament_prefix_path.sh
