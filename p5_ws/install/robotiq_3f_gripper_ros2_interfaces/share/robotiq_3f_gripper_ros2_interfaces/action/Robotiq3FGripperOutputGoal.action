@@ -1,6 +1,0 @@
-Robotiq3FGripperOutputRegisters output_registers_goal
----
-string result
----
-Robotiq3FGripperInputRegisters input_registers
-Robotiq3FGripperOutputRegisters output_registers
