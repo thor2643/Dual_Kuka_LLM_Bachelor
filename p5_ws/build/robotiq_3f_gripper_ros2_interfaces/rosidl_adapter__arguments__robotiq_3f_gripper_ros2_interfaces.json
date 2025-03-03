@@ -1,9 +1,0 @@
-{
-  "package_name": "robotiq_3f_gripper_ros2_interfaces",
-  "non_idl_tuples": [
-    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/gripper_control/robotiq_3f_gripper_ros2_interfaces:msg/Robotiq3FGripperInputRegisters.msg",
-    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/gripper_control/robotiq_3f_gripper_ros2_interfaces:msg/Robotiq3FGripperOutputRegisters.msg",
-    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/gripper_control/robotiq_3f_gripper_ros2_interfaces:srv/Robotiq3FGripperOutputService.srv",
-    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/gripper_control/robotiq_3f_gripper_ros2_interfaces:action/Robotiq3FGripperOutputGoal.action"
-  ]
-}

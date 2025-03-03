@@ -1,6 +1,0 @@
-{
-  "package_name": "robotiq_2f_85_interfaces",
-  "non_idl_tuples": [
-    "/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/src/robutler/gripper_control/robotiq_2f_85_interfaces:srv/Robotiq2F85GripperCommand.srv"
-  ]
-}

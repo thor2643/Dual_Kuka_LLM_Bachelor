@@ -1,1 +1,0 @@
-Robotiq3FGripperOutputRegisters output_registers

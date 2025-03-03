@@ -1,4 +1,0 @@
-# Request
-string arm    # Define which arm to use
-bool execute  # Name of the object to adjust the value for
-
