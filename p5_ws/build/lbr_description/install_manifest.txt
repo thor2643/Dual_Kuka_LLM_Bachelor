@@ -62,6 +62,7 @@
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/realsense/_d435.urdf.xacro
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-3f-gripper/robotiq-3f-gripper_finger_articulated_macro.xacro
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/robotiq-3f-gripper/robotiq-3f-gripper_articulated_macro.xacro
+/home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/urdf/mock_dual_arm/mock_dual_arm.xacro
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/lbr_description/environment/lbr_description.dsv
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/ament_index/resource_index/package_run_dependencies/lbr_description
 /home/xdkazer/Dual_Kuka_LLM_Bachelor/p5_ws/install/lbr_description/share/ament_index/resource_index/parent_prefix_path/lbr_description

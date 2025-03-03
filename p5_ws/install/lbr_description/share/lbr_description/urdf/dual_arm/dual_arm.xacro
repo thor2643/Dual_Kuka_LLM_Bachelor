@@ -859,7 +859,7 @@
     <origin rpy="0 0 0" xyz="0 0 0.035"/>
   </joint>
   <link name="left_link_ee">
-        </link>
+        </link> 
   <!-- link list -->
   <link name="3f_finger_1_link_0">
     <visual>
