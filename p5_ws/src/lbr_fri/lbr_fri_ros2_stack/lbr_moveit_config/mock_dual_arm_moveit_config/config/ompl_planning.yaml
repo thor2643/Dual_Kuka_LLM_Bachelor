@@ -70,15 +70,17 @@ left_arm:
     - RRT 
   
 
-#3f_gripper:
+3f_gripper:
 # Planner constraints
-#  planner_configs:
-#    - RRTconnect 
+  
+  planner_configs:
+    - RRTconnect 
 
-#2f_gripper:
+2f_gripper:
 # Planner constraints
-#  planner_configs:
-#    - RRTconnect 
+  
+  planner_configs:
+    - RRTconnect 
   
  
   
