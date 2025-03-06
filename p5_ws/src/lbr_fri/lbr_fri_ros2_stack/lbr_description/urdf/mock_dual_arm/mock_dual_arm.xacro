@@ -218,11 +218,11 @@
     <joint name="3f_finger_1_joint_1">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
-        <param name="min">0.0495</param>
-        <param name="max">1.2218</param>
+        <param name="min">0.3758</param>
+        <param name="max">1.1276</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">0.0495</param>
+        <param name="initial_value">0.3758</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -236,7 +236,7 @@
         <param name="max">1.5708</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">0.0</param>
+        <param name="initial_value">0</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -246,11 +246,11 @@
     <joint name="3f_finger_1_joint_3">
       <param name="max_velocity">1.25</param>
       <command_interface name="position">
-        <param name="min">-1.2217</param>
-        <param name="max">-0.0523</param>
+        <param name="min">-0.9531</param>
+        <param name="max">0.7572</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">-1.2217</param>
+        <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -260,11 +260,11 @@
     <joint name="3f_finger_2_joint_1">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
-        <param name="min">0.0495</param>
-        <param name="max">1.2218</param>
+        <param name="min">0.3758</param>
+        <param name="max">1.1276</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">0.0495</param>
+        <param name="initial_value">0.3758</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -278,7 +278,7 @@
         <param name="max">1.5708</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">0.0</param>
+        <param name="initial_value">0</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -288,11 +288,11 @@
     <joint name="3f_finger_2_joint_3">
       <param name="max_velocity">1.25</param>
       <command_interface name="position">
-        <param name="min">-1.2217</param>
-        <param name="max">-0.0523</param>
+        <param name="min">-0.9531</param>
+        <param name="max">0.7572</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">-1.2217</param>
+        <param name="initial_value">0.0</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -302,11 +302,11 @@
     <joint name="3f_finger_middle_joint_1">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
-        <param name="min">0.0495</param>
-        <param name="max">1.2218</param>
+        <param name="min">0.3758</param>
+        <param name="max">1.1276</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">0.0495</param>
+        <param name="initial_value">0.3758</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -330,11 +330,11 @@
     <joint name="3f_finger_middle_joint_3">
       <param name="max_velocity">1.25</param>
       <command_interface name="position">
-        <param name="min">-1.2217</param>
-        <param name="max">-0.0523</param>
+        <param name="min">-0.9531</param>
+        <param name="max">0.7572</param>
       </command_interface>
       <state_interface name="position">
-        <param name="initial_value">-1.2217</param>
+        <param name="initial_value">0</param>
       </state_interface>
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
@@ -922,7 +922,7 @@
     <child link="3f_finger_1_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.43" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0.0495" upper="1.2218" velocity="1.23"/>
+    <limit effort="100" lower="0.3758" upper="1.1276" velocity="1.23"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <joint name="3f_finger_1_joint_2" type="revolute">
@@ -930,7 +930,7 @@
     <child link="3f_finger_1_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0.0" upper="1.5708" velocity="1.24"/>
+    <limit effort="100" lower="0.0" upper="1.5707" velocity="1.24"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <joint name="3f_finger_1_joint_3" type="revolute">
@@ -938,7 +938,7 @@
     <child link="3f_finger_1_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="-1.2217" upper="-0.0523" velocity="1.25"/>
+    <limit effort="100" lower="-0.9531" upper="0.7572" velocity="1.25"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <!-- end of joint list -->
@@ -1038,7 +1038,7 @@
     <child link="3f_finger_2_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.43" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0.0495" upper="1.2218" velocity="1.23"/>
+    <limit effort="100" lower="0.3758" upper="1.1276" velocity="1.23"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <joint name="3f_finger_2_joint_2" type="revolute">
@@ -1046,7 +1046,7 @@
     <child link="3f_finger_2_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0.0" upper="1.5708" velocity="1.24"/>
+    <limit effort="100" lower="0.0" upper="1.5707" velocity="1.24"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <joint name="3f_finger_2_joint_3" type="revolute">
@@ -1054,7 +1054,7 @@
     <child link="3f_finger_2_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="-1.2217" upper="-0.0523" velocity="1.25"/>
+    <limit effort="100" lower="-0.9531" upper="0.7572" velocity="1.25"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <!-- end of joint list -->
@@ -1154,7 +1154,7 @@
     <child link="3f_finger_middle_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.43" xyz="0.020 0 0"/>
-    <limit effort="100" lower="0.0495" upper="1.2218" velocity="1.23"/>
+    <limit effort="100" lower="0.3758" upper="1.1276" velocity="1.23"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <joint name="3f_finger_middle_joint_2" type="revolute">
@@ -1162,7 +1162,7 @@
     <child link="3f_finger_middle_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
-    <limit effort="100" lower="0.0" upper="1.5708" velocity="1.24"/>
+    <limit effort="100" lower="0.0" upper="1.5707" velocity="1.24"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <joint name="3f_finger_middle_joint_3" type="revolute">
@@ -1170,7 +1170,7 @@
     <child link="3f_finger_middle_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
-    <limit effort="100" lower="-1.2217" upper="-0.0523" velocity="1.25"/>
+    <limit effort="100" lower="-0.9531" upper="0.7572" velocity="1.25"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
   <!-- end of joint list -->

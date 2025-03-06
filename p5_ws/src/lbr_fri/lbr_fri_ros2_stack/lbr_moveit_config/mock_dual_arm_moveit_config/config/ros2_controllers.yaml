@@ -20,6 +20,7 @@ controller_manager:
 
 right_arm_controller:
   ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
     joints:
       - right_A1
       - right_A2
@@ -35,6 +36,7 @@ right_arm_controller:
       - velocity
 left_arm_controller:
   ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
     joints:
       - left_A1
       - left_A2
@@ -50,6 +52,7 @@ left_arm_controller:
       - velocity
 threef_gripper_controller:
   ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
     joints:
       - 3f_finger_1_joint_1
       - 3f_finger_1_joint_2
@@ -69,6 +72,7 @@ threef_gripper_controller:
       - velocity
 twof_gripper_controller:
   ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
     joints:
       - left_finger_joint
     command_interfaces:
