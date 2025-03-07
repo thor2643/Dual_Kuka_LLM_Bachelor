@@ -620,8 +620,6 @@ class LLMNode(Node):
                 tool_choice='auto'
             )
 
-            #print("\nModel response: ", llm_response)
-
             # Check if tool calls exist in response
             tool_calls = llm_response.choices[0].message.tool_calls
             if not tool_calls:
