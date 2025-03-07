@@ -93,7 +93,6 @@ Before starting the installation of this project, we recommend grabbing a snack 
 This project was developed by group 660 at Aalborg University, during their Robotics Bachelor. Every member of the group can be found listed below, alongside their GitHub pages:
 
 <section id="sec_contributors">
-<center>
 <table>
   <tr> 
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/Gustav-Bay"><img src="https://avatars.githubusercontent.com/u/120191982?v=4" width="100px;" alt=""/><br/><sub><b>Gustav Bay Baastrup</b></sub></a></br><a href="gttps://github.com/Gustav-Bay" title="">🤖</a></td>
@@ -103,4 +102,3 @@ This project was developed by group 660 at Aalborg University, during their Robo
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/signeskuldbol"><img src="https://avatars.githubusercontent.com/u/117270262?v=4" width="100px;" alt=""/><br/><sub><b>Signe Møller-Skuldbøl</b></sub></a></br><a href="gttps://github.com/signeskuldbol" title="">🌸</a></td>
   </tr>
 </table>
-</center>
