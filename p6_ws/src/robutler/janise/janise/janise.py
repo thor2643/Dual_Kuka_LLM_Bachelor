@@ -78,10 +78,24 @@ class LLMNode(Node):
 
         # Attributes
         self.future = 0
-
         self.llm_loop = False
 
+        # Get current time and date from OS and format it for log file differentiation
+        self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
+        self.get_logger().info(f"Current time and date: {self.current_time}")
+
         self.object_file = 'src/robutler/object_detector/object_detector/lego_bricks_config.json'
+        self.conversation_log_folder = 'src/robutler/janise/resource/conversation_logs'
+        self.conversation_log_file = self.conversation_log_folder + f'/{self.current_time}.json'
+
+        # Create the directory if it doesn't exist
+        if not os.path.exists(self.conversation_log_folder):
+            os.makedirs(self.conversation_log_folder)
+
+        # Create the JSON file if it doesn't exist
+        if not os.path.exists(self.conversation_log_file):
+            with open(self.conversation_log_file, 'w') as file:
+                pass
 
         self.lego_bricks = {}
 
@@ -187,7 +201,12 @@ class LLMNode(Node):
             - It is important that you do not make random assumptions about having completed a task. Always ensure that you have completed each step of a task before moving on to the next one.
 
             Your primary task is to execute movements and manipulations as requested, utilizing precise understanding of your left and right sides, grippers, and the overview provided by the RealSense camera.
+        
+            You must explain the reasoning behind each action before executing it. If you are unsure about a task or need further clarification, you should ask the user for more information or request assistance from the operator.
         """}]
+
+        # Log the initial message
+        self.log_conversation(self.message_buffer[-1])
 
 
     ##############################################################################
@@ -255,6 +274,34 @@ class LLMNode(Node):
             return None
         else:
             return future.result()
+    
+    def remove_null_values_and_keys(self, d):
+        if isinstance(d, dict):
+            return {k: self.remove_null_values_and_keys(v) for k, v in d.items() if v is not None and k not in ['id', 'type']}
+        elif isinstance(d, list):
+            return [self.remove_null_values_and_keys(v) for v in d if v is not None]
+        else:
+            return d
+
+        
+    def reorder_keys(self, d):
+        if isinstance(d, dict):
+            keys_order = ['role', 'content', 'tool_calls']
+            return {k: d[k] for k in keys_order if k in d}
+        return d   
+    
+    def log_conversation(self, llm_response, log_file_path=None):
+        """Log function to save the LLM responses to a file"""
+        if log_file_path is None:
+            log_file_path = self.conversation_log_file
+
+        with open(log_file_path, 'a') as log_file:
+            response = self.remove_null_values_and_keys(llm_response)
+            response = self.reorder_keys(response)
+            formatted_response = json.dumps(response, indent=4)
+            formatted_response = formatted_response.replace('\\n', '\n')
+            log_file.write(formatted_response)
+            log_file.write('\n\n')
 
     def run_service_request(self, timeout=60):
         try:
@@ -282,7 +329,6 @@ class LLMNode(Node):
         q_z = cr * cp * sy - sr * sp * cy
 
         return [q_w, q_x, q_y, q_z]
-
     
     def quat_to_euler(self, quat):
         w, x, y, z = quat
@@ -377,7 +423,6 @@ class LLMNode(Node):
             self.get_logger().error('No objects found')
             return GetObjectInfo.Response()
         
-
     def find_object_yolo(self, object_name: str) -> GetObjectInfo.Response:
         print(f"\nRequesting the YoloWorld detector service to find {object_name}")
         self.get_logger().info(f"\nLooking for object: {object_name}\n")
@@ -431,7 +476,6 @@ class LLMNode(Node):
 
             return self.objects_on_table_yolo
         
-
     def define_object_thresholds(self, object_name: str) -> DefineObjectInfo.Response:
         self.define_objects_req.object_name = object_name
 
@@ -599,18 +643,39 @@ class LLMNode(Node):
         prompt = request.prompt  # prompt is a string
         self.message_buffer.append({'role': 'user', 'content': prompt})
 
+        print("Received request")
+
         #If the user wants to clear the history, do so
         if "clear history" in prompt:
             os.system('clear')
             self.message_buffer = [self.message_buffer[0]]
             response.message = "History cleared."
+
+            # Create new JSON log file if it doesn't exist
+            # Get current time and date from OS and format it for log file differentiation
+            self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
+            self.get_logger().info(f"Current time and date: {self.current_time}")
+
+            self.conversation_log_file = self.conversation_log_folder + f"/{self.current_time}.json"
+
+            # Log the initial message
+            self.log_conversation(self.message_buffer[-1])
+
+            if not os.path.exists(self.conversation_log_file):
+                with open(self.conversation_log_file, 'w') as file:
+                    pass
+
             return response
+        
+        #Log the input prompt        
+        self.log_conversation(self.message_buffer[-1])
 
         loop_counter = 0
 
         self.llm_loop = True
 
         while True:
+            
             # API Request to chat with model with user-defined functions
             llm_response = self.client.chat.completions.create(
                 model="gpt-4o",
@@ -620,20 +685,28 @@ class LLMNode(Node):
                 tool_choice='auto'
             )
 
+            #Log response
+            self.log_conversation(llm_response.choices[0].message.model_dump())
+
             # Check if tool calls exist in response
             tool_calls = llm_response.choices[0].message.tool_calls
             if not tool_calls:
                 self.get_logger().info("The model didn't use a function.")
 
+                """
                 final_response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=self.message_buffer
                 )
                 response.message = final_response.choices[0].message.content
                 
-                self.message_buffer.append({'role': 'assistant', 'content': response.message})
+                #Log response
+                self.log_conversation(final_response.choices[0].message.model_dump())
 
-                print(final_response.choices[0].message.content)
+                self.message_buffer.append({'role': 'assistant', 'content': response.message})"
+                """
+
+                response.message = llm_response.choices[0].message.content
                 return response
 
             print("\nTool calls: ", tool_calls)
@@ -657,7 +730,14 @@ class LLMNode(Node):
                         'role': 'function',
                         "tool_call_id": tool_call_id,
                         'name': tool_func_name,
-                        'content': f"Function response: {function_response}" #json.dumps(function_response)
+                        'content': f"{function_response}" #json.dumps(function_response)
+                    })
+
+                    # Log the relevant function response
+                    self.log_conversation({
+                        'role': 'function',
+                        'name': tool_func_name,
+                        'content': f"{function_response}" #json.dumps(function_response)
                     })
 
             # Check if the model wants to continue the conversation
@@ -670,6 +750,7 @@ class LLMNode(Node):
                 })
                 print("Maximum number of coherent steps reached. Disabling message looping.")
                 self.stop_message_looping(False)
+                self.log_conversation(self.message_buffer[-1])
                 break
 
             loop_counter += 1
@@ -682,6 +763,9 @@ class LLMNode(Node):
             model="gpt-4o",
             messages=self.message_buffer
         )
+
+        #Log response
+        self.log_conversation(final_response.choices[0].message.model_dump())
 
         response.message = final_response.choices[0].message.content
         self.message_buffer.append({'role': 'assistant', 'content': response.message})

@@ -16,6 +16,7 @@ build/
 install/
 log/
 devel/
+conversation_logs/
 
 # Visual Studio
 ## Ignore Visual Studio temporary files, build results, and
@@ -431,4 +432,5 @@ FodyWeavers.xsd
 # Built Visual Studio Code Extensions
 *.vsix
 
-*/API_KEY.json
+API_KEY.json
+
