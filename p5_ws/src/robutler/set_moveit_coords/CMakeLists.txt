@@ -16,8 +16,11 @@ find_package(project_interfaces REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_visual_tools REQUIRED)
 find_package(graph_msgs REQUIRED)
+find_package(shape_msgs REQUIRED)
 
 add_executable(robot_controller_service src/robot_controller_service.cpp)
+add_executable(object_manager src/object_manager.cpp)
+
 
 ament_target_dependencies(robot_controller_service
   geometry_msgs  
@@ -27,8 +30,20 @@ ament_target_dependencies(robot_controller_service
   rclcpp
 )
 
+ament_target_dependencies(object_manager
+  rclcpp
+  moveit_ros_planning_interface
+  moveit_msgs
+  geometry_msgs
+  shape_msgs
+)
+
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(TARGETS object_manager
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS robot_controller_service
