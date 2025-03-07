@@ -26,8 +26,8 @@ Before starting the installation of this project, we recommend grabbing a snack 
     ```shell
     cd ~
     source /opt/ros/humble/setup.bash
-    git clone https://github.com/thor2643/P5-Kuka-Dual-Arm.git
-    cd P5-Kuka-Dual-Arm/p5_ws
+    git clone https://github.com/thor2643/Dual_Kuka_LLM_Bachelor.git
+    cd Dual_Kuka_LLM_Bachelor/p6_ws
     sudo rosdep init
     rosdep update
     rosdep install --from-paths src -i -r -y
@@ -48,14 +48,14 @@ Before starting the installation of this project, we recommend grabbing a snack 
 4. Installing python libraries
 
     ```shell
-    cd ~/P5-Kuka-Dual-Arm
+    cd ~/Dual_Kuka_LLM_Bachelor
     pip install -r requirements.txt
     ```
 
 5. Adding an API key for Janise
 
    ```shell
-    cd ~/P5-Kuka-Dual-Arm/p5_ws/src/robutler/janise
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise
     nano API_KEY.json
     # Added your API Key for GPT following the format
     # {
@@ -67,7 +67,7 @@ Before starting the installation of this project, we recommend grabbing a snack 
 6. Colcon build - Re-run if any packages timeout during compile
 
     ```shell
-    cd ~/P5-Kuka-Dual-Arm/p5_ws
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws
     export MAKEFLAGS="-j3"
     colcon build --mixin release
     ```
@@ -77,7 +77,7 @@ Before starting the installation of this project, we recommend grabbing a snack 
 9. Running the system
 
     ```shell
-    cd ~/P5-Kuka-Dual-Arm/p5_ws
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws
     source install/setup.bash
     ros2 launch robutler_bringup robutler.launch.py
     ```
@@ -86,13 +86,14 @@ Before starting the installation of this project, we recommend grabbing a snack 
 
     ```shell
     echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
-    echo "source ~/P5-Kuka-Dual-Arm/p5_ws/install/setup.bash" >> ~/.bashrc
+    echo "source ~/Dual_Kuka_LLM_Bachelor/p6_ws/install/setup.bash" >> ~/.bashrc
     ```
 
 ## Contributors
 This project was developed by group 660 at Aalborg University, during their Robotics Bachelor. Every member of the group can be found listed below, alongside their GitHub pages:
 
 <section id="sec_contributors">
+<center>
 <table>
   <tr> 
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/Gustav-Bay"><img src="https://avatars.githubusercontent.com/u/120191982?v=4" width="100px;" alt=""/><br/><sub><b>Gustav Bay Baastrup</b></sub></a></br><a href="gttps://github.com/Gustav-Bay" title="">🤖</a></td>
@@ -102,3 +103,4 @@ This project was developed by group 660 at Aalborg University, during their Robo
     <td align="center"><a target="_blank" rel="noreferrer noopener" href="https://github.com/signeskuldbol"><img src="https://avatars.githubusercontent.com/u/117270262?v=4" width="100px;" alt=""/><br/><sub><b>Signe Møller-Skuldbøl</b></sub></a></br><a href="gttps://github.com/signeskuldbol" title="">🌸</a></td>
   </tr>
 </table>
+</center>
