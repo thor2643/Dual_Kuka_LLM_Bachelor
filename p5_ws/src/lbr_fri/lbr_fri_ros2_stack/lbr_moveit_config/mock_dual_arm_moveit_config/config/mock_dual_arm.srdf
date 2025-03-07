@@ -67,6 +67,9 @@
     <group_state name="closed" group="2f_gripper">
         <joint name="left_finger_joint" value="0.5039"/>
     </group_state>
+    <group_state name="brick_grasp" group="2f_gripper">
+        <joint name="left_finger_joint" value="0.8757"/>
+    </group_state>
     <group_state name="open" group="3f_gripper">
         <joint name="3f_finger_1_joint_1" value="0.3758"/>
         <joint name="3f_finger_1_joint_2" value="0"/>
