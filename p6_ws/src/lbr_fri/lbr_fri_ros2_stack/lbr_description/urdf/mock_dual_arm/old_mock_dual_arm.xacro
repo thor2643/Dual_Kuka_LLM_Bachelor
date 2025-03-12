@@ -1601,7 +1601,7 @@
       </geometry>
     </collision>
   </link>
-  <!-- the wooden laser cut camera mount
+  <!-- the wooden laser cut camera mount-->
   <link name="cam_mount">
     <visual>
       <origin rpy="0 0 0" xyz="0.096012 0.03490 -0.059336"/>
@@ -1611,7 +1611,6 @@
       <material name="wood"/>
     </visual>
   </link>
-  -->
   <!-- 3f gripper adapter / mounting plate -->
   <link name="gripper_mounting_plate">
 	<visual>
@@ -1634,18 +1633,17 @@
     <parent link="world"/>
     <child link="table"/>
   </joint>
-  <!--joint between table and wooden camera mount
+  <!--joint between table and wooden camera mount-->
   <joint name="cam_table_joint" type="fixed">
     <parent link="table"/>
     <child link="cam_mount"/>
     <origin rpy="1.57079633 0 0" xyz="0.489819 0.84691 1.428"/>
   </joint>
-  -->
   <!--joint between table and right iiwa7 -->
   <joint name="mount_right" type="fixed">
     <parent link="table"/>
     <child link="right_link_0"/>
-    <origin rpy="0 0 -0.785398163" xyz="0.145181 0.79431 0.815"/>
+    <origin rpy="0.785398163 0 -1.57079633" xyz="0.268524 0.756691 1.037203"/>
   </joint>
   <!-- joint between right iiwa7 and 3f gripper-->
     <joint name="ee_mount" type="fixed">    
@@ -1659,11 +1657,11 @@
 	<child link="3f_palm" />
 	<origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
     </joint>
-  <!-- joint between left arm and table -->
+  <!-- joint between left arm and world -->
   <joint name="mount_left" type="fixed">
-    <parent link="table"/>
+    <parent link="world"/>
     <child link="left_link_0"/>
-    <origin rpy="0 0 -2.35619449 " xyz="0.795181 0.79431 0.815"/>
+    <origin rpy="-0.785398163 0 -1.57079633" xyz="0.711114 0.756691 1.037203"/>
   </joint>
   <!-- joint between left iiwa7 and 2f gripper-->
   <joint name="left_ee_mount" type="fixed">

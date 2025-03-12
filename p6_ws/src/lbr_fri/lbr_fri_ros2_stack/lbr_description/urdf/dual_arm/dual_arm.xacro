@@ -1693,9 +1693,9 @@
         <child link="3f_palm" />
         <origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
     </joint>
-  <!-- joint between left arm and world -->
+  <!-- joint between left arm and table -->
   <joint name="mount_left" type="fixed">
-    <parent link="world"/>
+    <parent link="table"/>
     <child link="left_link_0"/>
     <origin rpy="0 0 -2.35619449 " xyz="0.795181 0.79431 0.815"/>
   </joint>
