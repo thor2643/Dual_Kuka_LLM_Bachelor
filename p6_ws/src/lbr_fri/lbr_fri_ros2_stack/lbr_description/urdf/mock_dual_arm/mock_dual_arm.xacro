@@ -391,6 +391,30 @@
     </joint>
   </ros2_control>
   
+  <!-- Implementing the fake camera! -->
+  <gazebo reference="camera_link">
+    <sensor name="camera" type="camera">
+      <pose>0 0 0 0 1.57 0</pose>
+      <visualize>true</visualize>
+      <update_rate>5</update_rate>
+      <camera>
+        <horizontal_fov>1</horizontal_fov>
+        <image>
+          <format>R8G8B8</format>
+          <width>640</width>
+          <height>480</height>
+        </image>
+        <clip>
+          <near>0.05</near>
+          <far>1</far>
+        </clip>
+      </camera>
+      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+        <frame_name>cam_simu_joint</frame_name>
+      </plugin>
+    </sensor>
+  </gazebo>
+
 <!-- Links & Joints for the Right Arm -->
   <link name="right_link_0">
     <inertial>
@@ -1640,6 +1664,17 @@
     <child link="cam_mount"/>
     <origin rpy="1.57079633 0 0" xyz="0.489819 0.84691 1.428"/>
   </joint>
+  
+  <!-- Sneaky Camera Insert -->
+  <link name="camera_link"/>
+
+  <joint name="cam_simu_joint" type="fixed">
+    <parent link="cam_mount"/>
+    <child link="camera_link"/>
+    <origin rpy="0 -1.57079633 0" xyz="0 0 0"/>
+  </joint>
+
+
   <!--joint between table and right iiwa7 -->
   <joint name="mount_right" type="fixed">
     <parent link="table"/>
