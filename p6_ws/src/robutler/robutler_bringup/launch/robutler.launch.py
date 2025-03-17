@@ -66,7 +66,7 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(
-                    get_package_share_directory('dual_arm_moveit_config'),
+                    get_package_share_directory('isaac_dual_arm_moveit_config'),
                     'launch',
                     'demo.launch.py'
                 )

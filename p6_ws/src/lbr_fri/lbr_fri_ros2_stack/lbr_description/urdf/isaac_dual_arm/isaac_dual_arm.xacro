@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 
 <!-- top level -->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mock_dual_arm">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="isaac_dual_arm">
   <!-- Setup of Hardware & Joints for Right_Arm_Mock -->
   <ros2_control name="lbr_system_interface_right" type="system">
     <hardware>
