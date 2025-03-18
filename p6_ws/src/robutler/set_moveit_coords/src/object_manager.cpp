@@ -52,15 +52,18 @@ class ObjectManager : public rclcpp::Node {
         std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> planning_scene_interface_;
 };
 
+
+// To the best of my knowlage, x = 0.035, y = 0.035 & z = 0.86 is the absoulute closet we can get to the "0,0,0 edge" - Oversized collision boxes?
+// - Values above are for a box with size 0.1, 0.1, 0.1, so scale accordingly. (width a, width b, height?)
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<ObjectManager>();
 
     geometry_msgs::msg::PoseStamped pose;
     pose.header.frame_id = "world";
-    pose.pose.position.x = 0.5;
-    pose.pose.position.y = 0.0;
-    pose.pose.position.z = 0.5;
+    pose.pose.position.x = 0.035;
+    pose.pose.position.y = 0.035;
+    pose.pose.position.z = 0.86;
     pose.pose.orientation.w = 1.0;
 
     geometry_msgs::msg::PoseStamped pose2;
@@ -73,7 +76,7 @@ int main(int argc, char **argv) {
     node->addBox("test_object", pose, {0.1, 0.1, 0.1});
     node->addCircle("test_object2", pose2, {0.01});
     rclcpp::sleep_for(std::chrono::seconds(5));
-    node->removeBox("test_object");
+    // node->removeBox("test_object");
 
     rclcpp::shutdown();
     return 0;

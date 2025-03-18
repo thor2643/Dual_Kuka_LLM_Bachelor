@@ -24,6 +24,7 @@ if(BUILD_TESTING)
 endif()
 
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 
@@ -34,7 +35,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/ExecuteMoveCommand.srv"
   "srv/PromptJanice.srv"
   "srv/GetCurrentPose.srv"
+  "srv/GetImage.srv"
   DEPENDENCIES geometry_msgs
+  DEPENDENCIES sensor_msgs
 )
 
 ament_package()

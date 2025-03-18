@@ -27,13 +27,6 @@ def generate_launch_description():
     doc = xacro.parse(open(xacro_file))
     xacro.process_doc(doc)
     
-    # Gazebo Stuff - Needed for camera simulation
-    gazebo_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [PathJoinSubstitution([FindPackageShare('gazebo_ros'), 'launch', 'gazebo.launch.py'])]
-        )
-    )
-
     # Generate the robot description XML
     robot_description = {'robot_description': doc.toxml()}
     
@@ -42,14 +35,6 @@ def generate_launch_description():
         executable='robot_state_publisher',
         output='screen',
         parameters=[robot_description]
-    )
-    
-    robot_spawn_node = Node(
-        package='gazebo_ros',
-        executable='spawn_entity.py',
-        arguments=['-topic','robot_description',
-                   '-entity','robot'],
-        output='screen'
     )
     
     load_joint_state_broadcaster = ExecuteProcess(
@@ -84,29 +69,9 @@ def generate_launch_description():
         remappings=[('/tf', 'tf'), ('/tf_static', 'tf_static')]
     )
     
-    # Camera publisher node to be triggered after Gazebo starts
-    node_camera_publisher = Node(
-        package='image_tools',
-        executable='cam2image',
-        name='camera_publisher',
-        output='screen',
-        remappings=[('/image', '/camera/image_raw')]
-    )
     
     moveit_config = MoveItConfigsBuilder("mock_dual_arm", package_name="mock_dual_arm_moveit_config").to_moveit_configs()
 
-    # Register event handler to trigger camera publisher after Gazebo is launched
-    event_handler = RegisterEventHandler(
-        OnProcessExit(
-            target_action=robot_spawn_node,  # Trigger after the Gazebo launch finishes
-            on_exit=[node_camera_publisher]
-        )
-    )
 
-    return LaunchDescription([
-        generate_demo_launch(moveit_config),  # MoveIt launch
-        gazebo_launch,  # Launch Gazebo with ExecuteProcess
-        robot_spawn_node,  # Spawn robot in Gazebo
-        event_handler,  # Event handler to launch the camera publisher after Gazebo starts
-    ])
+    return generate_demo_launch(moveit_config)
 

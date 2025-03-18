@@ -5,7 +5,9 @@
   <!-- Setup of Hardware & Joints for Right_Arm_Mock -->
   <ros2_control name="lbr_system_interface_right" type="system">
     <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
+      <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+      <param name="joint_commands_topic">/right_arm/isaac_joint_commands</param>
+      <param name="joint_state_topic">/right_arm/isaac_joint_states</param>
     </hardware>
     <joint name="right_A1">
       <param name="max_velocity">1.710422666954443</param>
@@ -109,7 +111,9 @@
   <!-- Setup of Hardware & Joints for Left_Arm_Mock -->
   <ros2_control name="lbr_system_interface_left" type="system">
     <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
+      <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+      <param name="joint_commands_topic">/left_arm/isaac_joint_commands</param>
+      <param name="joint_state_topic">/left_arm/isaac_joint_states</param>
     </hardware>
     <joint name="left_A1">
       <param name="max_velocity">1.710422666954443</param>
@@ -821,8 +825,8 @@
     <child link="left_link_ee"/>
     <origin rpy="0 0 0" xyz="0 0 0.035"/>
   </joint>
-  <link name="left_link_ee"/>
-  <link name="camera_link_sky"/>
+  <link name="left_link_ee">
+	</link> 
 	
   
     <!-- link list -->
@@ -1677,10 +1681,4 @@
     <child link="2f_tool0"/>
     <origin rpy="0 3.14 0" xyz="0 0 0.165"/>
   </joint>
-  <!-- joint between left arm ee and camera-->
-  <joint name="cam_table" type="fixed">
-    <parent link="table"/>
-    <child link="camera_link_sky"/>
-    <origin rpy="0 0 0" xyz="0.5 0.5 2.2"/>
-  </joint> 
 </robot>
