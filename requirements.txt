@@ -56,3 +56,4 @@ CFFI==1.17.1
 pycparser==2.22 
 sounddevice==0.5.1
 numpy==1.26.4
+pyautogui==0.9.54
