@@ -2,12 +2,12 @@
 
 <!-- top level -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="isaac_dual_arm">
-  <!-- Setup of Hardware & Joints for Right_Arm_Mock -->
+  <!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
   <ros2_control name="lbr_system_interface_right" type="system">
     <hardware>
       <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-      <param name="joint_commands_topic">/right_arm/isaac_joint_commands</param>
-      <param name="joint_state_topic">/right_arm/isaac_joint_states</param>
+      <param name="joint_commands_topic">/isaac_joint_commands</param>
+      <param name="joint_state_topic">/isaac_joint_states</param>
     </hardware>
     <joint name="right_A1">
       <param name="max_velocity">1.710422666954443</param>
@@ -108,12 +108,10 @@
     </joint>
   </ros2_control>
 
-  <!-- Setup of Hardware & Joints for Left_Arm_Mock -->
+  <!-- Setup of Hardware & Joints for Left_Arm_Isaac -->
   <ros2_control name="lbr_system_interface_left" type="system">
     <hardware>
-      <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-      <param name="joint_commands_topic">/left_arm/isaac_joint_commands</param>
-      <param name="joint_state_topic">/left_arm/isaac_joint_states</param>
+      <plugin>mock_components/GenericSystem</plugin>
     </hardware>
     <joint name="left_A1">
       <param name="max_velocity">1.710422666954443</param>
@@ -169,7 +167,7 @@
       <state_interface name="velocity">
         <param name="initial_value">0.0</param>
       </state_interface>
-    </joint>
+    </joint>right_arm
     
     <joint name="left_A5">
       <param name="max_velocity">2.443460952792061</param>
