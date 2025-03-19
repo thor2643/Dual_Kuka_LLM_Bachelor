@@ -1,0 +1,7 @@
+# Request
+bool execute  # Simple Bool to request image
+
+---
+# Response
+string log
+sensor_msgs/Image image # Using standard msg type Image
