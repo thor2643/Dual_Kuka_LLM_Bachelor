@@ -11,7 +11,18 @@ import readline
 from threading import Event
 import base64
 
+# Langgraph / Langchain libraries
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+from langchain.tools.base import StructuredTool
 
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import MessagesState, StateGraph, START, END
+from langgraph.prebuilt import ToolNode
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+
+from IPython.display import Image, display
+from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeStyles
 
 # ROS 2 libraries and Node structure
 import rclpy
@@ -19,7 +30,6 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-
 
 # ROS 2 messages
 from project_interfaces.srv import GetObjectInfo
@@ -30,6 +40,7 @@ from project_interfaces.srv import PromptJanice
 from project_interfaces.srv import GetCurrentPose
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
+import cv2
 
 class LLMNode(Node):
     def __init__(self):
@@ -112,24 +123,20 @@ class LLMNode(Node):
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'}
         }
 
-        # Load and define all functions available to models
-        with open('src/robutler/janise/llm_functions_config.json') as f:
-            function_definitions = json.load(f)
-        self.tools = function_definitions
-
-        self.available_functions = {
-            'get_predefined_locations_and_poses': self.get_predefined_locations_and_poses,
-            'find_object': self.find_object,
-            'get_available_objects': self.get_available_objects,
-            'find_object_yolo': self.find_object_yolo,
-            'define_object_thresholds': self.define_object_thresholds,
-            'plan_robot_trajectory': self.plan_robot_trajectory,
-            'execute_planned_trajectory': self.execute_planned_trajectory,
-            'manipulate_right_gripper': self.manipulate_right_gripper,
-            'manipulate_left_gripper': self.manipulate_left_gripper,
-            'get_current_pose': self.get_current_pose,
-            'stop_message_looping': self.stop_message_looping
-        }
+        # Define the tools available to the LLM
+        self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
+                      StructuredTool.from_function(self.find_object), 
+                      StructuredTool.from_function(self.get_available_objects), 
+                      StructuredTool.from_function(self.find_object_yolo), 
+                      StructuredTool.from_function(self.define_object_thresholds), 
+                      StructuredTool.from_function(self.plan_robot_trajectory), 
+                      StructuredTool.from_function(self.execute_planned_trajectory), 
+                      StructuredTool.from_function(self.manipulate_right_gripper), 
+                      StructuredTool.from_function(self.manipulate_left_gripper), 
+                      StructuredTool.from_function(self.get_current_pose), 
+                      StructuredTool.from_function(self.stop_message_looping)]
+        
+        self.tool_node = ToolNode(self.tools)
 
         # Initialize Ollama client or OpenAI client with API key and optional project ID
         if self.use_ollama:
@@ -139,10 +146,93 @@ class LLMNode(Node):
             with open('src/robutler/janise/API_KEY.json') as f:
                 api_data = json.load(f)
             API_KEY = api_data['API_KEY']
-            self.client = OpenAI(api_key=API_KEY)
+
+            # Set API key
+            if not os.environ.get("OPENAI_API_KEY"):
+                os.environ["OPENAI_API_KEY"] = API_KEY 
+
+        # Initialise the model
+        # Change this to the model you want to use
+        self.model = ChatOpenAI(model="gpt-4o")
+        self.bound_model = self.model.bind_tools(self.tools)
+        self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
+
+        self.memory = MemorySaver()
+
+        # Define a new graph
+        # Using graphs allows us to define the flow of the conversation
+        # To grasp this, it might be helpful to read a bit about graph theory
+        # For each node action taken, we can will store the state of the conversation i.e. the messages
+        self.workflow = StateGraph(MessagesState)
+
+        # Define the two nodes we will cycle between
+        # The action node is the node that can actually call the tool using langgraphs's ToolNode class
+        # We could for an example also add an observation node for our evaluating model
+        self.workflow.add_node("agent", self.call_model)
+        self.workflow.add_node("action", self.tool_node)
+
+        # Consider adding another system message for this model
+        self.workflow.add_node("thought", self.think)
+
+        # Set the entrypoint as `agent`
+        # This means that this node is the first one called
+        # self.workflow.add_edge(START, "agent")
+        self.workflow.add_edge(START, "thought")
+        self.workflow.add_edge("thought", "agent")
+
+        # We now add a conditional edge
+        # This means that the edge taken is determined by the function passed in
+        self.workflow.add_conditional_edges(
+            # First, we define the start node. We use `agent`.
+            # This means these are the edges taken after the `agent` node is called.
+            "agent",
+            # Next, we pass in the function that will determine which node is called next.
+            self.should_continue,
+            # Next, we pass in the path map - all the possible nodes this edge could go to
+            ["action", END],
+        )
+
+        # We now add a normal edge from `tools` to `agent`.
+        # This means that after `tools` is called, `agent` node is called next.
+        self.workflow.add_edge("action", "thought")
+        self.workflow.add_edge("thought", "agent")
 
 
-        self.message_buffer = [{"role": "system", "content": """
+        # Finally, we compile it!
+        # This compiles it into a LangChain Runnable,
+        self.agent = self.workflow.compile(checkpointer=self.memory)
+
+        # Comment in to save a png of the graph and show it
+        """
+        graph = self.agent.get_graph()
+
+        # Display the workflow graph using OpenCV
+        graph_image_path = f"{self.conversation_log_folder}/workflow_graph_{self.current_time}.png"
+        graph.draw_mermaid_png(
+            draw_method=MermaidDrawMethod.API,
+            output_file_path=graph_image_path,
+        )
+
+        # Load and display the image using OpenCV
+        try:
+            graph_image = cv2.imread(graph_image_path)
+            if graph_image is not None:
+                cv2.imshow("Workflow Graph", graph_image)
+                cv2.waitKey(0)  # Wait for a key press to close the window
+                cv2.destroyAllWindows()
+            else:
+                self.get_logger().error("Failed to load the workflow graph image.")
+        except ImportError:
+            self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
+
+        """
+
+        # Setting a thread_id helps the model remember the context of the conversation
+        self.config = {"configurable": {"thread_id": "1"}}
+        self.config_think = {"configurable": {"thread_id": "CoT1"}} # CoT = Chain of Thoughts
+
+        self.initial_prompt = [
+            SystemMessage(content = """
             Your name is Janise. You are an AI robotic arm assistant using the LLM gpt-4o for task reasoning and manipulation tasks. You are to assume the persona of a butler.
 
             Context for your Workspace:
@@ -209,103 +299,61 @@ class LLMNode(Node):
             You must explain the reasoning behind each action before executing it. If you are unsure about a task or need further clarification, you should ask the user for more information or request assistance from the operator.
                                 
             Example of a tasks with chained thoughts:                    
-        """},
-        {
-            "role": "user",
-            "content": "To which poses can the robot arm be moved?"
-        },
-        {
-            "role": "system",
-            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
-        },
-        {
-            "role": "assistant",
-            "content": "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Let me call that.",
-            "tool_calls": [
-                {
-                    "id": "call_pTZTKZcHPTOPxDn3qnViIWWu",
-                    "function": {
-                        "arguments": "{}",
-                        "name": "get_predefined_locations_and_poses"
-                    },
-                    "type": "function",
-                }
+        """),
+            HumanMessage(content = "To which poses can the robot arm be moved?"),
+            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Let me call that.",
+                      tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}]),
+            ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}",
+                        tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
+            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage("""The robot arms can be moved to several predefined poses. Here are some of the poses:
+
+                    1. **Home Position for Right Arm**:
+                    - Coordinates: (0.1, 0.3, 0.3)
+                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+
+                    2. **Home Position for Left Arm**:
+                    - Coordinates: (0.9, 0.3, 0.3)
+                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+
+                    Should you desire to move one of the arms to one of these positions, feel free to let me know."""),
+            HumanMessage(content = "What objects can you find?"),
+            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage(content = "To answer this I must conisder the functions available to me. The function \"get_available_objects\" returns predefined objects that can be detcted. I must call this function.",
+                      tool_calls = [{"name": "get_available_objects", "args": {}, "id": "call_KZ4pgcOBYotzY1QERRB0OiFn"}]),
+            ToolMessage(content = "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
+                        tool_call_id = "call_KZ4pgcOBYotzY1QERRB0OiFn"),
+            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage(content = """I am able to locate the following objects within the workspace:
+
+                    - Red Brick
+                    - Green Brick
+                    - Yellow Brick
+                    - Orange Brick
+                    - Blue Brick
+                    - Pink Brick
+                    - Light Blue Brick
+                    - Light Green Brick
+                    - Purple Brick
+
+                    If you need assistance with any of these objects, please let me know.""")
             ]
-        },
-        {
-            "role": "tool",
-            "content": "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}",
-            "tool_call_id": "call_pTZTKZcHPTOPxDn3qnViIWWu",
-        },
-        {
-            "role": "system",
-            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
-        },
-        {
-            "role": "assistant",
-            "content": """The robot arms can be moved to several predefined poses. Here are some of the poses:
-
-        1. **Home Position for Right Arm**:
-        - Coordinates: (0.1, 0.3, 0.3)
-        - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
-
-        2. **Home Position for Left Arm**:
-        - Coordinates: (0.9, 0.3, 0.3)
-        - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
-
-        Should you desire to move one of the arms to one of these positions, feel free to let me know."""
-        },
-        {
-            "role": "user",
-            "content": "What objects can you find?"
-        },
-        {
-            "role": "system",
-            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
-        },
-        {
-            "role": "assistant",
-            "content": "To answer this I must conisder the functions available to me. The function \"get_available_objects\" returns predefined objects that can be detcted. I must call this function.",
-            "tool_calls": [
-                {
-                    "id": "call_KZ4pgcOBYotzY1QERRB0OiFn",
-                    "function": {
-                        "arguments": "{}",
-                        "name": "get_available_objects"
-                    },
-                    "type": "function"
-                }
-            ]
-        },
-        {
-            "role": "tool",
-            "content": "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
-            "tool_call_id": "call_KZ4pgcOBYotzY1QERRB0OiFn"
-        },
-        {
-            "role": "system",
-            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
-        },
-        {
-            "role": "assistant",
-            "content": """I am able to locate the following objects within the workspace:
-
-        - Red Brick
-        - Green Brick
-        - Yellow Brick
-        - Orange Brick
-        - Blue Brick
-        - Pink Brick
-        - Light Blue Brick
-        - Light Green Brick
-        - Purple Brick
-
-        If you need assistance with any of these objects, please let me know."""
-        }]
+        
+        self.initial_prompt_CoT = [SystemMessage(content = """Your name is Sokrates. You act as a critical thinker and evaluator of Janise's actions based on a user's request. 
+                                                                You must consider previous messages and the current state to reason about proper actions. 
+                                                                As Janise is controlling a dual arm robot you must consider physical relations between objects and the available functions that Janise can call.
+                                                                You are NOT allowed to call any tools yourself and can therefore only make suggestions for Janise to consider.
+                                                                You are to assume the persona of a philosopher.""")]
         
 
-        # Log the initial message
-        self.log_conversation(self.message_buffer)
+        
+
+
+        # Append the initial prompt to the message state
+        self.agent.update_state(self.config, {"messages": self.initial_prompt})
+
+
 
 
     ##############################################################################
@@ -466,24 +514,162 @@ class LLMNode(Node):
     def encode_image(image_path):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
+        
+    # Convert state_snapshot to a JSON-serializable format
+    def serialize_message(self, message):
+        if isinstance(message, SystemMessage):
+            return {"type": "SystemMessage", "content": message.content}
+        elif isinstance(message, HumanMessage):
+            return {"type": "HumanMessage", "content": message.content}
+        elif isinstance(message, AIMessage):
+            return {"type": "AIMessage", "content": message.content, "tool_calls": message.tool_calls}
+        elif isinstance(message, ToolMessage):
+            return {"type": "ToolMessage", "content": message.content, "name": message.name, "tool_call_id": message.tool_call_id}
+        return message  # Default case for other types
+    
+    def save_snapshot(self):
+        # Get current time and date from OS and format it for log file differentiation
+        self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
+
+        # Save the current state snapshot of the agent app to a file
+        state_snapshot_file = self.conversation_log_folder + f"/state_snapshot_{self.current_time}.json"
+        snapshot = self.agent.get_state(self.config).values
+
+        serializable_snapshot = {
+            key: [self.serialize_message(msg) for msg in value] if isinstance(value, list) else value
+            for key, value in snapshot.items()
+        }
+
+        with open(state_snapshot_file, 'w') as file:
+            json.dump(serializable_snapshot, file, indent=4)
+
+        self.get_logger().info(f"State snapshot saved to {state_snapshot_file}")
+
+    #######################################################################################
+    # ------------------------------ LANGGRAPH FUNCTIONS -------------------------------- #
+    #######################################################################################
+
+    # If a tool is to be called, the action node is called otherwise the agent node is called
+    def should_continue(self, state: MessagesState):
+        """Return the next node to execute."""
+        last_message = state["messages"][-1]
+        # If there is no function call, then we finish
+        if not last_message.tool_calls:
+            return END
+        # Otherwise if there is, we continue
+        return "action"
+    
+    # This is a simple helper function to filter the messages
+    # Modify this to fit your use case or use off-the-shelf tools from langchain_core
+    def filter_messages(self, messages: list):
+        # This is very simple helper function which only ever uses the last message
+        return messages[-1:]
+    
+    # Define the function that calls the model
+    # Takes in the cureent message history and returns the response
+    def call_model(self, state: MessagesState):
+        # We can filter the messages here
+        # filtered_messages = filter_messages(state["messages"])
+        response = self.bound_model.invoke(state["messages"])
+        # We return a list, because this will get added to the existing list
+        return {"messages": response}
+    
+    def think(self, state: MessagesState):
+        # We can filter the messages here
+        # filtered_messages = filter_messages(state["messages"])
+
+        CoT_message = self.initial_prompt_CoT + state["messages"][1:]
+
+        print(CoT_message)
+
+        response = self.think_model.invoke(CoT_message)
+        # We return a list, because this will get added to the existing list
+        return {"messages": response}
+    
+
     ########################################################################################
     # -------------------------- FUNCTIONS AVAILABLE TO THE LLM -------------------------- #
     ########################################################################################
 
-    def stop_message_looping(self):
+    #@tool
+    def stop_message_looping(self) -> str:
+        """ Disables the message looping mechanism used for sequential function calls.
+
+        This function is essential when multiple function calls are chained together, 
+        where the output of one function serves as the input for the next. By default, 
+        message looping is enabled, allowing seamless execution of such chains without 
+        requiring user intervention after each step.
+
+        Once all necessary function calls are completed, this function should be invoked 
+        to disable the message looping. This ensures that a final response is generated 
+        and sent to the user, signaling the end of the process and awaiting the next command.
+
+        Returns:
+            str: A confirmation message indicating that message looping has been disabled.
+        """
         self.llm_loop = False
 
         print("\nMessage looping has been disabled.")
 
         return "Message looping has been disabled."  
     
-    def get_available_objects(self):
+    #@tool
+    def get_available_objects(self) -> list:
+        """
+        Retrieves a list of predefined objects with associated thresholds.
+
+        This function returns a list of object names that have predefined thresholds 
+        and can be identified by the `find_object` function. It does not indicate 
+        the presence of these objects in the workspace but serves as a reference 
+        for valid object names that can be passed as parameters to `find_object`.
+
+        Returns:
+            list: A list of object names with predefined thresholds.
+        """
         return list(self.lego_bricks.keys())
 
+    #@tool
     def get_predefined_locations_and_poses(self) -> dict:
+        """
+        Retrieves a dictionary of predefined robot poses in world coordinates for specific locations.
+
+        This function provides a mapping of predefined locations to their corresponding robot poses
+        in world coordinates. It is intended for reference purposes only and does not perform any
+        robot movement or pose adjustments.
+
+        Returns:
+            dict: A dictionary where keys represent predefined location names and values are the
+            corresponding robot poses in world coordinates.
+        """
+
         return self.coordinates
 
+    #@tool
     def find_object(self, object_name: str) -> GetObjectInfo.Response:
+        """
+        Finds an object in the environment using the object detector service.
+        This function communicates with an object detection service to locate a specified object 
+        in the environment. It retrieves information about the object's position, orientation, 
+        and grasping width, and transforms the detected coordinates from the camera frame to 
+        the world frame using a calibrated transformation matrix. The detected objects are stored 
+        in a dictionary with unique names.
+
+        Args:
+            object_name (str): The name of the object to be located.
+
+        Returns:
+            GetObjectInfo.Response: A response object containing information about the detected 
+            objects. If no objects are found or the service call fails, an empty response is returned.
+
+        Notes:
+            - The function clears the `objects_on_table` dictionary before adding new objects.
+            - The transformation matrix `T_world_cam` is hardcoded and should be calibrated for 
+              the specific setup.
+            - If multiple objects with the same name are detected, unique names are generated 
+              by appending an index to the original name.
+            - The function waits for the service call to complete with a timeout of 15 seconds.
+        """
+
         print(f"\nRequesting the detector service to find {object_name}")  # Debugging
         self.get_logger().info(f"\nLooking for object: {object_name}\n")
         self.detector_req.object_name = object_name
@@ -540,8 +726,37 @@ class LLMNode(Node):
         else:
             self.get_logger().error('No objects found')
             return GetObjectInfo.Response()
-        
+
+    #@tool   
     def find_object_yolo(self, object_name: str) -> GetObjectInfo.Response:
+        """
+        Uses the YoloWorld object detection service to locate a specified object in the environment.
+        This function interacts with the YoloWorld detector service to identify the specified object 
+        and retrieve its details, including its Cartesian center point, orientation, and grasping width. 
+        If the object is found, its position is transformed from camera coordinates to world coordinates 
+        using a calibrated transformation matrix. The detected objects are stored in a dictionary with 
+        unique names to avoid conflicts.
+
+        Args:
+            object_name (str): The name of the object to locate.
+
+        Returns:
+            GetObjectInfo.Response: A response object containing the details of the detected objects. 
+            If no objects are found or the service call fails, an empty response is returned.
+
+        Raises:
+            None
+
+        Notes:
+            - The function waits for the YoloWorld service call to complete with a timeout of 40 seconds.
+            - If multiple objects with the same name are detected, unique names are generated by appending 
+              an incrementing number to the object name.
+            - The transformation matrix `T_world_cam` is hardcoded and used to convert coordinates from 
+              the camera frame to the world frame.
+            - Detected objects are stored in the `self.objects_on_table_yolo` dictionary with their 
+              transformed center points, orientations, and grasp widths.
+        """
+        
         print(f"\nRequesting the YoloWorld detector service to find {object_name}")
         self.get_logger().info(f"\nLooking for object: {object_name}\n")
         self.detector_req_yolo.object_name = object_name
@@ -593,8 +808,30 @@ class LLMNode(Node):
                 }
 
             return self.objects_on_table_yolo
-        
+    
+    #@tool
     def define_object_thresholds(self, object_name: str) -> DefineObjectInfo.Response:
+        """
+        Allows the user to define threshold values for object detection.
+
+        This function enables the user to interactively adjust the thresholds for 
+        the object detector service. An image will be displayed with trackbars 
+        that allow the user to modify the thresholds and observe the resulting 
+        changes in real-time. The object for which thresholds are being defined 
+        should be specified as an argument, using underscores (_) in place of spaces.
+
+        Once the thresholds are defined, they are saved and utilized by the object 
+        detector service. The updated object information is also stored in a 
+        dictionary for future use.
+
+        Args:
+            object_name (str): The name of the object for which thresholds are 
+                               being defined. Use underscores (_) instead of spaces.
+
+        Returns:
+            DefineObjectInfo.Response: The response from the object detector service 
+                                       after the thresholds have been defined.
+        """
         self.define_objects_req.object_name = object_name
 
         future = self.define_objects_client.call_async(self.define_objects_req)
@@ -608,7 +845,33 @@ class LLMNode(Node):
 
         return response
 
-    def plan_robot_trajectory(self, pose, arm):
+    #@tool
+    def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
+        """
+        Plans a robot trajectory to a specified pose for a given arm. The planned trajectory is simulated 
+        and visualized for the user. The trajectory can later be executed using the execute_planned_trajectory method.
+
+        Args:
+            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
+                         The first three numbers correspond to the x, y, z position in meters, and the last 
+                         three numbers represent the roll, pitch, and yaw angles in degrees.
+            arm (str): Specifies which arm to plan the trajectory for. Must be either 'left' or 'right'.
+
+        Returns:
+            PlanMoveCommand.Response: The response from the robot planning service, containing the result 
+                                      of the trajectory planning process.
+        Raises:
+            ValueError: If the provided arm argument is not 'left' or 'right'.
+            TimeoutError: If the planning service does not respond within the specified timeout period.
+
+        Notes:
+            - The function uses pre-calibrated transformation matrices to convert the pose from world 
+              coordinates to MoveIt coordinates, depending on the selected arm.
+            - The pose's orientation in roll, pitch, and yaw is converted to a quaternion format before 
+              being sent to the planning service.
+            - The function waits asynchronously for the planning service to respond, with a timeout of 75 seconds.
+        """
+
         if arm == 'right':
             # Calibrated transformation matrix from world to moveit coordinates based on right arm
             T_world_moveit = np.array([ [0.999983  , -0.00554552, -0.0018012 ,  -0.02903434],
@@ -650,10 +913,31 @@ class LLMNode(Node):
         # Wait for the result
         response = self.wait_future(future, timeout=75)
         return response
-        
-    def execute_planned_trajectory(self, arm):
-        print(f"Type of arm: {type(arm)}")
-        print(f"Executing planned trajectory for {arm} arm")
+
+    #@tool  
+    def execute_planned_trajectory(self, arm: str) -> ExecuteMoveCommand.Response:
+        """
+        Executes a planned trajectory on the specified arm of the physical robot.
+
+        This function sends a request to execute a trajectory that has been planned 
+        using the `plan_robot_trajectory` function. It is important to ensure that 
+        the `plan_robot_trajectory` function has been called prior to invoking this 
+        function, as it relies on the trajectory data generated by the planning step.
+
+        Args:
+            arm (str): The identifier of the robot arm on which the trajectory 
+                       should be executed (e.g., "left_arm" or "right_arm").
+
+        Returns:
+            ExecuteMoveCommand.Response: The response object containing the result 
+                                         of the execution request, including success 
+                                         status and any relevant feedback.
+
+        Raises:
+            TimeoutError: If the execution request does not complete within the 
+                          specified timeout period (90 seconds).
+        """
+
         self.robot_execute_req.arm = arm
 
         future = self.robot_execute_client.call_async(self.robot_execute_req)
@@ -663,7 +947,43 @@ class LLMNode(Node):
 
         return response
 
-    def manipulate_right_gripper(self, width=167, speed=110, force=15):  # Defaults to open gripper with max speed and minimum force
+    #@tool
+    def manipulate_right_gripper(self, width: int=167, speed: int=110, force: int=15) -> Robotiq3FGripperOutputService.Response:  # Defaults to open gripper with max speed and minimum force
+        """
+        Adjusts the right gripper's position, speed, and force.
+
+        This function controls the right gripper of the robot, allowing it to open, close, 
+        or adjust to a specific width. The speed and force of the gripper can also be customized. 
+        It is important to note that this function executes immediately and should not be called 
+        simultaneously with trajectory planning functions. For pickup tasks, ensure that this 
+        function is called only after executing a trajectory.
+
+        Parameters:
+            width (int, required): The desired width of the right gripper in millimeters [mm]. 
+                         The range is 0-167, where 0 is fully closed and 167 is fully open. 
+                         Default is 167.
+            speed (int, optional): The speed of the gripper in millimeters per second [mm/sec]. 
+                         The range is 22-110, where 22 is the minimum speed and 110 is the maximum speed. 
+                         Default is 110.
+            force (int, optional): The gripping force in Newtons [N]. 
+                         The range is 15-60, where 15 is the minimum force and 60 is the maximum force. 
+                         Default is 15.
+
+        Returns:
+            response: The response from the asynchronous service call to control the gripper. 
+                      If the input parameters exceed the gripper's capabilities, an error message 
+                      is logged, and a corresponding error string is returned.
+
+        Raises:
+            None: This function does not raise exceptions but logs errors if the input parameters 
+                  are out of the valid range.
+
+        Notes:
+            - Ensure the input parameters are within the specified ranges to avoid errors.
+            - This function directly interacts with the gripper controller and sends the 
+              appropriate commands to adjust the gripper's behavior.
+            - The function waits for the service call to complete with a timeout of 15 seconds.
+        """
         if width < 0 or width > 167:
             self.get_logger().error('Requested right gripper width exceeds gripper capabilities')
             return 'Requested gripper width exceeds gripper capabilities'
@@ -690,7 +1010,33 @@ class LLMNode(Node):
 
         return response
 
-    def manipulate_left_gripper(self, width=85, speed=110, force=20):   # Defaults to open gripper with fast speed and minimum force
+    #@tool
+    def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=20) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
+        """
+        Adjusts the left gripper's width, speed, and force to open, close, or position it at an intermediate state.
+
+        This function allows precise control of the left gripper by specifying the desired width, speed, and force. 
+        The gripper's width determines how far it opens or closes, while speed and force control the movement's 
+        velocity and strength, respectively. The function validates the input parameters to ensure they are within 
+        the gripper's operational limits.
+
+        Parameters:
+            width (int, required): The desired width of the left gripper in millimeters [mm]. 
+                Must be between 0 (fully closed) and 85 (fully open). Default is 85.
+            speed (int, optional): The movement speed of the left gripper in millimeters per second [mm/sec]. 
+                Must be between 20 and 150. Default is 110.
+            force (int, optional): The gripping force in Newtons [N]. 
+                Must be between 20 and 235. Default is 20.
+
+        Returns:
+            response: The result of the gripper command execution. If the input parameters are invalid, 
+                an error message is logged and returned.
+
+        Notes:
+            - This function executes the gripper command immediately. Do not call it alongside 
+              `plan_robot_trajectory` expecting it to execute as part of a trajectory plan.
+            - Ensure the input parameters are within the specified ranges to avoid errors.
+        """
         if width < 0 or width > 85:
             self.get_logger().error('Requested right gripper width exceeds gripper capabilities')
             return 'Requested gripper width exceeds gripper capabilities'
@@ -713,7 +1059,26 @@ class LLMNode(Node):
 
         return response
     
+    #@tool
     def get_current_pose(self, arm: str) -> GetCurrentPose.Response:
+        """
+        Retrieves the current pose of the specified robot arm.
+
+        Args:
+            arm (str): The robot arm to query. Must be either 'left' or 'right'.
+
+        Returns:
+            dict: A dictionary containing the current pose of the arm with the
+                  following structure:
+                  {
+                          'x': float,
+                          'y': float,
+                          'z': float
+                          'roll': float,
+                          'pitch': float,
+                          'yaw': float
+                  If the service call fails, returns a string indicating the failure.
+        """
         self.get_logger().info(f"Received request to get current pose for {arm} arm")
         self.robot_pose_req.arm = arm
 
@@ -759,145 +1124,39 @@ class LLMNode(Node):
 
     def gui_handle_service(self, request, response):
         prompt = request.prompt  # prompt is a string
-        self.message_buffer.append({'role': 'user', 'content': prompt})
+
+        # Convert to langgraph message
+        query = HumanMessage(prompt)
 
         print("Received request")
 
         #If the user wants to clear the history, do so
         if "clear history" in prompt:
             os.system('clear')
-            self.message_buffer = [self.message_buffer[0]]
             response.message = "History cleared."
 
-            # Create new JSON log file if it doesn't exist
-            # Get current time and date from OS and format it for log file differentiation
-            self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
-            self.get_logger().info(f"Current time and date: {self.current_time}")
+            # Log the conversation
+            self.save_snapshot()
 
-            self.conversation_log_file = self.conversation_log_folder + f"/{self.current_time}.json"
+            # Update config
+            current_id = int(self.config["configurable"]["thread_id"])
+            new_id = current_id + 1
+            self.config["configurable"]["thread_id"] = str(new_id)
 
-            # Log the initial message
-            self.log_conversation(self.message_buffer[-1])
-
-            if not os.path.exists(self.conversation_log_file):
-                with open(self.conversation_log_file, 'w') as file:
-                    pass
+            # Append the initial prompt to the message state
+            self.agent.update_state(self.config, {"messages": self.initial_prompt})
 
             return response
         
-        #Log the input prompt        
-        self.log_conversation(self.message_buffer[-1])
+        # Run the graph
+        # We stream the message through the agent (consider using this for updating GUI continuously)
+        for event in self.agent.stream({"messages": [query]}, self.config, stream_mode="values"):
+            event["messages"][-1].pretty_print()
 
-        loop_counter = 0
+        # Retrieve the last message from the agent and send it back to the user
+        response.message = self.agent.get_state(self.config).values["messages"][-1].content
 
-        self.llm_loop = True
-
-        while True:
-            # Append observation to the message buffer
-            self.update_current_state()
-            self.message_buffer.append({'role': 'system', 'content': f"Current state: {json.dumps(self.state)}"})
-
-            # Log the state observation        
-            self.log_conversation(self.message_buffer[-1])
-
-            # API Request to chat with model with user-defined functions
-            llm_response = self.client.chat.completions.create(
-                model="gpt-4o",
-                messages=self.message_buffer,
-                tools=self.tools,
-                max_completion_tokens=200,
-                tool_choice='auto'
-            )
-
-            # Log response
-            self.log_conversation(llm_response.choices[0].message.model_dump())
-
-            # Check if tool calls exist in response
-            tool_calls = llm_response.choices[0].message.tool_calls
-            if not tool_calls:
-                self.get_logger().info("The model didn't use a function.")
-
-                """
-                final_response = self.client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=self.message_buffer
-                )
-                response.message = final_response.choices[0].message.content
-                
-                #Log response
-                self.log_conversation(final_response.choices[0].message.model_dump())
-
-                self.message_buffer.append({'role': 'assistant', 'content': response.message})"
-                """
-
-                response.message = llm_response.choices[0].message.content
-                return response
-
-            print("\nTool calls: ", tool_calls)
-            for tool_call in tool_calls:
-                tool_call_id = tool_calls[0].id
-                tool_func_name = tool_call.function.name
-                tool_func_args = json.loads(tool_call.function.arguments)
-
-                # Debugging information
-                print(f"\nFunction called by model: {tool_func_name}")
-                print(f"Arguments received: {tool_func_args}")
-
-                # Call the function dynamically and handle response
-                function_call = self.available_functions.get(tool_func_name)
-                if function_call:
-                    function_response = function_call(**tool_func_args)
-                    print(f"\nFunction response for {tool_func_name}: ", function_response)
-
-                    # Append function response to message history
-                    self.message_buffer.append({
-                        'role': 'function',
-                        "tool_call_id": tool_call_id,
-                        'name': tool_func_name,
-                        'content': f"{function_response}" #json.dumps(function_response)
-                    })
-
-                    # Log the relevant function response
-                    self.log_conversation({
-                        'role': 'function',
-                        "tool_call_id": tool_call_id,
-                        'name': tool_func_name,
-                        'content': f"{function_response}" #json.dumps(function_response)
-                    })
-
-            # Check if the model wants to continue the conversation
-            if not self.llm_loop:
-                break
-            elif loop_counter > 10:
-                self.message_buffer.append({
-                    'role': 'system',
-                    'content': f"The maximum number of coherent steps is reached. Message looping will be disabled and the model must now generate a reply to the user." #json.dumps(function_response)
-                })
-                print("Maximum number of coherent steps reached. Disabling message looping.")
-                self.stop_message_looping(False)
-                self.log_conversation(self.message_buffer[-1])
-                break
-
-            loop_counter += 1
-
-
-        print("\nGenerating response from model...")
-        
-        # Get final response from model
-        final_response = self.client.chat.completions.create(
-            model="gpt-4o",
-            messages=self.message_buffer
-        )
-
-        #Log response
-        self.log_conversation(final_response.choices[0].message.model_dump())
-
-        response.message = final_response.choices[0].message.content
-        self.message_buffer.append({'role': 'assistant', 'content': response.message})
-
-        print(response.message)
-
-        return response
+        return response       
 
 
 def main(args=None):
