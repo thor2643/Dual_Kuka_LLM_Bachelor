@@ -9,13 +9,16 @@ import os
 import numpy as np
 import readline
 from threading import Event
-from rclpy.executors import MultiThreadedExecutor
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+import base64
+
+
 
 # ROS 2 libraries and Node structure
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 
 
 # ROS 2 messages
@@ -79,6 +82,7 @@ class LLMNode(Node):
         # Attributes
         self.future = 0
         self.llm_loop = False
+        self.state = {}
 
         # Get current time and date from OS and format it for log file differentiation
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
@@ -203,10 +207,105 @@ class LLMNode(Node):
             Your primary task is to execute movements and manipulations as requested, utilizing precise understanding of your left and right sides, grippers, and the overview provided by the RealSense camera.
         
             You must explain the reasoning behind each action before executing it. If you are unsure about a task or need further clarification, you should ask the user for more information or request assistance from the operator.
-        """}]
+                                
+            Example of a tasks with chained thoughts:                    
+        """},
+        {
+            "role": "user",
+            "content": "To which poses can the robot arm be moved?"
+        },
+        {
+            "role": "system",
+            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
+        },
+        {
+            "role": "assistant",
+            "content": "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Let me call that.",
+            "tool_calls": [
+                {
+                    "id": "call_pTZTKZcHPTOPxDn3qnViIWWu",
+                    "function": {
+                        "arguments": "{}",
+                        "name": "get_predefined_locations_and_poses"
+                    },
+                    "type": "function",
+                }
+            ]
+        },
+        {
+            "role": "tool",
+            "content": "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}",
+            "tool_call_id": "call_pTZTKZcHPTOPxDn3qnViIWWu",
+        },
+        {
+            "role": "system",
+            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
+        },
+        {
+            "role": "assistant",
+            "content": """The robot arms can be moved to several predefined poses. Here are some of the poses:
+
+        1. **Home Position for Right Arm**:
+        - Coordinates: (0.1, 0.3, 0.3)
+        - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+
+        2. **Home Position for Left Arm**:
+        - Coordinates: (0.9, 0.3, 0.3)
+        - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+
+        Should you desire to move one of the arms to one of these positions, feel free to let me know."""
+        },
+        {
+            "role": "user",
+            "content": "What objects can you find?"
+        },
+        {
+            "role": "system",
+            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
+        },
+        {
+            "role": "assistant",
+            "content": "To answer this I must conisder the functions available to me. The function \"get_available_objects\" returns predefined objects that can be detcted. I must call this function.",
+            "tool_calls": [
+                {
+                    "id": "call_KZ4pgcOBYotzY1QERRB0OiFn",
+                    "function": {
+                        "arguments": "{}",
+                        "name": "get_available_objects"
+                    },
+                    "type": "function"
+                }
+            ]
+        },
+        {
+            "role": "tool",
+            "content": "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
+            "tool_call_id": "call_KZ4pgcOBYotzY1QERRB0OiFn"
+        },
+        {
+            "role": "system",
+            "content": "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"
+        },
+        {
+            "role": "assistant",
+            "content": """I am able to locate the following objects within the workspace:
+
+        - Red Brick
+        - Green Brick
+        - Yellow Brick
+        - Orange Brick
+        - Blue Brick
+        - Pink Brick
+        - Light Blue Brick
+        - Light Green Brick
+        - Purple Brick
+
+        If you need assistance with any of these objects, please let me know."""
+        }]
+        
 
         # Log the initial message
-        self.log_conversation(self.message_buffer[-1])
+        self.log_conversation(self.message_buffer)
 
 
     ##############################################################################
@@ -277,13 +376,12 @@ class LLMNode(Node):
     
     def remove_null_values_and_keys(self, d):
         if isinstance(d, dict):
-            return {k: self.remove_null_values_and_keys(v) for k, v in d.items() if v is not None and k not in ['id', 'type']}
+            return {k: self.remove_null_values_and_keys(v) for k, v in d.items() if v is not None} # Outcommented to use for few-shot examples: and k not in ['id', 'type']}
         elif isinstance(d, list):
             return [self.remove_null_values_and_keys(v) for v in d if v is not None]
         else:
             return d
-
-        
+ 
     def reorder_keys(self, d):
         if isinstance(d, dict):
             keys_order = ['role', 'content', 'tool_calls']
@@ -347,7 +445,27 @@ class LLMNode(Node):
 
         return [roll, pitch, yaw]
 
+    def update_current_state(self):
+        """Retrieve the current state of the Robot cell, which can be fed as observation to the LLM
+        
+        Returns:
+            dict: The current state of the Robot cell
+        """
 
+        self.state = {
+            'left_gripper': {
+                'width': 85,
+            },
+            'right_gripper': {
+                'width': 167,
+            },
+            'services_unavailable': None,
+        }
+    
+    # Function to encode the image
+    def encode_image(image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
     ########################################################################################
     # -------------------------- FUNCTIONS AVAILABLE TO THE LLM -------------------------- #
     ########################################################################################
@@ -675,7 +793,13 @@ class LLMNode(Node):
         self.llm_loop = True
 
         while True:
-            
+            # Append observation to the message buffer
+            self.update_current_state()
+            self.message_buffer.append({'role': 'system', 'content': f"Current state: {json.dumps(self.state)}"})
+
+            # Log the state observation        
+            self.log_conversation(self.message_buffer[-1])
+
             # API Request to chat with model with user-defined functions
             llm_response = self.client.chat.completions.create(
                 model="gpt-4o",
@@ -685,7 +809,7 @@ class LLMNode(Node):
                 tool_choice='auto'
             )
 
-            #Log response
+            # Log response
             self.log_conversation(llm_response.choices[0].message.model_dump())
 
             # Check if tool calls exist in response
@@ -736,6 +860,7 @@ class LLMNode(Node):
                     # Log the relevant function response
                     self.log_conversation({
                         'role': 'function',
+                        "tool_call_id": tool_call_id,
                         'name': tool_func_name,
                         'content': f"{function_response}" #json.dumps(function_response)
                     })
