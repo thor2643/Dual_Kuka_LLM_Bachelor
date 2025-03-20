@@ -10,6 +10,8 @@ import numpy as np
 import readline
 from threading import Event
 import base64
+import cv2
+from cv_bridge import CvBridge
 
 # Langgraph / Langchain libraries
 from langchain_openai import ChatOpenAI
@@ -40,7 +42,7 @@ from project_interfaces.srv import PromptJanice
 from project_interfaces.srv import GetCurrentPose
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
-import cv2
+from project_interfaces.srv import GetImage
 
 class LLMNode(Node):
     def __init__(self):
@@ -73,6 +75,11 @@ class LLMNode(Node):
         self.detector_req_yolo = GetObjectInfo.Request()
         self.objects_on_table_yolo = {}
 
+        self.get_image_client = self.create_client(GetImage, 'get_image_from_rviz')
+        self.get_image_req = GetImage.Request()
+
+        self.bridge = CvBridge()
+        
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
         self.robot_plan_req = PlanMoveCommand.Request()
@@ -301,13 +308,17 @@ class LLMNode(Node):
             Example of a tasks with chained thoughts:                    
         """),
             HumanMessage(content = "To which poses can the robot arm be moved?"),
-            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
-            AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Let me call that.",
-                      tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}]),
+            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
+                      name = "Socrates"),
+            AIMessage(content = "",
+                      tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
+                      name = "Janise"),
             ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}",
                         tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
-            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
-            AIMessage("""The robot arms can be moved to several predefined poses. Here are some of the poses:
+            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user."),
+            AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
 
                     1. **Home Position for Right Arm**:
                     - Coordinates: (0.1, 0.3, 0.3)
@@ -317,14 +328,20 @@ class LLMNode(Node):
                     - Coordinates: (0.9, 0.3, 0.3)
                     - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
 
-                    Should you desire to move one of the arms to one of these positions, feel free to let me know."""),
+                    Should you desire to move one of the arms to one of these positions, feel free to let me know.""",
+                    name = "Janise"),
             HumanMessage(content = "What objects can you find?"),
-            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
-            AIMessage(content = "To answer this I must conisder the functions available to me. The function \"get_available_objects\" returns predefined objects that can be detcted. I must call this function.",
-                      tool_calls = [{"name": "get_available_objects", "args": {}, "id": "call_KZ4pgcOBYotzY1QERRB0OiFn"}]),
+            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage(content = "To answer this Janise should consider the available functions. The function \"get_available_objects\" returns predefined objects that can be detcted. This seems like an appropriate function to call.",
+                      name = "Socrates"),
+            AIMessage(content = "",
+                      tool_calls = [{"name": "get_available_objects", "args": {}, "id": "call_KZ4pgcOBYotzY1QERRB0OiFn"}],
+                      name = "Janise"),
             ToolMessage(content = "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
                         tool_call_id = "call_KZ4pgcOBYotzY1QERRB0OiFn"),
-            SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
+            AIMessage(content = "The returned objects are the predefined objects that can be detected. Janise should now return this information to the user.",
+                      name = "Socrates"),
             AIMessage(content = """I am able to locate the following objects within the workspace:
 
                     - Red Brick
@@ -337,23 +354,21 @@ class LLMNode(Node):
                     - Light Green Brick
                     - Purple Brick
 
-                    If you need assistance with any of these objects, please let me know.""")
+                    If you need assistance with any of these objects, please let me know.""",
+                    name = "Janise")
             ]
         
-        self.initial_prompt_CoT = [SystemMessage(content = """Your name is Sokrates. You act as a critical thinker and evaluator of Janise's actions based on a user's request. 
-                                                                You must consider previous messages and the current state to reason about proper actions. 
-                                                                As Janise is controlling a dual arm robot you must consider physical relations between objects and the available functions that Janise can call.
-                                                                You are NOT allowed to call any tools yourself and can therefore only make suggestions for Janise to consider.
-                                                                You are to assume the persona of a philosopher.""")]
+        self.initial_prompt_CoT = [SystemMessage(content = """Your name is Socrates. You act as a critical thinker and must help the other LLM agent Janise to take proper action based on a user's request. 
+                                                                You are to provide reasoning and guidance to Janise to ensure that the correct actions are taken. Your message is appended to the conversation for Janise to consider.
+                                                                As Janise is controlling a dual arm robot you must provide her with insights to the physical world, while considering the robot's capabilities and limitations.
+                                                                You are NOT allowed to call any tools yourself and can therefore only make suggestions for Janise to consider. You should always provide reasoning for your suggestions.
+                                                                You are set to make suggestions to Janise after an incoming user request or after a tool call has returned.
+                                                                You are never answering directly to the user, but only to Janise. Therefore, never take "you" in the user's request as if the user is talking to you. Janise is the only model communicating with the user.
+                                                                """)]
         
-
-        
-
 
         # Append the initial prompt to the message state
         self.agent.update_state(self.config, {"messages": self.initial_prompt})
-
-
 
 
     ##############################################################################
@@ -522,7 +537,7 @@ class LLMNode(Node):
         elif isinstance(message, HumanMessage):
             return {"type": "HumanMessage", "content": message.content}
         elif isinstance(message, AIMessage):
-            return {"type": "AIMessage", "content": message.content, "tool_calls": message.tool_calls}
+            return {"type": "AIMessage", "content": message.content, "tool_calls": message.tool_calls, "name": message.name}
         elif isinstance(message, ToolMessage):
             return {"type": "ToolMessage", "content": message.content, "name": message.name, "tool_call_id": message.tool_call_id}
         return message  # Default case for other types
@@ -541,9 +556,32 @@ class LLMNode(Node):
         }
 
         with open(state_snapshot_file, 'w') as file:
-            json.dump(serializable_snapshot, file, indent=4)
+            formatted_response = json.dumps(serializable_snapshot, indent=4)
+            formatted_response = formatted_response.replace('\\n', '\n')
+            file.write(formatted_response)
+            file.write('\n\n')
+            #json.dump(serializable_snapshot, file, indent=4)
 
         self.get_logger().info(f"State snapshot saved to {state_snapshot_file}")
+
+    def request_rvis_image(self):
+        """Implemented workaround to get a screenshot of the RViz GUI using the GetImage service.
+        Used to simulate a camera image for the object detection service."""
+        self.get_image_req.execute = True
+        future = self.get_image_client.call_async(self.get_image_req)
+
+        # Wait for the result
+        response = self.wait_future(future, timeout=10)
+
+        if response is not None:
+            image = self.bridge.imgmsg_to_cv2(response.image, desired_encoding='bgr8')
+
+            cv2.imread("image.jpg", image)
+
+            return image
+        else:
+            self.get_logger().error("Failed to retrieve image from RViz")
+            return None
 
     #######################################################################################
     # ------------------------------ LANGGRAPH FUNCTIONS -------------------------------- #
@@ -572,17 +610,18 @@ class LLMNode(Node):
         # filtered_messages = filter_messages(state["messages"])
         response = self.bound_model.invoke(state["messages"])
         # We return a list, because this will get added to the existing list
+        response.name = "Janise"
         return {"messages": response}
     
     def think(self, state: MessagesState):
         # We can filter the messages here
         # filtered_messages = filter_messages(state["messages"])
 
+        # We must replace the system message for Janise with the system message for Sokrates
         CoT_message = self.initial_prompt_CoT + state["messages"][1:]
 
-        print(CoT_message)
-
         response = self.think_model.invoke(CoT_message)
+        response.name = "Socrates"
         # We return a list, because this will get added to the existing list
         return {"messages": response}
     
@@ -1124,6 +1163,9 @@ class LLMNode(Node):
 
     def gui_handle_service(self, request, response):
         prompt = request.prompt  # prompt is a string
+
+        # TEst
+        self.request_rvis_image()
 
         # Convert to langgraph message
         query = HumanMessage(prompt)
