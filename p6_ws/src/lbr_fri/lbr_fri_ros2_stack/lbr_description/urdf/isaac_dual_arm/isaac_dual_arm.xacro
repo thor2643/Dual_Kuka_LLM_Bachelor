@@ -6,11 +6,11 @@
   <ros2_control name="lbr_system_interface_right" type="system">
     <hardware>
       <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-      <param name="joint_commands_topic">/isaac_joint_commands</param>
-      <param name="joint_state_topic">/isaac_joint_states</param>
+      <param name="joint_commands_topic">/right_isaac_joint_commands</param>
+      <param name="joint_states_topic">/right_isaac_joint_states</param>
     </hardware>
     <joint name="right_A1">
-      <param name="max_velocity">1.710422666954443</param>
+      <param name="max_velocity">1.710422666954443</param> 
       <command_interface name="position">
         <param name="min">-2.9670597283903604</param>
         <param name="max">2.9670597283903604</param>
@@ -111,7 +111,9 @@
   <!-- Setup of Hardware & Joints for Left_Arm_Isaac -->
   <ros2_control name="lbr_system_interface_left" type="system">
     <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
+      <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+      <param name="joint_commands_topic">/left_isaac_joint_commands</param>
+      <param name="joint_states_topic">/left_isaac_joint_states</param>
     </hardware>
     <joint name="left_A1">
       <param name="max_velocity">1.710422666954443</param>

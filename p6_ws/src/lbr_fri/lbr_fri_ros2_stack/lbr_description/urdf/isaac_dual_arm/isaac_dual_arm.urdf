@@ -9,8 +9,7 @@
   <ros2_control name="lbr_system_interface_right" type="system">
     <hardware>
       <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-      <param name="joint_commands_topic">/isaac_joint_commands</param>
-      <param name="joint_state_topic">/isaac_joint_states</param>
+      <param name="joint_states_topic">/isaac_joint_states</param>
     </hardware>
     <joint name="right_A1">
       <param name="max_velocity">1.710422666954443</param>
