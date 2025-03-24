@@ -5,11 +5,11 @@
 <!-- =================================================================================== -->
 <!-- top level -->
 <robot name="isaac_dual_arm">
-  <!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
   <ros2_control name="lbr_system_interface_right" type="system">
     <hardware>
       <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-      <param name="joint_states_topic">/isaac_joint_states</param>
+      <param name="joint_commands_topic">/right_isaac_joint_commands</param>
+      <param name="joint_states_topic">/right_isaac_joint_states</param>
     </hardware>
     <joint name="right_A1">
       <param name="max_velocity">1.710422666954443</param>
@@ -102,12 +102,7 @@
         <param name="initial_value">0.0</param>
       </state_interface>
     </joint>
-  </ros2_control>
-  <!-- Setup of Hardware & Joints for Left_Arm_Isaac -->
-  <ros2_control name="lbr_system_interface_left" type="system">
-    <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
-    </hardware>
+    <!-- Setup of Hardware for left arm -->
     <joint name="left_A1">
       <param name="max_velocity">1.710422666954443</param>
       <command_interface name="position">
@@ -1605,6 +1600,22 @@
       </geometry>
     </collision>
   </link>
+  <!-- camera arm mount -->
+  <link name="camera_arm_mount">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://lbr_description/meshes/camera_arm_mount/Mount_realsense_camera_Default.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="steel_satin"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh ilename="package://lbr_description/meshes/camera_arm_mount/Mount_realsense_camera_Default.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
   <!--joint between world and table-->
   <joint name="world_joint" type="fixed">
     <parent link="world"/>
@@ -1641,11 +1652,17 @@
     <child link="left_link_0"/>
     <origin rpy="0 0 -2.35619449 " xyz="0.795181 0.79431 0.815"/>
   </joint>
-  <!-- joint between left iiwa7 and 2f gripper-->
-  <joint name="left_ee_mount" type="fixed">
+  <!-- joint between left iiwa7 and camera arm mount-->
+  <joint name="left_ee_cam" type="fixed">
     <parent link="left_link_ee"/>
-    <child link="left_robotiq_arg2f_base_link"/>
+    <child link="camera_arm_mount"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <!-- joint between camera arm mount and 2f gripper-->
+  <joint name="left_ee_mount" type="fixed">
+    <parent link="camera_arm_mount"/>
+    <child link="left_robotiq_arg2f_base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.012"/>
   </joint>
   <!-- joint between left arm ee and 2f gripper-->
   <joint name="2f_ee_tool0" type="fixed">
