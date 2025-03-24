@@ -2,10 +2,10 @@
 
 <!-- top level -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="isaac_dual_arm">
-<!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
-<xacro:include filename="$(find isaac_dual_arm_moveit_config)/config/isaac_dual_arm.ros2_control.xacro"/>
+  <!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
+  <xacro:include filename="$(find isaac_dual_arm_moveit_config)/config/isaac_dual_arm.ros2_control.xacro"/>
 
-<!-- Links & Joints for the Right Arm -->
+  <!-- Links & Joints for the Right Arm -->
   <link name="right_link_0">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.012857 0.0 0.069964"/>
@@ -1256,7 +1256,7 @@
 	<collision>
 	    <origin xyz="0 0 0" rpy="0 0 0"/>
 	    <geometry>
-	        <mesh ilename="package://lbr_description/meshes/camera_arm_mount/Mount_realsense_camera_Default.stl"  scale="0.001 0.001 0.001"/>
+	        <mesh filename="package://lbr_description/meshes/camera_arm_mount/Mount_realsense_camera_Default.stl" scale="0.001 0.001 0.001"/>
 	    </geometry>
 	</collision>
   </link>    
@@ -1312,7 +1312,7 @@
   
   <!-- joint between left arm ee and 2f gripper-->
   <joint name="2f_ee_tool0" type="fixed">
-    <parent link="left_link_ee"/>
+    <parent link="camera_arm_mount"/>
     <child link="2f_tool0"/>
     <origin rpy="0 3.14 0" xyz="0 0 0.165"/>
   </joint>
