@@ -1,9 +1,9 @@
 moveit_setup_assistant_config:
   urdf:
     package: lbr_description
-    relative_path: urdf/mock_dual_arm/mock_dual_arm.xacro
+    relative_path: urdf/isaac_dual_arm/isaac_dual_arm.xacro
   srdf:
-    relative_path: config/mock_dual_arm.srdf
+    relative_path: config/isaac_dual_arm.srdf
   package_settings:
     author_name: Thor
     author_email: by23ws@student.aau.dk
