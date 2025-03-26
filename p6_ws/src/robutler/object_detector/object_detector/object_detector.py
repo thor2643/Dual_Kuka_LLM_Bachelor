@@ -216,7 +216,7 @@ class ObjectDetector(Node):
         masks = results[0].masks.data.cpu().numpy()  # Convert to NumPy format
 
         for i, mask in enumerate(results[0].masks.data):  
-            mask = masks[i]  # Take the first detected object mask
+            mask = masks[i]  
 
             # Convert mask to 8-bit format for OpenCV
             mask = (mask * 255).astype(np.uint8)
