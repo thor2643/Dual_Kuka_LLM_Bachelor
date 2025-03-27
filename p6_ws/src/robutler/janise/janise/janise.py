@@ -114,10 +114,12 @@ class LLMNode(Node):
         if not os.path.exists(self.conversation_log_folder):
             os.makedirs(self.conversation_log_folder)
 
+        """
         # Create the JSON file if it doesn't exist
         if not os.path.exists(self.conversation_log_file):
             with open(self.conversation_log_file, 'w') as file:
                 pass
+        """
 
         self.lego_bricks = {}
 
@@ -313,7 +315,7 @@ class LLMNode(Node):
             self.initial_prompt_Janise,
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
-            AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
+            HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                       name = "Socrates"),
             AIMessage(content = "",
                       tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
@@ -321,7 +323,7 @@ class LLMNode(Node):
             ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}",
                         tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
             #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
-            AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user."),
+            HumanMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user."),
             AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
 
                     1. **Home Position for Right Arm**:
@@ -336,7 +338,7 @@ class LLMNode(Node):
                     name = "Janise"),
             HumanMessage(content = "What objects can you find?"),
             #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
-            AIMessage(content = "To answer this Janise should consider the available functions. The function \"get_available_objects\" returns predefined objects that can be detcted. This seems like an appropriate function to call.",
+            HumanMessage(content = "To answer this Janise should consider the available functions. The function \"get_available_objects\" returns predefined objects that can be detcted. This seems like an appropriate function to call.",
                       name = "Socrates"),
             AIMessage(content = "",
                       tool_calls = [{"name": "get_available_objects", "args": {}, "id": "call_KZ4pgcOBYotzY1QERRB0OiFn"}],
@@ -344,7 +346,7 @@ class LLMNode(Node):
             ToolMessage(content = "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
                         tool_call_id = "call_KZ4pgcOBYotzY1QERRB0OiFn"),
             #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
-            AIMessage(content = "The returned objects are the predefined objects that can be detected. Janise should now return this information to the user.",
+            HumanMessage(content = "The returned objects are the predefined objects that can be detected. Janise should now return this information to the user.",
                       name = "Socrates"),
             AIMessage(content = """I am able to locate the following objects within the workspace:
 
