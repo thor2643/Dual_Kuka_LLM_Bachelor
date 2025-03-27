@@ -160,7 +160,7 @@ class LLMNode(Node):
 
         # Initialise the model
         # Change this to the model you want to use
-        self.model = ChatOpenAI(model="gpt-4o")
+        self.model = ChatOpenAI(model="gpt-4o-mini")
         self.bound_model = self.model.bind_tools(self.tools)
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
 
@@ -238,8 +238,7 @@ class LLMNode(Node):
         self.config = {"configurable": {"thread_id": "1"}}
         self.config_think = {"configurable": {"thread_id": "CoT1"}} # CoT = Chain of Thoughts
 
-        self.initial_prompt = [
-            SystemMessage(content = """
+        self.initial_prompt_Janise = SystemMessage(content = """
             Your name is Janise. You are an AI robotic arm assistant using the LLM gpt-4o for task reasoning and manipulation tasks. You are to assume the persona of a butler.
 
             Context for your Workspace:
@@ -270,12 +269,12 @@ class LLMNode(Node):
             - If an operation fails, do not assume the result of a retry without executing the appropriate function again.      
 
             Multi-step Task Execution:
-            - By default message looping is enabled, allowing for continuous workflow until task completion. However, you should disable message looping when all steps have been completed to provide a final response to the user.
+            - By default message looping is enabled, allowing for continuous workflow until task completion.
             - Some tasks may require multiple steps to complete. In other words, a single task may consist of several sub-tasks that need to be executed in sequence e.g a pickup task. 
-            - You should assume that almost all tasks will be multi-step tasks, and therefore you should by default enable message looping to allow for continuous workflow until task completion.
+            - You should assume that almost all tasks will be multi-step tasks and therefore you should consider possible future actions.
             - When asked to move to a specific location, this implies that you should both plan and execute the movement to that location. The robot will not move on its own without the execution command.
             - When all steps have been completed, disable message looping to conclude the task and provide a final response to the user.
-            - Tasks exceeding 10 steps should automatically transition into sub-tasks, with you notifying the operator and resuming seamlessly.
+            - Tasks exceeding 10 steps should automatically transition into sub-tasks, with you notifying the operator and resuming seamlessly.by default enable message looping to allow for continuous workflow until task completion.
 
             Interaction Style:
             - You must always reply to the user in a manner fitting a butler persona, using the following styles when executing movement tasks:
@@ -304,9 +303,14 @@ class LLMNode(Node):
             Your primary task is to execute movements and manipulations as requested, utilizing precise understanding of your left and right sides, grippers, and the overview provided by the RealSense camera.
         
             You must explain the reasoning behind each action before executing it. If you are unsure about a task or need further clarification, you should ask the user for more information or request assistance from the operator.
+                          
+            Before you are to make decisions, another agents named Socrates will provide you with insights and guidance to ensure that the correct actions are taken. You should always consider the suggestions made by Socrates before making a decision.
                                 
             Example of a tasks with chained thoughts:                    
-        """),
+        """)
+
+        self.initial_prompt = [
+            self.initial_prompt_Janise,
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
             AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
@@ -358,13 +362,15 @@ class LLMNode(Node):
                     name = "Janise")
             ]
         
-        self.initial_prompt_CoT = [SystemMessage(content = """Your name is Socrates. You act as a critical thinker and must help the other LLM agent Janise to take proper action based on a user's request. 
+        self.initial_prompt_CoT = SystemMessage(content = """Your name is Socrates. You act as a critical thinker and must help the other LLM agent Janise to take proper action based on a user's request. 
                                                                 You are to provide reasoning and guidance to Janise to ensure that the correct actions are taken. Your message is appended to the conversation for Janise to consider.
                                                                 As Janise is controlling a dual arm robot you must provide her with insights to the physical world, while considering the robot's capabilities and limitations.
                                                                 You are NOT allowed to call any tools yourself and can therefore only make suggestions for Janise to consider. You should always provide reasoning for your suggestions.
                                                                 You are set to make suggestions to Janise after an incoming user request or after a tool call has returned.
                                                                 You are never answering directly to the user, but only to Janise. Therefore, never take "you" in the user's request as if the user is talking to you. Janise is the only model communicating with the user.
-                                                                """)]
+                                                 
+                                                                To help you reason better you are given an image of the workspace. This you can use to provide better guidance to Janise.
+                                                                """)
         
 
         # Append the initial prompt to the message state
@@ -526,7 +532,7 @@ class LLMNode(Node):
         }
     
     # Function to encode the image
-    def encode_image(image_path):
+    def encode_image(self, image_path):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
         
@@ -576,7 +582,7 @@ class LLMNode(Node):
         if response is not None:
             image = self.bridge.imgmsg_to_cv2(response.image, desired_encoding='bgr8')
 
-            cv2.imread("image.jpg", image)
+            cv2.imwrite("image.jpg", image)
 
             return image
         else:
@@ -606,24 +612,61 @@ class LLMNode(Node):
     # Define the function that calls the model
     # Takes in the cureent message history and returns the response
     def call_model(self, state: MessagesState):
-        # We can filter the messages here
-        # filtered_messages = filter_messages(state["messages"])
+        # We append the initial prompt to Janise
+        state["messages"][0] = self.initial_prompt_Janise
+
+        # Append the initial prompt to the message state
+        self.agent.update_state(self.config, {"messages": state["messages"]})
+
         response = self.bound_model.invoke(state["messages"])
         # We return a list, because this will get added to the existing list
         response.name = "Janise"
         return {"messages": response}
     
     def think(self, state: MessagesState):
-        # We can filter the messages here
-        # filtered_messages = filter_messages(state["messages"])
+        # We append an image to the CoT message
+        image_path = "image.jpg"
+
+        # Resize the image to 524x524
+        # Change this to get the actual image from the camera
+        original_image = cv2.imread(image_path)
+        resized_image = cv2.resize(original_image, (524, 524))
+        resized_image_path = "resized_image.jpg"
+        cv2.imwrite(resized_image_path, resized_image)
+
+        # Encode the resized image
+        image = self.encode_image(resized_image_path)
+        image = self.encode_image(resized_image_path)
+
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": """Here is an overview of the workspace. Please provide guidance to Janise based on this image.
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
 
         # We must replace the system message for Janise with the system message for Sokrates
-        CoT_message = self.initial_prompt_CoT + state["messages"][1:]
+        state["messages"][0] = self.initial_prompt_CoT
+        state["messages"].append(message)
 
-        response = self.think_model.invoke(CoT_message)
-        response.name = "Socrates"
+        # But it cannot analyze the image and the chat history at the same time
+        response_2 = self.think_model.invoke(state["messages"])
+
+        # Delete the image from history to save tokens
+        state["messages"].pop()
+
+        # Convert to Human message, such that Janise does not think she answered herself.
+        response_human = HumanMessage(content=response_2.text())
+        response_human.name = "Socrates"
+
+        print(state["messages"])
+
         # We return a list, because this will get added to the existing list
-        return {"messages": response}
+        return {"messages": response_human}
     
 
     ########################################################################################
@@ -1164,8 +1207,8 @@ class LLMNode(Node):
     def gui_handle_service(self, request, response):
         prompt = request.prompt  # prompt is a string
 
-        # TEst
-        self.request_rvis_image()
+        # TEst image retrieval
+        # self.request_rvis_image()
 
         # Convert to langgraph message
         query = HumanMessage(prompt)
