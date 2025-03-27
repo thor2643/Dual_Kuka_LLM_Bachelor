@@ -19,7 +19,7 @@ def generate_launch_description():
         #    package='robotiq_3f_gripper_ros2_control',
         #    executable='gripper_control_service_server'
         #),
-        
+         
         # 2F Gripper - Service
         #Node(
         #    package='robotiq_2f_85_control',
@@ -66,7 +66,7 @@ def generate_launch_description():
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(
-                    get_package_share_directory('isaac_dual_arm_moveit_config'),
+                    get_package_share_directory('dual_arm_moveit_config'),
                     'launch',
                     'demo.launch.py'
                 )

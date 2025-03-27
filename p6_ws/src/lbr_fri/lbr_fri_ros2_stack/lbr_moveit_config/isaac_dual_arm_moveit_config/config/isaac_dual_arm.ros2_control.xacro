@@ -202,9 +202,27 @@
         <param name="initial_value">0.0</param>
       </state_interface>
     </joint>
-  </ros2_control>
 
-  <!-- Setup of Hardware for 3F Gripper -->
+    <!-- Setup of Hardware for 2F Gripper -->
+
+
+    <joint name="left_finger_joint">
+      <param name="max_velocity">2</param>
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">0.8</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+
+    </ros2_control>
+
+   <!--Setup of Hardware for 3F Gripper -->
   <ros2_control name="3FGripper" type="system">
     <hardware>
       <plugin>mock_components/GenericSystem</plugin>
@@ -364,23 +382,5 @@
     </joint>
   </ros2_control>
   
-  <!-- Setup of Hardware for 2F Gripper -->
-  <ros2_control name="2FGripper" type="system">
-    <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
-    </hardware>
-    <joint name="left_finger_joint">
-      <param name="max_velocity">2</param>
-      <command_interface name="position">
-        <param name="min">0.0</param>
-        <param name="max">0.8</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-  </ros2_control>
+  
 </robot>

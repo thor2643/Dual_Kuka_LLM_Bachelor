@@ -5,6 +5,27 @@
   <!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
   <xacro:include filename="$(find isaac_dual_arm_moveit_config)/config/isaac_dual_arm.ros2_control.xacro"/>
 
+  <!-- MATERIAL LIST -->
+  <material name="aluminum">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+  <material name="plastic">
+    <color rgba="0.1 0.1 0.1 1"/>
+  </material>
+  <material name="steel_satin">
+    <color rgba="0.6274509803921569 0.6274509803921569 0.6274509803921569 1"/>
+  </material>
+  <material name="wood">
+    <color rgba="0.588235294 0.375 0.1 1"/>
+  </material>
+  <material name="white">
+    <color rgba="0.8 0.8 0.8 1"/>
+  </material>
+  <material name="gray">
+	<color rgba="1 0 0 1"/>
+  </material>
+
+
   <!-- Links & Joints for the Right Arm -->
   <link name="right_link_0">
     <inertial>
@@ -221,7 +242,7 @@
   </joint>
   <link name="right_link_ee">
 	</link>
-  
+
 <!-- Links & Joints for the Left Arm --> 
   <link name="left_link_0">
     <inertial>
@@ -447,9 +468,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="1 0 0 1"/>
-      </material>
+      <material name="gray"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -563,9 +582,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="1 0 0 1"/>
-      </material>
+      <material name="gray"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -679,9 +696,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="1 0 0 1"/>
-      </material>
+      <material name="gray"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -794,9 +809,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/palm.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="0.6274509803921569 0.6274509803921569 0.6274509803921569 1.0"/>
-      </material>
+      <material name="gray"/>
     </visual>
     <collision>
       <geometry>
@@ -837,11 +850,7 @@
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
   </joint>
-  <joint name="3f_palm_tool0" type="fixed">
-    <parent link="3f_palm"/>
-    <child link="3f_tool0"/>
-    <origin rpy="0 -1.5707 1.5707" xyz="0.0 0.15 0"/>
-  </joint>
+  
   <!-- end of joint list -->
   <link name="left_robotiq_arg2f_base_link">
     <inertial>
@@ -1159,44 +1168,13 @@
     <axis xyz="0 0 1"/>
   </joint>
 
-  <!-- end of joint list 
-  <transmission name="left_finger_joint_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="left_finger_joint">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="left_finger_joint_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission> -->
+  
+  <!-- CUSTOM LINKS (NOT IIWA7 OR GRIPPERS) -->
 
-  <material name="aluminum">
-    <color rgba="0.5 0.5 0.5 1"/>
-  </material>
-  <material name="plastic">
-    <color rgba="0.1 0.1 0.1 1"/>
-  </material>
-  <!--
-    <xacro:arg name="robot_name" default="lbr" />
-    <xacro:arg name="sim" default="false" />
-    <xacro:arg
-	name="system_parameters_path"
-	default="$(find lbr_ros2_control)/config/lbr_system_parameters.yaml" />
-    -->
-  <!-- materials -->
-  <material name="steel_satin">
-    <color rgba="0.6274509803921569 0.6274509803921569 0.6274509803921569 1"/>
-  </material>
-  <material name="wood">
-    <color rgba="0.588235294 0.375 0.1 1"/>
-  </material>
-  <material name="white">
-    <color rgba="0.8 0.8 0.8 1"/>
-  </material>
-  <!-- fixed to world, see http://classic.gazebosim.org/tutorials?tut=ros_urdf&cat=connect_ros -->
-  <link name="world"/>
-  <!-- table link -->
-  <link name="table">
+  <link name="world"/>  <!-- Fixed to world, necessary for Rviz and Gazebo -->
+
+  <!-- Table and wall links -->
+  <link name="table_top">
     <inertial>
       <origin rpy="0 0 0" xyz="0.47511520643410643 0.9340356249199337 1.753635248949686"/>
       <mass value="1382.7919279449686"/>
@@ -1212,21 +1190,51 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	<mesh filename="package://lbr_description/meshes/table/collision/iiwa7_table_collision.stl" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://lbr_description/meshes/table/collision/Table_top.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
-  <!-- the wooden laser cut camera mount
-  <link name="cam_mount">
-    <visual>
-      <origin rpy="0 0 0" xyz="0.096012 0.03490 -0.059336"/>
+  <link name="left_side_wall">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	<mesh filename="package://lbr_description/meshes/camera_mount/Camera_Mount_V2_v2.stl" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="wood"/>
-    </visual>
+    </collision>
   </link>
-  -->
+  <link name="right_side_wall">
+    <collision>
+      <origin rpy="0 0 0" xyz="-1.411 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="back_wall">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_box">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_box.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_box">
+    <collision>
+      <origin rpy="0 0 0" xyz="-1.181 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_box.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
   <!-- 3f gripper adapter / mounting plate -->
   <link name="gripper_mounting_plate">
 	<visual>
@@ -1236,7 +1244,6 @@
 	    </geometry>
 	    <material name="steel_satin"/>
 	</visual>
-
 	<collision>
 	    <origin xyz="0.045 -0.045 0" rpy="0 0 0"/>
 	    <geometry>
@@ -1244,7 +1251,7 @@
 	    </geometry>
 	</collision>
   </link>    
-  <!-- camera arm mount -->
+  <!-- Camera arm mount -->
   <link name="camera_arm_mount">
 	<visual>
 	    <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -1261,39 +1268,70 @@
 	</collision>
   </link>    
 
-  <!--joint between world and table-->
+  <!-- TABLE AND SIDE WALL JOINTS TO TABLE-->
+  <!--Joint between world and table-->
   <joint name="world_joint" type="fixed">
     <parent link="world"/>
-    <child link="table"/>
+    <child link="table_top"/>
   </joint>
-  <!--joint between table and wooden camera mount
-  <joint name="cam_table_joint" type="fixed">
-    <parent link="table"/>
-    <child link="cam_mount"/>
-    <origin rpy="1.57079633 0 0" xyz="0.489819 0.84691 1.428"/>
+  <joint name="left_side_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="left_side_wall"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
-  -->
-  <!--joint between table and right iiwa7 -->
+  <joint name="right_side_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="right_side_wall"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="back_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="back_wall"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="left_box_joint" type="fixed">
+    <parent link="world"/>
+    <child link="left_box"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="right_box_joint" type="fixed">
+    <parent link="world"/>
+    <child link="right_box"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+
+  <!-- JOINTS FOR RIGHT ARM AND 3F GRIPPER -->
+  <!--Joint between table and right iiwa7 -->
   <joint name="mount_right" type="fixed">
-    <parent link="table"/>
+    <parent link="table_top"/>
     <child link="right_link_0"/>
     <origin rpy="0 0 -0.785398163" xyz="0.145181 0.79431 0.815"/>
   </joint>
   <!-- joint between right iiwa7 and 3f gripper-->
-    <joint name="ee_mount" type="fixed">    
-	<parent link="right_link_ee" />
-	<child link="gripper_mounting_plate" />
-	<origin xyz="0 0 0" rpy="0 0 0"/>
-    </joint>
+  <joint name="ee_mount" type="fixed">    
+	  <parent link="right_link_ee" />
+	  <child link="gripper_mounting_plate" />
+	  <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
   <!-- joint between right iiwa7 and 3f gripper-->
-    <joint name="adapter_mount" type="fixed">    
-	<parent link="gripper_mounting_plate" />
-	<child link="3f_palm" />
-	<origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
-    </joint>
+  <joint name="adapter_mount" type="fixed">    
+	  <parent link="gripper_mounting_plate" />
+	  <child link="3f_palm" />
+	  <origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
+  </joint>
+  <!-- joint between 3f gripper and 3f tool0-->
+  <joint name="3f_palm_tool0" type="fixed">
+    <parent link="3f_palm"/>
+    <child link="3f_tool0"/>
+    <origin rpy="0 -1.5707 1.5707" xyz="0.0 0.15 0"/>
+  </joint>
+
+
+  <!-- JOINTS FOR LEFT ARM AND 2F GRIPPER -->
   <!-- joint between left arm and table -->
   <joint name="mount_left" type="fixed">
-    <parent link="table"/>
+    <parent link="table_top"/>
     <child link="left_link_0"/>
     <origin rpy="0 0 -2.35619449 " xyz="0.795181 0.79431 0.815"/>
   </joint>
@@ -1309,12 +1347,10 @@
     <child link="left_robotiq_arg2f_base_link"/>
     <origin rpy="0 0 0" xyz="0 0 0.012"/>
   </joint>
-  
-  <!-- joint between left arm ee and 2f gripper-->
+  <!-- joint between camara arm mount and 2f_tool0-->
   <joint name="2f_ee_tool0" type="fixed">
     <parent link="camera_arm_mount"/>
     <child link="2f_tool0"/>
     <origin rpy="0 3.14 0" xyz="0 0 0.165"/>
   </joint>
-
 </robot>
