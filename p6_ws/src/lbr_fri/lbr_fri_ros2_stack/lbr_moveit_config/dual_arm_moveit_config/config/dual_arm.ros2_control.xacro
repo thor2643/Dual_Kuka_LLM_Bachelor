@@ -1,0 +1,213 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <ros2_control name="lbr_system_interface_right" type="system">
+    <hardware>
+      <plugin>lbr_ros2_control::SystemInterface</plugin>
+      <param name="fri_client_sdk_major_version">1</param>
+      <param name="fri_client_sdk_minor_version">15</param>
+      <param name="client_command_mode">position</param>
+      <param name="port_id">30200</param>
+      <param name="remote_host">INADDR_ANY</param>
+      <param name="rt_prio">80</param>
+      <param name="pid_p">0.1</param>
+      <param name="pid_i">0.0</param>
+      <param name="pid_d">0.0</param>
+      <param name="pid_i_max">0.0</param>
+      <param name="pid_i_min">0.0</param>
+      <param name="pid_antiwindup">False</param>
+      <param name="command_guard_variant">default</param>
+      <param name="external_torque_cutoff_frequency">10</param>
+      <param name="measured_torque_cutoff_frequency">10</param>
+      <param name="open_loop">True</param>
+    </hardware>
+    <sensor name="auxiliary_sensor">
+      <!-- see KUKA::FRI::LBRState -->
+      <state_interface name="sample_time"/>
+      <state_interface name="session_state"/>
+      <state_interface name="connection_quality"/>
+      <state_interface name="safety_state"/>
+      <state_interface name="operation_mode"/>
+      <state_interface name="drive_state"/>
+      <state_interface name="client_command_mode"/>
+      <state_interface name="overlay_type"/>
+      <state_interface name="control_mode"/>
+      <state_interface name="time_stamp_sec"/>
+      <state_interface name="time_stamp_nano_sec"/>
+      <state_interface name="tracking_performance"/>
+    </sensor>
+    <sensor name="estimated_ft_sensor">
+      <param name="chain_root">right_link_0</param>
+      <param name="chain_tip">right_link_ee</param>
+      <param name="damping">0.2</param>
+      <param name="force_x_th">2.0</param>
+      <param name="force_y_th">2.0</param>
+      <param name="force_z_th">2.0</param>
+      <param name="torque_x_th">0.5</param>
+      <param name="torque_y_th">0.5</param>
+      <param name="torque_z_th">0.5</param>
+      <state_interface name="force.x"/>
+      <state_interface name="force.y"/>
+      <state_interface name="force.z"/>
+      <state_interface name="torque.x"/>
+      <state_interface name="torque.y"/>
+      <state_interface name="torque.z"/>
+    </sensor>
+    <!-- FRI Cartesian impedance control mode -->
+    <gpio name="wrench">
+      <command_interface name="force.x"/>
+      <command_interface name="force.y"/>
+      <command_interface name="force.z"/>
+      <command_interface name="torque.x"/>
+      <command_interface name="torque.y"/>
+      <command_interface name="torque.z"/>
+    </gpio>
+    <joint name="right_A1">
+      <param name="min_position">-2.9670597283903604</param>
+      <param name="max_position">2.9670597283903604</param>
+      <param name="max_velocity">1.710422666954443</param>
+      <param name="max_torque">200</param>
+      <command_interface name="position">
+        <param name="min">-2.9670597283903604</param>
+        <param name="max">2.9670597283903604</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">-200</param>
+        <param name="max"> 200</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="commanded_joint_position"/>
+      <state_interface name="commanded_torque"/>
+      <state_interface name="external_torque"/>
+      <state_interface name="ipo_joint_position"/>
+    </joint>
+    <joint name="right_A2">
+      <param name="min_position">-2.0943951023931953</param>
+      <param name="max_position">2.0943951023931953</param>
+      <param name="max_velocity">1.710422666954443</param>
+      <param name="max_torque">200</param>
+      <command_interface name="position">
+        <param name="min">-2.0943951023931953</param>
+        <param name="max">2.0943951023931953</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">-200</param>
+        <param name="max"> 200</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="commanded_joint_position"/>
+      <state_interface name="commanded_torque"/>
+      <state_interface name="external_torque"/>
+      <state_interface name="ipo_joint_position"/>
+    </joint>
+    <joint name="right_A3">
+      <param name="min_position">-2.9670597283903604</param>
+      <param name="max_position">2.9670597283903604</param>
+      <param name="max_velocity">1.7453292519943295</param>
+      <param name="max_torque">200</param>
+      <command_interface name="position">
+        <param name="min">-2.9670597283903604</param>
+        <param name="max">2.9670597283903604</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">-200</param>
+        <param name="max"> 200</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="commanded_joint_position"/>
+      <state_interface name="commanded_torque"/>
+      <state_interface name="external_torque"/>
+      <state_interface name="ipo_joint_position"/>
+    </joint>
+    <joint name="right_A4">
+      <param name="min_position">-2.0943951023931953</param>
+      <param name="max_position">2.0943951023931953</param>
+      <param name="max_velocity">2.2689280275926285</param>
+      <param name="max_torque">200</param>
+      <command_interface name="position">
+        <param name="min">-2.0943951023931953</param>
+        <param name="max">2.0943951023931953</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">-200</param>
+        <param name="max"> 200</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="commanded_joint_position"/>
+      <state_interface name="commanded_torque"/>
+      <state_interface name="external_torque"/>
+      <state_interface name="ipo_joint_position"/>
+    </joint>
+    <joint name="right_A5">
+      <param name="min_position">-2.9670597283903604</param>
+      <param name="max_position">2.9670597283903604</param>
+      <param name="max_velocity">2.443460952792061</param>
+      <param name="max_torque">200</param>
+      <command_interface name="position">
+        <param name="min">-2.9670597283903604</param>
+        <param name="max">2.9670597283903604</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">-200</param>
+        <param name="max"> 200</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="commanded_joint_position"/>
+      <state_interface name="commanded_torque"/>
+      <state_interface name="external_torque"/>
+      <state_interface name="ipo_joint_position"/>
+    </joint>
+    <joint name="right_A6">
+      <param name="min_position">-2.0943951023931953</param>
+      <param name="max_position">2.0943951023931953</param>
+      <param name="max_velocity">3.141592653589793</param>
+      <param name="max_torque">200</param>
+      <command_interface name="position">
+        <param name="min">-2.0943951023931953</param>
+        <param name="max">2.0943951023931953</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">-200</param>
+        <param name="max"> 200</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="commanded_joint_position"/>
+      <state_interface name="commanded_torque"/>
+      <state_interface name="external_torque"/>
+      <state_interface name="ipo_joint_position"/>
+    </joint>
+    <joint name="right_A7">
+      <param name="min_position">-3.0543261909900763</param>
+      <param name="max_position">3.0543261909900763</param>
+      <param name="max_velocity">3.141592653589793</param>
+      <param name="max_torque">200</param>
+      <command_interface name="position">
+        <param name="min">-3.0543261909900763</param>
+        <param name="max">3.0543261909900763</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">-200</param>
+        <param name="max"> 200</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+      <state_interface name="commanded_joint_position"/>
+      <state_interface name="commanded_torque"/>
+      <state_interface name="external_torque"/>
+      <state_interface name="ipo_joint_position"/>
+    </joint>
+  </ros2_control>
+  
+</robot>
