@@ -368,17 +368,20 @@
   <material name="plastic">
     <color rgba="0.1 0.1 0.1 1"/>
   </material>
-  <material name="steel_satin">
+  <material name="steel_satin_old">
     <color rgba="0.6274509803921569 0.6274509803921569 0.6274509803921569 1"/>
+  </material>
+  <material name="steel_satin">
+    <color rgba="0.3 0.3 0.3 1"/>
   </material>
   <material name="wood">
     <color rgba="0.588235294 0.375 0.1 1"/>
   </material>
   <material name="white">
-    <color rgba="0.8 0.8 0.8 1"/>
+    <color rgba="0.9 0.9 0.9 1"/>
   </material>
   <material name="gray">
-    <color rgba="1 0 0 1"/>
+    <color rgba="0.6 0.6 0.6 1"/>
   </material>
   <!-- Links & Joints for the Right Arm -->
   <link name="right_link_0">
@@ -819,7 +822,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -842,7 +845,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_1.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
@@ -863,7 +866,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_2.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
@@ -884,7 +887,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_3.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
@@ -933,7 +936,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -956,7 +959,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_1.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
@@ -977,7 +980,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_2.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
@@ -998,7 +1001,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_3.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
@@ -1047,7 +1050,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -1070,7 +1073,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_1.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
@@ -1091,7 +1094,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_2.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
@@ -1112,7 +1115,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_3.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
@@ -1160,7 +1163,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/palm.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <geometry>
@@ -1531,7 +1534,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://lbr_description/meshes/table/visual/base_link_low_polly.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://lbr_description/meshes/table/visual/Table_top.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="steel_satin"/>
     </visual>
@@ -1542,30 +1545,16 @@
       </geometry>
     </collision>
   </link>
-  <link name="left_side_wall">
-    <collision>
+  <link name="wooden_top">
+    <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
+        <mesh filename="package://lbr_description/meshes/table/visual/Wooden_top.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-    </collision>
+      <material name="white"/>
+    </visual>
   </link>
-  <link name="right_side_wall">
-    <collision>
-      <origin rpy="0 0 0" xyz="-1.411 0 0"/>
-      <geometry>
-        <mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-  </link>
-  <link name="back_wall">
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
-      </geometry>
-    </collision>
-  </link>
+
   <link name="left_box">
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1589,7 +1578,7 @@
       <geometry>
         <mesh filename="package://lbr_description/meshes/gripper_mounting_plate/gripper_mounting_plate.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="steel_satin"/>
+      <material name="gray"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.045 -0.045 0"/>
@@ -1620,20 +1609,9 @@
     <parent link="world"/>
     <child link="table_top"/>
   </joint>
-  <joint name="left_side_wall_joint" type="fixed">
-    <parent link="world"/>
-    <child link="left_side_wall"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-  </joint>
-  <joint name="right_side_wall_joint" type="fixed">
-    <parent link="world"/>
-    <child link="right_side_wall"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
-  </joint>
-  <joint name="back_wall_joint" type="fixed">
-    <parent link="world"/>
-    <child link="back_wall"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
+  <joint name="wooden_top_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="wooden_top"/>
   </joint>
   <joint name="left_box_joint" type="fixed">
     <parent link="world"/>
