@@ -665,8 +665,6 @@ class LLMNode(Node):
         response_human = HumanMessage(content=response_2.text())
         response_human.name = "Socrates"
 
-        print(state["messages"])
-
         # We return a list, because this will get added to the existing list
         return {"messages": response_human}
     
@@ -958,17 +956,17 @@ class LLMNode(Node):
 
         if arm == 'right':
             # Calibrated transformation matrix from world to moveit coordinates based on right arm
-            T_world_moveit = np.array([ [0.999983  , -0.00554552, -0.0018012 ,  -0.02903434],
-                                        [0.00554922,  0.99998249,  0.00205645,  -0.03177714],
-                                        [0.00178977, -0.00206641,   0.9999962,         0.84],
-                                        [       0.0,         0.0,         0.0,          1.0]])
+            T_world_moveit = np.array([ [ 0.99998383, -0.00168775,  0.00543034, -0.03063849],
+                                        [ 0.00168078,  0.99999776,  0.00128864, -0.02827154],
+                                        [-0.00543251, -0.00127949,  0.99998443,  0.8001058 ],
+                                        [ 0.0,         0.0,         0.0,         1.0,      ] ])
             
         if arm == 'left':
             # Calibrated transformation matrix from world to moveit coordinates based on left arm
-            T_world_moveit = np.array([ [ 0.99994978,  -0.01001088, 0.00046925,  -0.03011298],
-                                        [0.01001359,  0.99993071, 0.00618906,  -0.03906320],
-                                        [ -0.00040726,  -0.00619345,  0.99998074, 0.81322784],
-                                        [        0.0,         0.0,         0.0,         1.0]])
+            T_world_moveit = np.array([ [ 0.99993911, -0.01089373,  0.00176324, -0.02348162],
+                                        [ 0.01089142,  0.99993982,  0.00131455, -0.03821792],
+                                        [-0.00177746, -0.00129526,  0.99999758,  0.80140745],
+                                        [ 0.0,         0.0,         0.0,         1.0       ] ])
             
         
         # Extract the position from the pose and append 1 to make it a 4D vector
