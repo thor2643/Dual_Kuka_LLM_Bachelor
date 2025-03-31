@@ -1,400 +1,35 @@
 <?xml version="1.0"?>
 
 <!-- top level -->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="mock_dual_arm">
-  <!-- Setup of Hardware & Joints for Right_Arm_Mock -->
-  <ros2_control name="lbr_system_interface_right" type="system">
-    <hardware>
-      <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-      <param name="joint_commands_topic">/right_arm/isaac_joint_commands</param>
-      <param name="joint_state_topic">/right_arm/isaac_joint_states</param>
-    </hardware>
-    <joint name="right_A1">
-      <param name="max_velocity">1.710422666954443</param>
-      <command_interface name="position">
-        <param name="min">-2.9670597283903604</param>
-        <param name="max">2.9670597283903604</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="right_A2">
-      <param name="max_velocity">1.710422666954443</param>
-      <command_interface name="position">
-        <param name="min">-2.0943951023931953</param>
-        <param name="max">2.0943951023931953</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="right_A3">
-      <param name="max_velocity">1.7453292519943295</param>
-      <command_interface name="position">
-        <param name="min">-2.9670597283903604</param>
-        <param name="max">2.9670597283903604</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="right_A4">
-      <param name="max_velocity">2.2689280275926285</param>
-      <command_interface name="position">
-        <param name="min">-2.0943951023931953</param>
-        <param name="max">2.0943951023931953</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="right_A5">
-      <param name="max_velocity">2.443460952792061</param>
-      <command_interface name="position">
-        <param name="min">-2.9670597283903604</param>
-        <param name="max">2.9670597283903604</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="right_A6">
-      <param name="max_velocity">3.141592653589793</param>
-      <command_interface name="position">
-        <param name="min">-2.0943951023931953</param>
-        <param name="max">2.0943951023931953</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="right_A7">
-      <param name="max_velocity">3.141592653589793</param>
-      <command_interface name="position">
-        <param name="min">-3.0543261909900763</param>
-        <param name="max">3.0543261909900763</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-  </ros2_control>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="isaac_dual_arm">
+  <!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
+  <xacro:include filename="$(find isaac_dual_arm_moveit_config)/config/isaac_dual_arm.ros2_control.xacro"/>
 
-  <!-- Setup of Hardware & Joints for Left_Arm_Mock -->
-  <ros2_control name="lbr_system_interface_left" type="system">
-    <hardware>
-      <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
-      <param name="joint_commands_topic">/left_arm/isaac_joint_commands</param>
-      <param name="joint_state_topic">/left_arm/isaac_joint_states</param>
-    </hardware>
-    <joint name="left_A1">
-      <param name="max_velocity">1.710422666954443</param>
-      <command_interface name="position">
-        <param name="min">-2.9670597283903604</param>
-        <param name="max">2.9670597283903604</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="left_A2">
-      <param name="max_velocity">1.710422666954443</param>
-      <command_interface name="position">
-        <param name="min">-2.0943951023931953</param>
-        <param name="max">2.0943951023931953</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="left_A3">
-      <param name="max_velocity">1.7453292519943295</param>
-      <command_interface name="position">
-        <param name="min">-2.9670597283903604</param>
-        <param name="max">2.9670597283903604</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="left_A4">
-      <param name="max_velocity">2.2689280275926285</param>
-      <command_interface name="position">
-        <param name="min">-2.0943951023931953</param>
-        <param name="max">2.0943951023931953</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="left_A5">
-      <param name="max_velocity">2.443460952792061</param>
-      <command_interface name="position">
-        <param name="min">-2.9670597283903604</param>
-        <param name="max">2.9670597283903604</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="left_A6">
-      <param name="max_velocity">3.141592653589793</param>
-      <command_interface name="position">
-        <param name="min">-2.0943951023931953</param>
-        <param name="max">2.0943951023931953</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="left_A7">
-      <param name="max_velocity">3.141592653589793</param>
-      <command_interface name="position">
-        <param name="min">-3.0543261909900763</param>
-        <param name="max">3.0543261909900763</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-  </ros2_control>
+  <!-- MATERIAL LIST -->
+  <material name="aluminum">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+  <material name="plastic">
+    <color rgba="0.1 0.1 0.1 1"/>
+  </material>
+  <material name="steel_satin_old">
+    <color rgba="0.6274509803921569 0.6274509803921569 0.6274509803921569 1"/>
+  </material>
+  <material name="steel_satin">
+    <color rgba="0.3 0.3 0.3 1"/>
+  </material>
+  <material name="wood">
+    <color rgba="0.588235294 0.375 0.1 1"/>
+  </material>
+  <material name="white">
+    <color rgba="0.9 0.9 0.9 1"/>
+  </material>
+  <material name="gray">
+	<color rgba="0.6 0.6 0.6 1"/>
+  </material>
 
-  <!-- Setup of Hardware for 3F Gripper -->
-  <ros2_control name="3FGripper" type="system">
-    <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
-    </hardware>
-    <joint name="3f_finger_1_joint_1">
-      <param name="max_velocity">1.23</param>
-      <command_interface name="position">
-        <param name="min">0.3758</param>
-        <param name="max">1.1276</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.3758</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_1_joint_2">
-      <param name="max_velocity">1.24</param>
-      <command_interface name="position">
-        <param name="min">0.0</param>
-        <param name="max">1.5708</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_1_joint_3">
-      <param name="max_velocity">1.25</param>
-      <command_interface name="position">
-        <param name="min">-0.9531</param>
-        <param name="max">0.7572</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_2_joint_1">
-      <param name="max_velocity">1.23</param>
-      <command_interface name="position">
-        <param name="min">0.3758</param>
-        <param name="max">1.1276</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.3758</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_2_joint_2">
-      <param name="max_velocity">1.24</param>
-      <command_interface name="position">
-        <param name="min">0.0</param>
-        <param name="max">1.5708</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_2_joint_3">
-      <param name="max_velocity">1.25</param>
-      <command_interface name="position">
-        <param name="min">-0.9531</param>
-        <param name="max">0.7572</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_middle_joint_1">
-      <param name="max_velocity">1.23</param>
-      <command_interface name="position">
-        <param name="min">0.3758</param>
-        <param name="max">1.1276</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.3758</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_middle_joint_2">
-      <param name="max_velocity">1.24</param>
-      <command_interface name="position">
-        <param name="min">0.0</param>
-        <param name="max">1.5708</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_finger_middle_joint_3">
-      <param name="max_velocity">1.25</param>
-      <command_interface name="position">
-        <param name="min">-0.9531</param>
-        <param name="max">0.7572</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_palm_finger_1_joint">
-      <param name="max_velocity">1.23</param>
-      <command_interface name="position">
-        <param name="min">-0.1784</param>
-        <param name="max">0.192</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">-0.1784</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-    
-    <joint name="3f_palm_finger_2_joint">
-      <param name="max_velocity">1.23</param>
-      <command_interface name="position">
-        <param name="min">-0.192</param>
-        <param name="max">0.1784</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">-0.192</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-  </ros2_control>
-  
-  <!-- Setup of Hardware for 2F Gripper -->
-  <ros2_control name="2FGripper" type="system">
-    <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
-    </hardware>
-    <joint name="left_finger_joint">
-      <param name="max_velocity">2</param>
-      <command_interface name="position">
-        <param name="min">0.0</param>
-        <param name="max">0.8</param>
-      </command_interface>
-      <state_interface name="position">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity">
-        <param name="initial_value">0.0</param>
-      </state_interface>
-    </joint>
-  </ros2_control>
-  
-<!-- Links & Joints for the Right Arm -->
+
+  <!-- Links & Joints for the Right Arm -->
   <link name="right_link_0">
     <inertial>
       <origin rpy="0 0 0" xyz="-0.012857 0.0 0.069964"/>
@@ -610,7 +245,7 @@
   </joint>
   <link name="right_link_ee">
 	</link>
-  
+
 <!-- Links & Joints for the Left Arm --> 
   <link name="left_link_0">
     <inertial>
@@ -836,9 +471,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="1 0 0 1"/>
-      </material>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -861,7 +494,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_1.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
@@ -882,7 +515,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_2.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
@@ -903,7 +536,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_3.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
@@ -952,9 +585,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="1 0 0 1"/>
-      </material>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -977,7 +608,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_1.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
@@ -998,7 +629,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_2.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
@@ -1019,7 +650,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_3.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
@@ -1068,9 +699,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_0.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="1 0 0 1"/>
-      </material>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
@@ -1093,7 +722,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_1.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
@@ -1114,7 +743,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_2.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
@@ -1135,7 +764,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/link_3.dae"/>
       </geometry>
-      <material name="gray"/>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
@@ -1183,9 +812,7 @@
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/palm.dae"/>
       </geometry>
-      <material name="gray">
-	<color rgba="0.6274509803921569 0.6274509803921569 0.6274509803921569 1.0"/>
-      </material>
+      <material name="steel_satin"/>
     </visual>
     <collision>
       <geometry>
@@ -1226,11 +853,7 @@
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
   </joint>
-  <joint name="3f_palm_tool0" type="fixed">
-    <parent link="3f_palm"/>
-    <child link="3f_tool0"/>
-    <origin rpy="0 -1.5707 1.5707" xyz="0.0 0.15 0"/>
-  </joint>
+  
   <!-- end of joint list -->
   <link name="left_robotiq_arg2f_base_link">
     <inertial>
@@ -1548,44 +1171,13 @@
     <axis xyz="0 0 1"/>
   </joint>
 
-  <!-- end of joint list 
-  <transmission name="left_finger_joint_trans">
-    <type>transmission_interface/SimpleTransmission</type>
-    <joint name="left_finger_joint">
-      <hardwareInterface>PositionJointInterface</hardwareInterface>
-    </joint>
-    <actuator name="left_finger_joint_motor">
-      <mechanicalReduction>1</mechanicalReduction>
-    </actuator>
-  </transmission> -->
+  
+  <!-- CUSTOM LINKS (NOT IIWA7 OR GRIPPERS) -->
 
-  <material name="aluminum">
-    <color rgba="0.5 0.5 0.5 1"/>
-  </material>
-  <material name="plastic">
-    <color rgba="0.1 0.1 0.1 1"/>
-  </material>
-  <!--
-    <xacro:arg name="robot_name" default="lbr" />
-    <xacro:arg name="sim" default="false" />
-    <xacro:arg
-	name="system_parameters_path"
-	default="$(find lbr_ros2_control)/config/lbr_system_parameters.yaml" />
-    -->
-  <!-- materials -->
-  <material name="steel_satin">
-    <color rgba="0.6274509803921569 0.6274509803921569 0.6274509803921569 1"/>
-  </material>
-  <material name="wood">
-    <color rgba="0.588235294 0.375 0.1 1"/>
-  </material>
-  <material name="white">
-    <color rgba="0.8 0.8 0.8 1"/>
-  </material>
-  <!-- fixed to world, see http://classic.gazebosim.org/tutorials?tut=ros_urdf&cat=connect_ros -->
-  <link name="world"/>
-  <!-- table link -->
-  <link name="table">
+  <link name="world"/>  <!-- Fixed to world, necessary for Rviz and Gazebo -->
+
+  <!-- Table and wall links -->
+  <link name="table_top">
     <inertial>
       <origin rpy="0 0 0" xyz="0.47511520643410643 0.9340356249199337 1.753635248949686"/>
       <mass value="1382.7919279449686"/>
@@ -1594,28 +1186,76 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	<mesh filename="package://lbr_description/meshes/table/visual/base_link_low_polly.stl" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://lbr_description/meshes/table/visual/Table_top.stl" scale="0.001 0.001 0.001"/>
       </geometry>
       <material name="steel_satin"/>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	<mesh filename="package://lbr_description/meshes/table/collision/iiwa7_table_collision.stl" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://lbr_description/meshes/table/collision/Table_top.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
-  <!-- the wooden laser cut camera mount
-  <link name="cam_mount">
+
+  <link name="wooden_top">
     <visual>
-      <origin rpy="0 0 0" xyz="0.096012 0.03490 -0.059336"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	<mesh filename="package://lbr_description/meshes/camera_mount/Camera_Mount_V2_v2.stl" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://lbr_description/meshes/table/visual/Wooden_top.stl" scale="0.001 0.001 0.001"/>
       </geometry>
-      <material name="wood"/>
+      <material name="white"/>
     </visual>
   </link>
-  -->
+
+  <link name="left_side_wall">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_side_wall">
+    <collision>
+      <origin rpy="0 0 0" xyz="-1.411 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="back_wall">
+    <visual>
+	    <origin xyz="0 0.1 0" rpy="0 0 0"/>
+	    <geometry>
+	        <mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
+	    </geometry>
+	    <material name="white"/>
+	  </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+	        <mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_box">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_box.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_box">
+    <collision>
+      <origin rpy="0 0 0" xyz="-1.181 0 0"/>
+      <geometry>
+	<mesh filename="package://lbr_description/meshes/table/collision/Side_box.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+
   <!-- 3f gripper adapter / mounting plate -->
   <link name="gripper_mounting_plate">
 	<visual>
@@ -1623,61 +1263,119 @@
 	    <geometry>
 	        <mesh filename="package://lbr_description/meshes/gripper_mounting_plate/gripper_mounting_plate.stl" scale="0.001 0.001 0.001"/>
 	    </geometry>
-	    <material name="steel_satin"/>
+	    <material name="gray"/>
 	</visual>
-
 	<collision>
 	    <origin xyz="0.045 -0.045 0" rpy="0 0 0"/>
 	    <geometry>
 	        <mesh filename="package://lbr_description/meshes/gripper_mounting_plate/gripper_mounting_plate.stl" scale="0.001 0.001 0.001"/>
 	    </geometry>
 	</collision>
-    </link>    
-  <!--joint between world and table-->
+  </link>    
+  <!-- Camera arm mount -->
+  <link name="camera_arm_mount">
+	<visual>
+	    <origin xyz="0 0 0" rpy="0 0 0"/>
+	    <geometry>
+	        <mesh filename="package://lbr_description/meshes/camera_arm_mount/Mount_realsense_camera_Default.stl" scale="0.001 0.001 0.001"/>
+	    </geometry>
+	    <material name="steel_satin"/>
+	</visual>
+	<collision>
+	    <origin xyz="0 0 0" rpy="0 0 0"/>
+	    <geometry>
+	        <mesh filename="package://lbr_description/meshes/camera_arm_mount/Mount_realsense_camera_Default.stl" scale="0.001 0.001 0.001"/>
+	    </geometry>
+	</collision>
+  </link>    
+
+  <!-- TABLE AND SIDE WALL JOINTS TO TABLE-->
+  <!--Joint between world and table-->
   <joint name="world_joint" type="fixed">
     <parent link="world"/>
-    <child link="table"/>
+    <child link="table_top"/>
   </joint>
-  <!--joint between table and wooden camera mount
-  <joint name="cam_table_joint" type="fixed">
-    <parent link="table"/>
-    <child link="cam_mount"/>
-    <origin rpy="1.57079633 0 0" xyz="0.489819 0.84691 1.428"/>
+  <joint name="wooden_top_joint" type="fixed">
+    <parent link="table_top"/>
+    <child link="wooden_top"/>
   </joint>
-  -->
-  <!--joint between table and right iiwa7 -->
+
+  <joint name="left_side_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="left_side_wall"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="right_side_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="right_side_wall"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="back_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="back_wall"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="left_box_joint" type="fixed">
+    <parent link="world"/>
+    <child link="left_box"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="right_box_joint" type="fixed">
+    <parent link="world"/>
+    <child link="right_box"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+
+  <!-- JOINTS FOR RIGHT ARM AND 3F GRIPPER -->
+  <!--Joint between table and right iiwa7 -->
   <joint name="mount_right" type="fixed">
-    <parent link="table"/>
+    <parent link="table_top"/>
     <child link="right_link_0"/>
     <origin rpy="0 0 -0.785398163" xyz="0.145181 0.79431 0.815"/>
   </joint>
   <!-- joint between right iiwa7 and 3f gripper-->
-    <joint name="ee_mount" type="fixed">    
-	<parent link="right_link_ee" />
-	<child link="gripper_mounting_plate" />
-	<origin xyz="0 0 0" rpy="0 0 0"/>
-    </joint>
+  <joint name="ee_mount" type="fixed">    
+	  <parent link="right_link_ee" />
+	  <child link="gripper_mounting_plate" />
+	  <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
   <!-- joint between right iiwa7 and 3f gripper-->
-    <joint name="adapter_mount" type="fixed">    
-	<parent link="gripper_mounting_plate" />
-	<child link="3f_palm" />
-	<origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
-    </joint>
+  <joint name="adapter_mount" type="fixed">    
+	  <parent link="gripper_mounting_plate" />
+	  <child link="3f_palm" />
+	  <origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
+  </joint>
+  <!-- joint between 3f gripper and 3f tool0-->
+  <joint name="3f_palm_tool0" type="fixed">
+    <parent link="3f_palm"/>
+    <child link="3f_tool0"/>
+    <origin rpy="0 -1.5707 1.5707" xyz="0.0 0.15 0"/>
+  </joint>
+
+
+  <!-- JOINTS FOR LEFT ARM AND 2F GRIPPER -->
   <!-- joint between left arm and table -->
   <joint name="mount_left" type="fixed">
-    <parent link="table"/>
+    <parent link="table_top"/>
     <child link="left_link_0"/>
     <origin rpy="0 0 -2.35619449 " xyz="0.795181 0.79431 0.815"/>
   </joint>
-  <!-- joint between left iiwa7 and 2f gripper-->
-  <joint name="left_ee_mount" type="fixed">
+  <!-- joint between left iiwa7 and camera arm mount-->
+  <joint name="left_ee_cam" type="fixed">
     <parent link="left_link_ee"/>
-    <child link="left_robotiq_arg2f_base_link"/>
+    <child link="camera_arm_mount"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
-  <!-- joint between left arm ee and 2f gripper-->
+  <!-- joint between camera arm mount and 2f gripper-->
+  <joint name="left_ee_mount" type="fixed">
+    <parent link="camera_arm_mount"/>
+    <child link="left_robotiq_arg2f_base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 0.012"/>
+  </joint>
+  <!-- joint between camara arm mount and 2f_tool0-->
   <joint name="2f_ee_tool0" type="fixed">
-    <parent link="left_link_ee"/>
+    <parent link="camera_arm_mount"/>
     <child link="2f_tool0"/>
     <origin rpy="0 3.14 0" xyz="0 0 0.165"/>
   </joint>
