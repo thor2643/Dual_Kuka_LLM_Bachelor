@@ -857,7 +857,7 @@
   </joint>
   
   <!-- 2F GRIPPER -->   
-  <xacro:robotiq_85_gripper prefix="2f_" parent="camera_arm_mount">
+  <xacro:robotiq_85_gripper prefix="left_2f_" parent="camera_arm_mount">
     <origin xyz="0 0 0.012" rpy="0 -1.5707 0"/>
   </xacro:robotiq_85_gripper>
 
