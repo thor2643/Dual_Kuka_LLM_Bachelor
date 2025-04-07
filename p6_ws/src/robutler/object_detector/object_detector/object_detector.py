@@ -4,19 +4,28 @@ from ultralytics import YOLOWorld    #pip install ultralytics
 #SAM
 from ultralytics import SAM
 
+#Point cloud
+import open3d as o3d
+import sensor_msgs_py.point_cloud2 as pc2  # For converting PointCloud2 to numpy
+from sklearn.decomposition import PCA
+from scipy.spatial.transform import Rotation as ROT
+from sklearn.cluster import DBSCAN
+from collections import deque
+
 #Image processing
 import numpy as np
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
-import json
 import os
+
 
 
 
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
-from project_interfaces.srv import DefineObjectInfo
+from project_interfaces.msg import Grasp6D, DetectedObject
 from geometry_msgs.msg import Point
+from geometry_msgs.msg import Vector3 #for the 6D grasp prediction
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
@@ -70,7 +79,7 @@ class RealSenseCamera(Node):
         self.color_img = None
         self.depth_img = None
         self.camera_info = None
-
+        
 
         
     def convert_to_depth_img(self, msg):
@@ -92,6 +101,7 @@ class RealSenseCamera(Node):
         except CvBridgeError as e:
             self.get_logger().error(f'Error converting color image: {e}')
 
+        
     def camera_info_callback(self, msg):
         self.camera_info = msg.k
 
@@ -113,6 +123,9 @@ class ObjectDetector(Node):
         self.depth_frame = None   
         self.color_frame = None
         self.camera_info = None
+
+        #Point cloud
+        self.point_cloud = None
 
         #YOLO and SAM results
         self.yolo_results = None
@@ -136,8 +149,56 @@ class ObjectDetector(Node):
         
         self.depth_frame = self.realsense_camera.depth_img
         self.color_frame = self.realsense_camera.color_img
-        self.camera_info = self.realsense_camera.camera_info
+        self.camera_info = self.realsense_camera.camera_info    
     
+    def create_point_cloud(self):
+         # The camera info message .K contains the camera intrinsics
+        #[ fx   0  cx ]
+        #[  0  fy  cy ]
+        #[  0   0   1 ]
+        # Get the camera intrinsics
+        fx = self.camera_info[0]
+        fy = self.camera_info[4]
+        cx = self.camera_info[2]
+        cy = self.camera_info[5]
+
+        height, width = self.depth_frame.shape
+
+        # Create a grid of pixel coordinates (u, v)
+        u, v = np.meshgrid(np.arange(width), np.arange(height))
+
+        # Get the depth in meters
+        z = self.depth_frame.astype(np.float32) / 1000.0  # Convert to meters
+
+        # Replace 0.0 with np.nan to mark invalid pixels
+        z[z == 0.0] = np.nan
+
+        # Reproject to 3D space
+        x = (u - cx) * z / fx
+        y = (v - cy) * z / fy
+
+        # Stack into a (H, W, 3) point cloud
+        self.point_cloud = np.stack((x, y, z), axis=-1) # organized point cloud (H, W, 3)
+
+        """
+        # Convert to Open3D point cloud
+        # Flatten the (H, W, 3) point cloud to (N, 3)
+        pc_np = self.point_cloud.reshape(-1, 3)
+
+        # Filter out points with NaNs or zero depth (z <= 0)
+        valid = ~np.isnan(pc_np).any(axis=1) & (pc_np[:, 2] > 0)
+        pc_np_filtered = pc_np[valid]
+
+        
+        # Create Open3D point cloud
+        self.point_cloud_flat_o3d = o3d.geometry.PointCloud()
+        self.point_cloud_flat_o3d.points = o3d.utility.Vector3dVector(pc_np_filtered)
+        self.point_cloud_flat_o3d.colors = o3d.utility.Vector3dVector(np.zeros_like(pc_np_filtered))  # (optional, ensures colors are attached)
+        # Estimate normals (if you want to do e.g. surface reconstruction)
+        self.point_cloud_flat_o3d.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+        self.point_cloud_flat_o3d.normals = o3d.utility.Vector3dVector(np.asarray(self.point_cloud_flat_o3d.normals))  # (optional, ensures normals are attached)
+        self.point_cloud_flat_o3d.paint_uniform_color([0.8, 0.9, 0.9])  # (optional: color for points)
+        """
     
     #The callback function for the detector service for YOLO World
     def get_object_information_yolo(self, request, response):
@@ -146,11 +207,13 @@ class ObjectDetector(Node):
 
         self.retrieve_aligned_frames()
         image = self.get_color_image()
-        image = cv2.rotate(image, cv2.ROTATE_180)
+        #image = cv2.rotate(image, cv2.ROTATE_180)
 
         #Apply Yolo World, data is stored in self.yolo_results
         self.apply_yolo_world(image, object, verbose=False)
 
+
+        # If no objects are found with the specified class, try to find any object and return the class
         if len(self.yolo_results[0].boxes.data) == 0:
             self.get_logger().info(f'No {object} found\n')
             self.apply_yolo_world(image, object, verbose=False, name_objects = True)
@@ -158,38 +221,102 @@ class ObjectDetector(Node):
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
             response.object_count = 0
             return response
-
-        for i in range(len(self.yolo_results[0].boxes.data)):
-            x_min, y_min, x_max, y_max, _, _ = self.yolo_results[0].boxes.data[i]  #confidence and class
-            response.object_count += 1
-            cartesian_coordinates = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
-            #print(cartesian_coordinates)
-            #print(type(cartesian_coordinates))
-            point = Point()
-            point.x = float(cartesian_coordinates[0])
-            point.y = float(cartesian_coordinates[1])
-            point.z = float(cartesian_coordinates[2])
-            response.centers.append(point)
-            response.orientations.append(0)
-            response.grasp_widths.append(min(x_max - x_min, y_max - y_min))
- 
-
+        
         image_with_bbx = self.yolo_results[0].plot()
 
-        self.get_logger().info(f'Found {response.object_count} {object}\n')
+        self.get_logger().info(f'Found {len(self.yolo_results[0].boxes.data)} {object}\n')
 
         self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_with_bbx))
 
-        #SAM prediction on one object
-        if (len(self.yolo_results[0].boxes.data)) == 1:
+        self.create_point_cloud()
+
+        for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
+            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
             self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max]) #updates sam_result_img and sam_masks
-        
-        #GRASP Prediction 6D 
+            # checks if the mask size matches the point cloud size
+            if self.sam_masks.shape[1] != self.point_cloud.shape[0]:
+                self.get_logger().warn("Mask size doesn't match point cloud...")
+                self.get_logger().warn(f"shapes: mask:{self.sam_masks.shape} vs pc: {self.point_cloud.shape}")
+                continue
+            
+            #convert the mask to binary
+            mask_binary = (self.sam_masks > 0).astype(np.uint8)
 
+            # Apply morphological operations to the mask 
+            if False: #Performs morphological operations on the mask
+                # Create a kernel for the morphological operation
+                kernel = np.ones((5, 5), np.uint8)  # Adjust the size of the kernel to control how much the mask shrinks
+                # Perform closing (dilate then erode)
+                mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
+                # Step 2: Shrink the mask using erosion
+                mask_binary = cv2.erode(mask_closed, kernel, iterations=5)  # You can adjust iterations for more shrinking
+            
+            # Visualize the mask
+            if False: # Set to True to show the masks and the overlay
+                overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
+                cv2.imshow("Overlayed Mask", overlay)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
 
+                cv2.imshow("Eroded Mask", mask_binary * 255)
+                cv2.imshow("Mask", mask_binary * 255)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+                
+            #Apply the mask to the point cloud
+            point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
+            grasps = self.grasp_prediction(point_cloud_masked) 
+
+            detected_object = DetectedObject()
+            detected_object.grasps = []
+            detected_object.name = f"{object} {i}"
+
+            for grasp in grasps:
+                grasp_msg = Grasp6D()
+                
+                # Fill position
+                grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
+                
+                # Fill orientation
+                grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
+
+                detected_object.grasps.append(grasp_msg) 
+
+            response.detected_objects.append(detected_object)
+            response.object_count += 1
 
         return response
-    
+
+    def filter_by_depth_jump_np(self, pc_np, z_jump_threshold=0.04): #4 cm
+        # Sort by depth (z-axis)
+        sorted_indices = np.argsort(pc_np[:, 2])
+        sorted_points = pc_np[sorted_indices]
+
+        # Start with first point
+        filtered_points = [sorted_points[0]]
+
+        for i in range(1, len(sorted_points)):
+            prev_z = sorted_points[i - 1, 2]
+            curr_z = sorted_points[i, 2]
+
+            # If the depth jump is small, keep the point
+            if abs(curr_z - prev_z) <= z_jump_threshold:
+                filtered_points.append(sorted_points[i])
+            else:
+                # Discontinuity detected — stop here
+                break
+
+        return np.array(filtered_points)
+
+    def filter_by_depth_jump(self, pcd, jump_threshold=0.04):
+        points_np = np.asarray(pcd)
+        filtered_points = self.filter_by_depth_jump_np(points_np, jump_threshold)
+
+        filtered_pcd = o3d.geometry.PointCloud()
+        filtered_pcd.points = o3d.utility.Vector3dVector(filtered_points)
+        return filtered_pcd
+
+
     def SAM_predict(self, img, points = None, bboxes=None, labels = None, **kwargs):
         sam = SAM("sam_b.pt")
 
@@ -213,20 +340,238 @@ class ObjectDetector(Node):
         # Publish the image to the GUI
         self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(self.sam_result_img))
         
-        masks = results[0].masks.data.cpu().numpy()  # Convert to NumPy format
+        # Convert all masks to NumPy and scale binary mask
+        self.sam_masks = (results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
 
-        for i, mask in enumerate(results[0].masks.data):  
-            mask = masks[i]  
 
-            # Convert mask to 8-bit format for OpenCV
-            mask = (mask * 255).astype(np.uint8)
-            self.sam_masks.append(mask)
+    def segment_surfaces_by_normal_and_connectivity(self, pcd, angle_threshold_deg=10, distance_threshold=0.01, num_candidates=4):
+        """
+        Segments a point cloud into planar surface groups based on normal similarity and spatial connectivity.
 
-    def grasp_prediction(self, img, points = None, bboxes=None, labels = None, **kwargs):
-        #TODO  
-        pass
+        Args:
+            pcd (o3d.geometry.PointCloud): Input point cloud with normals estimated.
+            angle_threshold_deg (float): Max angle (in degrees) between normals to be considered similar.
+            distance_threshold (float): Max 3D distance to consider points as neighbors. This increase computation time Points_total*r³=computations.
+            num_candidates (int): Number of top surfaces to generate grasps for. 
 
-   
+        Returns:
+            List[List[int]]: List of point index groups (each a list of indices).
+        """
+        normals = np.asarray(pcd.normals)
+        points = np.asarray(pcd.points)
+        used = np.zeros(len(points), dtype=bool)
+        groups_all = []
+
+        # Normalize angle threshold
+        cos_thresh = np.cos(np.deg2rad(angle_threshold_deg))
+
+        # Build KDTree for spatial neighbor search
+        kdtree = o3d.geometry.KDTreeFlann(pcd)
+
+        for seed_idx in range(len(points)):
+            if used[seed_idx]:
+                continue
+
+            # Lock reference normal to the original seed point
+            seed_normal = normals[seed_idx]
+
+            queue = deque([seed_idx])
+            used[seed_idx] = True
+            group = [seed_idx]
+
+            while queue:
+                idx = queue.popleft()
+
+                # Search spatial neighbors
+                [_, neighbor_indices, _] = kdtree.search_radius_vector_3d(points[idx], distance_threshold)
+
+                for ni in neighbor_indices:
+                    if used[ni]:
+                        continue
+
+                    n_curr = normals[ni]
+                    dot = np.dot(seed_normal, n_curr)
+
+                    if dot > cos_thresh:
+                        used[ni] = True
+                        queue.append(ni)
+                        group.append(ni)
+
+            groups_all.append(group)
+        
+        #Take only the largest groups, sort groups by size (descending)
+        sorted_groups = sorted(groups_all, key=lambda g: len(g), reverse=True)
+        groups = sorted_groups[:num_candidates]
+
+        if len(sorted_groups) < num_candidates:
+            self.get_logger().info(f"Only found {len(sorted_groups)} groups, fewer than requested {num_candidates}")
+
+        return groups
+
+    def generate_grasp_candidates_from_groups(self, pcd, groups):
+        """
+        Generate grasp poses (6D) from the segmented surfaces.
+
+        Args:
+            pcd (o3d.geometry.PointCloud): Original point cloud (with normals).
+            groups (List[List[int]]): List of index groups from segmentation.
+
+        Returns:
+            List[List[float]]: shape (len[groups], len[grasps]) grasp = [x, y, z, roll, pitch, yaw]
+        """
+        points = np.asarray(pcd.points)
+        normals = np.asarray(pcd.normals)
+
+        grasps = []
+
+        for group in groups:
+            surface_points = points[group]
+            surface_normals = normals[group]
+
+            # Estimate approach vector (mean normal)
+            approach = -np.mean(surface_normals, axis=0)
+            approach /= np.linalg.norm(approach)
+
+            # PCA on surface points
+            pca = PCA(n_components=3)
+            pca.fit(surface_points)
+
+            # Grasp position
+            center = surface_points.mean(axis=0)
+
+            # Opening direction = PCA component 1 (shorter in-plane axis)
+            x_axis = pca.components_[1]
+            y_axis = np.cross(approach, x_axis)
+
+            # Re-orthonormalize (ensures that no numerical errors occur in the calculated rotation matrix and that they are orthognormal) 
+            R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
+            U, _, Vt = np.linalg.svd(R_matrix)
+            R_ortho = U @ Vt
+
+            # Convert to roll-pitch-yaw
+            rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=False)
+
+
+            # Add grasp to list [x, y, z, roll, pitch, yaw]
+            grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2])])
+
+        return grasps
+
+
+    def grasp_prediction(self, point_cloud_masked):
+        ################################################################
+                # Filter the point cloud
+        ################################################################
+
+        #reformatting (H, W, 3) to (N, 3)
+        pc_np = point_cloud_masked.reshape(-1, 3)
+        # Filter out points with NaNs or zero depth (z <= 0)
+        valid = ~np.isnan(pc_np).any(axis=1) & (pc_np[:, 2] > 0)
+        pc_np_filtered = pc_np[valid]
+        # Filter out points with large depth jumps to remove noise
+        pc_np_filtered = self.filter_by_depth_jump_np(pc_np_filtered) 
+        
+        # Sanity check
+        if len(pc_np_filtered) == 0:
+            self.get_logger().info("No valid points in masked point cloud.")
+            return
+    
+        ################################################################
+                # Create Open3D point cloud, downsample it, and estimate normals
+        ################################################################
+
+        # Create Open3D point cloud
+        pcd = o3d.geometry.PointCloud() #point cloud object
+        pcd.points = o3d.utility.Vector3dVector(pc_np_filtered)
+
+        # Downsample the point cloud into 1 mm cubes
+        pcd = pcd.voxel_down_sample(voxel_size=0.001) 
+
+        # filter out points with large depth jumps as voxel downsampling can create noise
+        pcd = self.filter_by_depth_jump(pcd.points, jump_threshold=0.02) 
+
+        if True: #True: apply mean filter to smothe the point cloud - this improves surface estimation
+            pcd = self.knn_mean_filter(pcd, k=30) # tuning of k is important and does greatly affect the result
+
+        # Estimate normals
+        pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.2, max_nn=30))
+
+        #orient normals consistently. Important for surface estimation !!!
+        pcd.orient_normals_consistent_tangent_plane(k=30) # k is the number of neighbors to consider
+
+        ################################################################
+        # Estimate surfaces for grasp pose estimation
+        ################################################################
+
+        # Estimate surfaces based on normal similarity and spatial connectivity
+        groups = self.segment_surfaces_by_normal_and_connectivity(pcd, angle_threshold_deg=20, distance_threshold=0.01, num_candidates=3)
+        # Generate grasp candidates from the segmented surfaces. Outputs a list of grasps
+        grasps = self.generate_grasp_candidates_from_groups(pcd, groups)
+
+        ################################################################
+        # Visualize result
+        ################################################################
+
+        if False: # Set to True to visualize the point cloud and grasp poses
+            # Visualize the camera frame
+            camera_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01)
+
+            # Creating the grasp frames       
+            grasp_frames = []
+            for grasp in grasps:
+                x, y, z, roll, pitch, yaw = grasp
+
+                # Convert RPY to rotation matrix
+                rot = ROT.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
+
+                # Create coordinate frame and apply transform
+                frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.025)
+                frame.rotate(rot, center=(0, 0, 0))
+                frame.translate([x, y, z])
+
+                grasp_frames.append(frame)
+
+            # Make point cloud blue
+            pcd.paint_uniform_color([0, 0, 1]) # blue
+
+            # you can visualise: camera_frame, pcd, grasp_frames, normals
+            o3d.visualization.draw_geometries([pcd,*grasp_frames, camera_frame], point_show_normal=False, window_name="Grasp Poses", width=800, height=600)
+
+        ################################################################
+        # :Return the grasp pose
+        ################################################################
+        return grasps
+
+    def knn_mean_filter(self, pcd: o3d.geometry.PointCloud, k: int = 20) -> o3d.geometry.PointCloud:
+        points = np.asarray(pcd.points)
+        tree = o3d.geometry.KDTreeFlann(pcd)
+
+        smoothed_points = []
+
+        for i in range(len(points)):
+            _, idx, _ = tree.search_knn_vector_3d(pcd.points[i], k)
+            neighbor_points = points[idx]
+            mean = neighbor_points.mean(axis=0)
+            smoothed_points.append(mean)
+
+        new_pcd = o3d.geometry.PointCloud()
+        new_pcd.points = o3d.utility.Vector3dVector(np.array(smoothed_points))
+
+        # Optionally keep normals if they exist and you want to smooth them too
+        if pcd.has_normals():
+            normals = np.asarray(pcd.normals)
+            smoothed_normals = []
+            for i in range(len(normals)):
+                _, idx, _ = tree.search_knn_vector_3d(pcd.points[i], k)
+                neighbor_normals = normals[idx]
+                mean_n = neighbor_normals.mean(axis=0)
+                mean_n /= np.linalg.norm(mean_n) + 1e-8  # normalize
+                smoothed_normals.append(mean_n)
+            new_pcd.normals = o3d.utility.Vector3dVector(np.array(smoothed_normals))
+
+        return new_pcd
+
+
     def show_depth_map(self):
         cv2.namedWindow("Depth Map", cv2.WINDOW_AUTOSIZE)
 
@@ -291,12 +636,12 @@ class ObjectDetector(Node):
 
     def apply_yolo_world(self, img, object_name, name_objects = False, verbose = False):
         model = YOLOWorld("yolov8l-world.pt")  # or select yolov8{s/m/l}-world.pt for different sizes
-
+        
         if name_objects == False:
-            model.set_classes([object_name])
-
+            model.set_classes([object_name])  # Set the class list to only include the specified object
+            
         # Execute inference with the YOLOv8l-world model on the specified image
-        self.yolo_results = model.predict(img)
+        self.yolo_results = model.predict(img, verbose=False)
 
         #the following prints the results of the yolo model without the class contrains
         if name_objects:
