@@ -74,7 +74,7 @@ twof_gripper_controller:
   ros__parameters:
     allow_nonzero_velocity_at_trajectory_end: false
     joints:
-      - 2f_robotiq_85_left_knuckle_joint
+      - left_2f_robotiq_85_left_knuckle_joint
     command_interfaces:
       - position
     state_interfaces:

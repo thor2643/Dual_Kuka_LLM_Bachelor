@@ -466,7 +466,7 @@
 	</link> 
 
     <!-- link list -->
-  <link name="3f_finger_1_link_0">
+  <link name="a_3f_finger_1_link_0">
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
       <geometry>
@@ -489,7 +489,7 @@
       <inertia ixx="0.01" ixy="-0.00002" ixz="0.00001" iyy="0.0008" iyz="0" izz="0.001"/>
     </inertial>
   </link>
-  <link name="3f_finger_1_link_1">
+  <link name="a_3f_finger_1_link_1">
     <visual>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
       <geometry>
@@ -510,7 +510,7 @@
       <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
     </inertial>
   </link>
-  <link name="3f_finger_1_link_2">
+  <link name="a_3f_finger_1_link_2">
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -531,7 +531,7 @@
       <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
     </inertial>
   </link>
-  <link name="3f_finger_1_link_3">
+  <link name="a_3f_finger_1_link_3">
     <visual>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
       <geometry>
@@ -555,25 +555,25 @@
   <!-- end of link list -->
 
   <!-- 3f joint list -->
-  <joint name="3f_finger_1_joint_1" type="revolute">
-    <parent link="3f_finger_1_link_0"/>
-    <child link="3f_finger_1_link_1"/>
+  <joint name="a_3f_finger_1_joint_1" type="revolute">
+    <parent link="a_3f_finger_1_link_0"/>
+    <child link="a_3f_finger_1_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.43" xyz="0.020 0 0"/>
     <limit effort="100" lower="0.3758" upper="1.1276" velocity="1.23"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
-  <joint name="3f_finger_1_joint_2" type="revolute">
-    <parent link="3f_finger_1_link_1"/>
-    <child link="3f_finger_1_link_2"/>
+  <joint name="a_3f_finger_1_joint_2" type="revolute">
+    <parent link="a_3f_finger_1_link_1"/>
+    <child link="a_3f_finger_1_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
     <limit effort="100" lower="0.0" upper="1.5707" velocity="1.24"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
-  <joint name="3f_finger_1_joint_3" type="revolute">
-    <parent link="3f_finger_1_link_2"/>
-    <child link="3f_finger_1_link_3"/>
+  <joint name="a_3f_finger_1_joint_3" type="revolute">
+    <parent link="a_3f_finger_1_link_2"/>
+    <child link="a_3f_finger_1_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
     <limit effort="100" lower="-0.9531" upper="0.7572" velocity="1.25"/>
@@ -581,7 +581,7 @@
   </joint>
   <!-- end of joint list -->
   <!-- link list -->
-  <link name="3f_finger_2_link_0">
+  <link name="a_3f_finger_2_link_0">
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
       <geometry>
@@ -604,7 +604,7 @@
       <inertia ixx="0.01" ixy="-0.00002" ixz="0.00001" iyy="0.0008" iyz="0" izz="0.001"/>
     </inertial>
   </link>
-  <link name="3f_finger_2_link_1">
+  <link name="a_3f_finger_2_link_1">
     <visual>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
       <geometry>
@@ -625,7 +625,7 @@
       <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
     </inertial>
   </link>
-  <link name="3f_finger_2_link_2">
+  <link name="a_3f_finger_2_link_2">
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -646,7 +646,7 @@
       <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
     </inertial>
   </link>
-  <link name="3f_finger_2_link_3">
+  <link name="a_3f_finger_2_link_3">
     <visual>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
       <geometry>
@@ -669,25 +669,25 @@
   </link>
   <!-- end of link list -->
   <!-- joint list -->
-  <joint name="3f_finger_2_joint_1" type="revolute">
-    <parent link="3f_finger_2_link_0"/>
-    <child link="3f_finger_2_link_1"/>
+  <joint name="a_3f_finger_2_joint_1" type="revolute">
+    <parent link="a_3f_finger_2_link_0"/>
+    <child link="a_3f_finger_2_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.43" xyz="0.020 0 0"/>
     <limit effort="100" lower="0.3758" upper="1.1276" velocity="1.23"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
-  <joint name="3f_finger_2_joint_2" type="revolute">
-    <parent link="3f_finger_2_link_1"/>
-    <child link="3f_finger_2_link_2"/>
+  <joint name="a_3f_finger_2_joint_2" type="revolute">
+    <parent link="a_3f_finger_2_link_1"/>
+    <child link="a_3f_finger_2_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
     <limit effort="100" lower="0.0" upper="1.5707" velocity="1.24"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
-  <joint name="3f_finger_2_joint_3" type="revolute">
-    <parent link="3f_finger_2_link_2"/>
-    <child link="3f_finger_2_link_3"/>
+  <joint name="a_3f_finger_2_joint_3" type="revolute">
+    <parent link="a_3f_finger_2_link_2"/>
+    <child link="a_3f_finger_2_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
     <limit effort="100" lower="-0.9531" upper="0.7572" velocity="1.25"/>
@@ -695,7 +695,7 @@
   </joint>
   <!-- end of joint list -->
   <!-- link list -->
-  <link name="3f_finger_middle_link_0">
+  <link name="a_3f_finger_middle_link_0">
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
       <geometry>
@@ -718,7 +718,7 @@
       <inertia ixx="0.01" ixy="-0.00002" ixz="0.00001" iyy="0.0008" iyz="0" izz="0.001"/>
     </inertial>
   </link>
-  <link name="3f_finger_middle_link_1">
+  <link name="a_3f_finger_middle_link_1">
     <visual>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
       <geometry>
@@ -739,7 +739,7 @@
       <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
     </inertial>
   </link>
-  <link name="3f_finger_middle_link_2">
+  <link name="a_3f_finger_middle_link_2">
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
@@ -760,7 +760,7 @@
       <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
     </inertial>
   </link>
-  <link name="3f_finger_middle_link_3">
+  <link name="a_3f_finger_middle_link_3">
     <visual>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
       <geometry>
@@ -783,25 +783,25 @@
   </link>
   <!-- end of link list -->
   <!-- joint list -->
-  <joint name="3f_finger_middle_joint_1" type="revolute">
-    <parent link="3f_finger_middle_link_0"/>
-    <child link="3f_finger_middle_link_1"/>
+  <joint name="a_3f_finger_middle_joint_1" type="revolute">
+    <parent link="a_3f_finger_middle_link_0"/>
+    <child link="a_3f_finger_middle_link_1"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.43" xyz="0.020 0 0"/>
     <limit effort="100" lower="0.3758" upper="1.1276" velocity="1.23"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
-  <joint name="3f_finger_middle_joint_2" type="revolute">
-    <parent link="3f_finger_middle_link_1"/>
-    <child link="3f_finger_middle_link_2"/>
+  <joint name="a_3f_finger_middle_joint_2" type="revolute">
+    <parent link="a_3f_finger_middle_link_1"/>
+    <child link="a_3f_finger_middle_link_2"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
     <limit effort="100" lower="0.0" upper="1.5707" velocity="1.24"/>
     <dynamics damping="1" friction="0.1"/>
   </joint>
-  <joint name="3f_finger_middle_joint_3" type="revolute">
-    <parent link="3f_finger_middle_link_2"/>
-    <child link="3f_finger_middle_link_3"/>
+  <joint name="a_3f_finger_middle_joint_3" type="revolute">
+    <parent link="a_3f_finger_middle_link_2"/>
+    <child link="a_3f_finger_middle_link_3"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 0" xyz="0.039 0 0"/>
     <limit effort="100" lower="-0.9531" upper="0.7572" velocity="1.25"/>
@@ -809,7 +809,7 @@
   </joint>
   <!-- end of joint list -->
   <!-- link list -->
-  <link name="3f_palm">
+  <link name="a_3f_palm">
     <visual>
       <geometry>
 	<mesh filename="package://lbr_description/meshes/robotiq-3f-gripper_articulated/visual/palm.dae"/>
@@ -825,7 +825,7 @@
       </material>
     </collision>
   </link>
-  <link name="3f_tool0"/>
+  <link name="a_3f_tool0"/>
   <inertial>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <mass value="1.3"/>
@@ -833,25 +833,25 @@
   </inertial>
   <!-- end of link list -->
   <!-- joint list -->
-  <joint name="3f_palm_finger_1_joint" type="revolute">
-    <parent link="3f_palm"/>
-    <child link="3f_finger_1_link_0"/>
+  <joint name="a_3f_palm_finger_1_joint" type="revolute">
+    <parent link="a_3f_palm"/>
+    <child link="a_3f_finger_1_link_0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 0.036"/>
     <limit effort="100" lower="-0.1784" upper="0.192" velocity="1.23"/>
     <dynamics damping="1.0" friction="0.1"/>
   </joint>
-  <joint name="3f_palm_finger_2_joint" type="revolute">
-    <parent link="3f_palm"/>
-    <child link="3f_finger_2_link_0"/>
+  <joint name="a_3f_palm_finger_2_joint" type="revolute">
+    <parent link="a_3f_palm"/>
+    <child link="a_3f_finger_2_link_0"/>
     <axis xyz="0 1 0"/>
     <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 -0.036"/>
     <limit effort="100" lower="-0.192" upper="0.1784" velocity="1.23"/>
     <dynamics damping="1.0" friction="0.1"/>
   </joint>
-  <joint name="3f_palm_finger_middle_joint" type="fixed">
-    <parent link="3f_palm"/>
-    <child link="3f_finger_middle_link_0"/>
+  <joint name="a_3f_palm_finger_middle_joint" type="fixed">
+    <parent link="a_3f_palm"/>
+    <child link="a_3f_finger_middle_link_0"/>
     <axis xyz="0 0 1"/>
     <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
   </joint>
@@ -1033,13 +1033,13 @@
   <!-- joint between right iiwa7 and 3f gripper-->
   <joint name="adapter_mount" type="fixed">    
 	  <parent link="gripper_mounting_plate" />
-	  <child link="3f_palm" />
+	  <child link="a_3f_palm" />
 	  <origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
   </joint>
   <!-- joint between 3f gripper and 3f tool0-->
-  <joint name="3f_palm_tool0" type="fixed">
-    <parent link="3f_palm"/>
-    <child link="3f_tool0"/>
+  <joint name="a_3f_palm_tool0" type="fixed">
+    <parent link="a_3f_palm"/>
+    <child link="a_3f_tool0"/>
     <origin rpy="0 -1.5707 1.5707" xyz="0.0 0.15 0"/>
   </joint>
 
