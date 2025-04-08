@@ -37,12 +37,8 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import tf2_ros
 
 # ROS 2 messages
-from project_interfaces.srv import GetObjectInfo
-from project_interfaces.srv import DefineObjectInfo
-from project_interfaces.srv import PlanMoveCommand
-from project_interfaces.srv import ExecuteMoveCommand
-from project_interfaces.srv import PromptJanice
-from project_interfaces.srv import GetCurrentPose
+from project_interfaces.srv import GetObjectInfo, DefineObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
+from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
@@ -914,6 +910,10 @@ class LLMNode(Node):
         print(f"\nRequesting the YoloWorld detector service to find {object_name}")
         self.get_logger().info(f"\nLooking for object: {object_name}\n")
         self.detector_req_yolo.object_name = object_name
+        #transform_msg = TransformMatrix()
+        #transform_msg.matrix = T.flatten().tolist() : Insert transformation matrix(T) here it must be flat for message to work TODO
+        #self.detector_req_yolo.transform = transform_msg
+
 
         future = self.detector_client_yolo.call_async(self.detector_req_yolo)
 
@@ -925,6 +925,8 @@ class LLMNode(Node):
         if response is None:
             self.get_logger().error('Service call failed')
             return GetObjectInfo.Response()
+        
+        
         
         if response.object_count != 0:
             self.get_logger().info(f"\nObjects found: {response.object_count}")
