@@ -394,6 +394,8 @@ class LLMNode(Node):
             self.get_logger().error('Service call failed')
             return GetObjectInfo.Response()
         
+        
+        
         if response.object_count != 0:
             self.get_logger().info(f"\nObjects found: {response.object_count}")
             self.get_logger().info(f"Center points: {response.centers}")

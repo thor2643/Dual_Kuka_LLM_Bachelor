@@ -109,7 +109,7 @@ class RealSenseCamera(Node):
 """   THERE ARE TODO IN THE CODE: FIX THEM WHEN CALIBRATION HAS BEEN CALCULATED!
 
 In the grasp pipeline the following parameters are of importance: DO NOT CHANGE THEM UNLESS YOU KNOW WHAT YOU ARE DOING!!!! (Ask Signe, She doesent even know so dont touch them!!!!)
-    - conf: Yolo World confidence threshold currently set to 0.5
+    - conf: Yolo World confidence threshold (currently not used so default(0.25))
     - num_candidates: The number of grasps candidates.
     - grasp_height: you chose how high you want the center point to be. for instance 0.25 places the center point 25% down from the highest point in the surface group.
     - clustered: If True, the mask is clustered using morphological operations. This is important for the grasp pose estimation as it removes information.
@@ -243,6 +243,7 @@ class ObjectDetector(Node):
 
         for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
+            self.get_logger().info(f'SAM segments bounding box [{x_min}, {y_min}, {x_max}, {y_max}]\n')
             self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
             # checks if the mask size matches the point cloud size
             if self.sam_masks.shape[1] != self.point_cloud.shape[0]:
@@ -852,7 +853,7 @@ class ObjectDetector(Node):
             model.set_classes([object_name])  # Set the class list to only include the specified object
             
         # Execute inference with the YOLOv8l-world model on the specified image
-        self.yolo_results = model.predict(img, conf = 0.5, verbose=False)
+        self.yolo_results = model.predict(img, verbose=False) #, conf = 0.3
 
         #the following prints the results of the yolo model without the class contrains
         if name_objects:
