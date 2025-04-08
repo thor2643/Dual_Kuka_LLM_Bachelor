@@ -20,7 +20,7 @@ from rclpy.node import Node
 
 # ROS 2 messages
 from project_interfaces.srv import GetObjectInfo, DefineObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
-from project_interfaces.msg import TransformationMatrix, Grasp6D, DetectedObject
+from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 
@@ -378,7 +378,9 @@ class LLMNode(Node):
         print(f"\nRequesting the YoloWorld detector service to find {object_name}")
         self.get_logger().info(f"\nLooking for object: {object_name}\n")
         self.detector_req_yolo.object_name = object_name
-        #self.detector_req_yolo.transform = T.flatten().tolist() : Insert transformation matrix(T) here it must be flat for message to work TODO
+        #transform_msg = TransformMatrix()
+        #transform_msg.matrix = T.flatten().tolist() : Insert transformation matrix(T) here it must be flat for message to work TODO
+        #self.detector_req_yolo.transform = transform_msg
 
 
         future = self.detector_client_yolo.call_async(self.detector_req_yolo)

@@ -23,7 +23,7 @@ import os
 
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
-from project_interfaces.msg import Grasp6D, DetectedObject, TransformationMatrix
+from project_interfaces.msg import Grasp6D, DetectedObject, TransformMatrix
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3 #for the 6D grasp prediction
 import rclpy
