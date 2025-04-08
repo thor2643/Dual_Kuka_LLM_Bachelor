@@ -106,10 +106,12 @@ class RealSenseCamera(Node):
         self.camera_info = msg.k
 
 
-"""
-In the grasp pipeline the following parameters are of importance:
+"""   THERE ARE TODO IN THE CODE: FIX THEM WHEN CALIBRATION HAS BEEN CALCULATED!
+
+In the grasp pipeline the following parameters are of importance: DO NOT CHANGE THEM UNLESS YOU KNOW WHAT YOU ARE DOING!!!! (Ask Signe, She doesent even know so dont touch them!!!!)
     - conf: Yolo World confidence threshold currently set to 0.5
     - num_candidates: The number of grasps candidates.
+    - grasp_height: you chose how high you want the center point to be. for instance 0.25 places the center point 25% down from the highest point in the surface group.
     - clustered: If True, the mask is clustered using morphological operations. This is important for the grasp pose estimation as it removes information.
     - iterations: iterations for the morphological operations.
     - voxel_size: The size of the voxel grid for downsampling the point cloud. Smaller values retain more detail but increase computation time.
@@ -499,6 +501,15 @@ class ObjectDetector(Node):
             # Grasp position
             center = surface_points.mean(axis=0)
 
+            
+            if False: #TODO
+                # shift grasp center z value to grasp height
+                if max(surface_points[:, 2]) - min(surface_points[:, 2]) > 0.02: # if the object is not flat
+                    grasp_height = 0.25 # Controls how far up to grasp
+                    z_min = np.min(surface_points[:, 2])
+                    z_max = np.max(surface_points[:, 2])
+                    center[2] = z_max - grasp_height * (z_max - z_min)
+
             # Opening direction = PCA component 1 (shorter in-plane axis)
             x_axis = pca.components_[1]
             y_axis = np.cross(approach, x_axis)
@@ -556,7 +567,7 @@ class ObjectDetector(Node):
             return
     
         ################################################################
-                # Create Open3D point cloud, downsample it, and estimate normals
+                # Create Open3D point cloud, downsample, tranform, and estimate normals
         ################################################################
 
         # Create Open3D point cloud
@@ -584,7 +595,7 @@ class ObjectDetector(Node):
 
 
         ################################################################
-        # Estimate surfaces for grasp pose estimation
+        # Estimate surfaces and grasps 
         ################################################################
 
         # Estimate surfaces based on normal similarity and spatial connectivity
