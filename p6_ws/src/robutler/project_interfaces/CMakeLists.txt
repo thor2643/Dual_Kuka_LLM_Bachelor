@@ -30,6 +30,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Grasp6D.msg"
   "msg/DetectedObject.msg"
+  "msg/TransformationMatrix.msg"
   "srv/GetObjectInfo.srv"
   "srv/PlanMoveCommand.srv"
   "srv/DefineObjectInfo.srv"

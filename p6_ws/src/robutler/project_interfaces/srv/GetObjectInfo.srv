@@ -1,10 +1,11 @@
 # Request
 string object_name  # Name of the object to search for
+#project_interfaces/TransformMatrix transform #trasformation matrix for non-stationary camera 
 
 ---
 # Response
 int32 object_count                # The number of objects found
-DetectedObject[] detected_objects
+DetectedObject[] detected_objects # nested msg´es as it cant take nested arrays. |-;
 
 
 #BEFORE

@@ -23,7 +23,7 @@ import os
 
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
-from project_interfaces.msg import Grasp6D, DetectedObject
+from project_interfaces.msg import Grasp6D, DetectedObject, TransformationMatrix
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3 #for the 6D grasp prediction
 import rclpy
@@ -106,6 +106,19 @@ class RealSenseCamera(Node):
         self.camera_info = msg.k
 
 
+"""
+In the grasp pipeline the following parameters are of importance:
+    - conf: Yolo World confidence threshold currently set to 0.5
+    - num_candidates: The number of grasps candidates.
+    - clustered: If True, the mask is clustered using morphological operations. This is important for the grasp pose estimation as it removes information.
+    - iterations: iterations for the morphological operations.
+    - voxel_size: The size of the voxel grid for downsampling the point cloud. Smaller values retain more detail but increase computation time.
+    - angle_threshold_deg: The maximum angle (in degrees) between normals to be considered similar.
+    - distance_threshold: The maximum 3D distance to consider points as neighbors. This increases computation time.
+    - k: The number of neighbors to consider for the mean filter. 
+    - jump_threshold: The threshold for filtering out points with large depth jumps.
+    
+"""
 class ObjectDetector(Node):
     def __init__(self):
         super().__init__('object_detector')
@@ -126,6 +139,12 @@ class ObjectDetector(Node):
 
         #Point cloud
         self.point_cloud = None
+        #self.transformation_matrix = np.eye(4)  # Identity matrix for transformation
+        self.transformation_matrix_stationary = np.array([  [1, 0, 0, 0],
+                                                            [0, 1, 0, 0],
+                                                            [0, 0, 1, 0],
+                                                            [0, 0, 0, 1]  # Homogeneous coordinate TODO
+                                                        ])
 
         #YOLO and SAM results
         self.yolo_results = None
@@ -180,29 +199,11 @@ class ObjectDetector(Node):
         # Stack into a (H, W, 3) point cloud
         self.point_cloud = np.stack((x, y, z), axis=-1) # organized point cloud (H, W, 3)
 
-        """
-        # Convert to Open3D point cloud
-        # Flatten the (H, W, 3) point cloud to (N, 3)
-        pc_np = self.point_cloud.reshape(-1, 3)
-
-        # Filter out points with NaNs or zero depth (z <= 0)
-        valid = ~np.isnan(pc_np).any(axis=1) & (pc_np[:, 2] > 0)
-        pc_np_filtered = pc_np[valid]
-
-        
-        # Create Open3D point cloud
-        self.point_cloud_flat_o3d = o3d.geometry.PointCloud()
-        self.point_cloud_flat_o3d.points = o3d.utility.Vector3dVector(pc_np_filtered)
-        self.point_cloud_flat_o3d.colors = o3d.utility.Vector3dVector(np.zeros_like(pc_np_filtered))  # (optional, ensures colors are attached)
-        # Estimate normals (if you want to do e.g. surface reconstruction)
-        self.point_cloud_flat_o3d.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-        self.point_cloud_flat_o3d.normals = o3d.utility.Vector3dVector(np.asarray(self.point_cloud_flat_o3d.normals))  # (optional, ensures normals are attached)
-        self.point_cloud_flat_o3d.paint_uniform_color([0.8, 0.9, 0.9])  # (optional: color for points)
-        """
     
     #The callback function for the detector service for YOLO World
-    def get_object_information_yolo(self, request, response):
+    def get_object_information_yolo(self, request, response, clustered = True):
         object = request.object_name
+        #self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  TODO + in GetObjectInfo message
         self.get_logger().info(f'Requested to find {object} with Yolo World\n')
 
         self.retrieve_aligned_frames()
@@ -228,11 +229,19 @@ class ObjectDetector(Node):
 
         self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_with_bbx))
 
+        if False:
+            # Show the image with bounding boxes
+            cv2.imshow("Image with Bounding Boxes", image_with_bbx)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+
         self.create_point_cloud()
+        all_grasps = []
+
 
         for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
-            self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max]) #updates sam_result_img and sam_masks
+            self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
             # checks if the mask size matches the point cloud size
             if self.sam_masks.shape[1] != self.point_cloud.shape[0]:
                 self.get_logger().warn("Mask size doesn't match point cloud...")
@@ -241,31 +250,31 @@ class ObjectDetector(Node):
             
             #convert the mask to binary
             mask_binary = (self.sam_masks > 0).astype(np.uint8)
+            mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
 
             # Apply morphological operations to the mask 
-            if False: #Performs morphological operations on the mask
+            if clustered: #Performs morphological operations on the mask
                 # Create a kernel for the morphological operation
                 kernel = np.ones((5, 5), np.uint8)  # Adjust the size of the kernel to control how much the mask shrinks
                 # Perform closing (dilate then erode)
                 mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
                 # Step 2: Shrink the mask using erosion
-                mask_binary = cv2.erode(mask_closed, kernel, iterations=5)  # You can adjust iterations for more shrinking
+                mask_binary = cv2.erode(mask_closed, kernel, iterations = 4)  # You can adjust iterations for more shrinking
             
             # Visualize the mask
             if False: # Set to True to show the masks and the overlay
+                # Remove the batch dimension
                 overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
                 cv2.imshow("Overlayed Mask", overlay)
                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
 
-                cv2.imshow("Eroded Mask", mask_binary * 255)
-                cv2.imshow("Mask", mask_binary * 255)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
                 
             #Apply the mask to the point cloud
             point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
-            grasps = self.grasp_prediction(point_cloud_masked) 
+            grasps = self.grasp_prediction(point_cloud_masked, num_candidates=2) # num_candidates is the number of grasps to be generated
+            all_grasps.extend(grasps)
+
 
             detected_object = DetectedObject()
             detected_object.grasps = []
@@ -280,10 +289,54 @@ class ObjectDetector(Node):
                 # Fill orientation
                 grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
 
+                grasp_msg.grasp_width = grasp[6] #grasp width
+
                 detected_object.grasps.append(grasp_msg) 
 
             response.detected_objects.append(detected_object)
             response.object_count += 1
+
+        if True:  # Visualize grasp lines on image
+            image_copy = self.color_frame.copy()
+
+            fx = self.camera_info[0]
+            fy = self.camera_info[4]
+            cx = self.camera_info[2]
+            cy = self.camera_info[5]
+
+            for grasp in all_grasps:
+                x, y, z, roll, pitch, yaw, grasp_witdh = grasp
+                center = np.array([x, y, z])
+
+                # Get rotation matrix from RPY
+                rot = ROT.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
+
+                # Grasp opening direction (gripper x-axis)
+                x_axis = rot[:, 0] * (grasp_witdh/2)  # 5 cm in opening direction
+                # Approach direction (gripper -z)
+                z_axis = -rot[:, 2] * 0.05  # 5 cm in approach direction
+
+                # Define endpoints of lines
+                grasp_left = center - x_axis
+                grasp_right = center + x_axis
+                handle = center + z_axis
+
+                # Project points to image
+                pt_left = self.project(grasp_left, fx, fy, cx, cy)
+                pt_right = self.project(grasp_right, fx, fy, cx, cy)
+                pt_handle = self.project(handle, fx, fy, cx, cy)
+                pt_center = self.project(center, fx, fy, cx, cy)
+
+                # Draw lines if all are valid
+                if pt_left and pt_right:
+                    cv2.line(image_copy, pt_left, pt_right, (0, 255, 0), 2)  # grasp line
+
+                if pt_center and pt_handle:
+                    cv2.line(image_copy, pt_center, pt_handle, (0, 0, 255), 2)  # approach dir
+
+            cv2.imshow("Grasp Pose Overlay", image_copy)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
 
         return response
 
@@ -419,10 +472,17 @@ class ObjectDetector(Node):
         Returns:
             List[List[float]]: shape (len[groups], len[grasps]) grasp = [x, y, z, roll, pitch, yaw]
         """
+
         points = np.asarray(pcd.points)
         normals = np.asarray(pcd.normals)
+        original_points = np.asarray(pcd.points)
 
         grasps = []
+
+        # Generate a top-down grasp (approaching from above)
+        if True:
+            top_grasp = self.generate_top_down_grasp(pcd)
+            grasps.append(top_grasp) # dummy grasp
 
         for group in groups:
             surface_points = points[group]
@@ -451,14 +511,33 @@ class ObjectDetector(Node):
             # Convert to roll-pitch-yaw
             rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=False)
 
+            # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
+            plane_normal = approach
+            plane_point = center
+
+            #  Filter points near the x-y plane (with threshold)
+            distances_to_plane = np.abs((original_points - plane_point) @ plane_normal)
+            on_plane_mask = distances_to_plane < 0.005  # 0.5 cm
+
+            plane_points = original_points[on_plane_mask]
+
+            if len(plane_points) < 2:
+                grasp_width = 0.15  # Not enough data so max width
+            else:
+                # Project points onto x-axis to get scalar positions along grasp width direction
+                projections = (plane_points - center) @ x_axis
+                min_proj = np.min(projections)
+                max_proj = np.max(projections)
+
+                grasp_width = np.abs(max_proj - min_proj)
 
             # Add grasp to list [x, y, z, roll, pitch, yaw]
-            grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2])])
+            grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
 
         return grasps
 
 
-    def grasp_prediction(self, point_cloud_masked):
+    def grasp_prediction(self, point_cloud_masked, num_candidates):
         ################################################################
                 # Filter the point cloud
         ################################################################
@@ -490,6 +569,10 @@ class ObjectDetector(Node):
         # filter out points with large depth jumps as voxel downsampling can create noise
         pcd = self.filter_by_depth_jump(pcd.points, jump_threshold=0.02) 
 
+        if True: #True: transform the point cloud to the global frame 
+            # transform the point cloud from local to global frame
+            pcd = self.transform_pointcloud_to_global(pcd, self.transformation_matrix_stationary)
+
         if True: #True: apply mean filter to smothe the point cloud - this improves surface estimation
             pcd = self.knn_mean_filter(pcd, k=30) # tuning of k is important and does greatly affect the result
 
@@ -499,12 +582,13 @@ class ObjectDetector(Node):
         #orient normals consistently. Important for surface estimation !!!
         pcd.orient_normals_consistent_tangent_plane(k=30) # k is the number of neighbors to consider
 
+
         ################################################################
         # Estimate surfaces for grasp pose estimation
         ################################################################
 
         # Estimate surfaces based on normal similarity and spatial connectivity
-        groups = self.segment_surfaces_by_normal_and_connectivity(pcd, angle_threshold_deg=20, distance_threshold=0.01, num_candidates=3)
+        groups = self.segment_surfaces_by_normal_and_connectivity(pcd, angle_threshold_deg=20, distance_threshold=0.01, num_candidates=num_candidates)
         # Generate grasp candidates from the segmented surfaces. Outputs a list of grasps
         grasps = self.generate_grasp_candidates_from_groups(pcd, groups)
 
@@ -535,12 +619,128 @@ class ObjectDetector(Node):
             pcd.paint_uniform_color([0, 0, 1]) # blue
 
             # you can visualise: camera_frame, pcd, grasp_frames, normals
-            o3d.visualization.draw_geometries([pcd,*grasp_frames, camera_frame], point_show_normal=False, window_name="Grasp Poses", width=800, height=600)
-
+            o3d.visualization.draw_geometries([pcd,*grasp_frames], point_show_normal=False, window_name="Grasp Poses", width=800, height=600)
+        
         ################################################################
         # :Return the grasp pose
         ################################################################
         return grasps
+
+    def project(self, pt3d, fx, fy, cx, cy):
+                x, y, z = pt3d
+                if z <= 0:
+                    return None
+                u = int((x * fx / z) + cx)
+                v = int((y * fy / z) + cy)
+                return (u, v)
+    
+
+    def generate_top_down_grasp(self, global_pointcloud, top_band_height=0.005):
+        """
+        Generate a grasp that approaches from the top (negative Z).
+        
+        Args:
+            original_pointcloud (np.ndarray): Nx3 array of 3D points in global frame.
+            top_band_height (float): Thickness (in meters) of top layer to consider.
+
+        Returns:
+            List[float]: [x, y, z, roll, pitch, yaw, width] of the grasp.
+        """
+        # Convert to numpy array
+        global_pointcloud = np.asarray(global_pointcloud.points)
+
+        # Filter out invalid points
+        valid = ~np.isnan(global_pointcloud).any(axis=1)
+        pc = global_pointcloud[valid]
+
+        if pc.shape[0] == 0:
+            print("No valid points in point cloud.")
+            return None
+
+        # Sort by Z (height)
+        pc_sorted = pc[np.argsort(pc[:, 2])] 
+
+        # Get the highest z value
+        z_max = pc_sorted[-1, 2]
+
+        # Select points within top_band_height of max height
+        top_points = pc_sorted[pc_sorted[:, 2] > (z_max - top_band_height)]
+
+        # Compute center of top surface
+        center = np.mean(top_points, axis=0)
+
+        # Orientation:
+        # Approach from top → -Z axis
+        # X and Y are found using PCA 
+        # PCA on surface points
+        approach = np.array([0, 0, -1])  # approach direction (down)
+
+        pca = PCA(n_components=3)
+        pca.fit(top_points)
+
+        # Opening direction = PCA component 1 (shorter in-plane axis)
+        x_axis = pca.components_[1]
+        y_axis = np.cross(approach, x_axis)
+
+        # Re-orthonormalize (ensures that no numerical errors occur in the calculated rotation matrix and that they are orthognormal) 
+        R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
+        U, _, Vt = np.linalg.svd(R_matrix)
+        R_ortho = U @ Vt
+
+        # Convert to roll-pitch-yaw
+        rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=False)
+
+        # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
+        plane_normal = approach
+        plane_point = center
+
+        #  Filter points near the x-y plane (with threshold)
+        distances_to_plane = np.abs((global_pointcloud - plane_point) @ plane_normal)
+        on_plane_mask = distances_to_plane < top_band_height  # 0.5 cm
+
+        plane_points = global_pointcloud[on_plane_mask]
+
+        if len(plane_points) < 2:
+            grasp_width = 0.15  # Not enough data so max width
+        else:
+            # Project points onto x-axis to get scalar positions along grasp width direction
+            projections = (plane_points - center) @ x_axis
+            min_proj = np.min(projections)
+            max_proj = np.max(projections)
+
+            grasp_width = np.abs(max_proj - min_proj)
+
+        # Return 6D pose with width
+        return [*center, *rpy, float(grasp_width)]
+    
+    def transform_pointcloud_to_global(self, pointcloud, transformation_matrix):
+        """
+        Transforms a point cloud using a 4x4 transformation matrix.
+        
+        Args:
+            pcd (o3d.geometry.PointCloud): Original point cloud
+            transformation_matrix (np.ndarray): 4x4 transformation matrix.
+        
+        Returns:
+            pcd (o3d.geometry.PointCloud): Transformed point cloud
+        """
+        pointcloud = np.asarray(pointcloud.points)
+        if pointcloud.shape[1] != 3:
+            raise ValueError("Point cloud must be Nx3")
+
+        # Convert to homogeneous coordinates (Nx4)
+        ones = np.ones((pointcloud.shape[0], 1))
+        pc_homogeneous = np.hstack([pointcloud, ones])  # Nx4
+
+        # Apply transformation
+        pc_transformed = (transformation_matrix @ pc_homogeneous.T).T[:, :3]  # Nx3
+
+        # Create new Open3D point cloud and assign points
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(pc_transformed)
+        
+        return pcd
+
 
     def knn_mean_filter(self, pcd: o3d.geometry.PointCloud, k: int = 20) -> o3d.geometry.PointCloud:
         points = np.asarray(pcd.points)
@@ -641,7 +841,7 @@ class ObjectDetector(Node):
             model.set_classes([object_name])  # Set the class list to only include the specified object
             
         # Execute inference with the YOLOv8l-world model on the specified image
-        self.yolo_results = model.predict(img, verbose=False)
+        self.yolo_results = model.predict(img, conf = 0.5, verbose=False)
 
         #the following prints the results of the yolo model without the class contrains
         if name_objects:

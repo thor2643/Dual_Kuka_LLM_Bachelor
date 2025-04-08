@@ -432,3 +432,5 @@ FodyWeavers.xsd
 *.vsix
 
 */API_KEY.json
+*/sam_b.pt
+*/yolov8l-world.pt
