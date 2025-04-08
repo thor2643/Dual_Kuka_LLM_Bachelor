@@ -516,7 +516,7 @@ class ObjectDetector(Node):
             R_ortho = U @ Vt
 
             # Convert to roll-pitch-yaw
-            rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=False)
+            rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
 
             # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
             plane_normal = approach
@@ -695,7 +695,7 @@ class ObjectDetector(Node):
         R_ortho = U @ Vt
 
         # Convert to roll-pitch-yaw
-        rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=False)
+        rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
 
         # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
         plane_normal = approach
