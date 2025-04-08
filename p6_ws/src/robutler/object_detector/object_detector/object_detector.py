@@ -141,13 +141,8 @@ class ObjectDetector(Node):
 
         #Point cloud
         self.point_cloud = None
-        #self.transformation_matrix = np.eye(4)  # Identity matrix for transformation
-        self.transformation_matrix_stationary = np.array([  [1, 0, 0, 0],
-                                                            [0, 1, 0, 0],
-                                                            [0, 0, 1, 0],
-                                                            [0, 0, 0, 1]  # Homogeneous coordinate TODO
-                                                        ])
-
+        self.transformation_matrix = None
+        
         #YOLO and SAM results
         self.yolo_results = None
         self.sam_result_img = None
@@ -205,7 +200,7 @@ class ObjectDetector(Node):
     #The callback function for the detector service for YOLO World
     def get_object_information_yolo(self, request, response, clustered = True):
         object = request.object_name
-        #self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  TODO + in GetObjectInfo message
+        self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
         self.get_logger().info(f'Requested to find {object} with Yolo World\n')
 
         self.retrieve_aligned_frames()
@@ -583,7 +578,7 @@ class ObjectDetector(Node):
 
         if True: #True: transform the point cloud to the global frame 
             # transform the point cloud from local to global frame
-            pcd = self.transform_pointcloud_to_global(pcd, self.transformation_matrix_stationary)
+            pcd = self.transform_pointcloud_to_global(pcd, self.transformation_matrix)
 
         if True: #True: apply mean filter to smothe the point cloud - this improves surface estimation
             pcd = self.knn_mean_filter(pcd, k=30) # tuning of k is important and does greatly affect the result

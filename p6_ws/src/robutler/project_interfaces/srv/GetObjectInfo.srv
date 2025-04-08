@@ -1,6 +1,6 @@
 # Request
 string object_name  # Name of the object to search for
-#project_interfaces/TransformMatrix transform #trasformation matrix for non-stationary camera 
+project_interfaces/TransformMatrix transform #trasformation matrix for non-stationary camera 
 
 ---
 # Response
