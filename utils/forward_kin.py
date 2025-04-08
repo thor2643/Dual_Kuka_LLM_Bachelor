@@ -94,3 +94,7 @@ joint_angles_degrees = [61, 70, -58, -55, 11, 93, -71]
 joint_angles_rads = [angle * np.pi/180 for angle in joint_angles_degrees]
 pose = forward_kinematics_right(joint_angles_rads)
 print(pose)
+
+
+
+

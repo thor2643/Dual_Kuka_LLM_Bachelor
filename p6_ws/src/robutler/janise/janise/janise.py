@@ -11,7 +11,9 @@ import readline
 from threading import Event
 import base64
 import cv2
-from cv_bridge import CvBridge
+from cv_bridge import CvBridge, CvBridgeError
+from scipy.spatial.transform import Rotation 
+import math
 
 # Langgraph / Langchain libraries
 from langchain_openai import ChatOpenAI
@@ -32,6 +34,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+import tf2_ros
 
 # ROS 2 messages
 from project_interfaces.srv import GetObjectInfo
@@ -43,6 +46,8 @@ from project_interfaces.srv import GetCurrentPose
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
+from geometry_msgs.msg import TransformStamped
+from sensor_msgs.msg import Image
 
 class LLMNode(Node):
     def __init__(self):
@@ -78,7 +83,16 @@ class LLMNode(Node):
         self.get_image_client = self.create_client(GetImage, 'get_image_from_rviz')
         self.get_image_req = GetImage.Request()
 
+        # Create a subscriber to the topic 
+        self.subscription = self.create_subscription(
+            Image,  # Message type
+            '/camera/camera/color/image_raw',  # Topic name
+            self.convert_to_color_img,  # Callback function
+            10  # Queue size
+        )
+
         self.bridge = CvBridge()
+        self.color_img = None
         
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
@@ -89,6 +103,9 @@ class LLMNode(Node):
 
         self.robot_pose_client = self.create_client(GetCurrentPose, 'get_pose', callback_group=client_cb_group)
         self.robot_pose_req = GetCurrentPose.Request()
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         # Specify a specific microphone if needed
         self.microphone_index = 8
@@ -144,7 +161,7 @@ class LLMNode(Node):
                       StructuredTool.from_function(self.manipulate_left_gripper), 
                       StructuredTool.from_function(self.get_current_pose), 
                       StructuredTool.from_function(self.stop_message_looping)]
-        
+                
         self.tool_node = ToolNode(self.tools)
 
         # Initialize Ollama client or OpenAI client with API key and optional project ID
@@ -162,7 +179,7 @@ class LLMNode(Node):
 
         # Initialise the model
         # Change this to the model you want to use
-        self.model = ChatOpenAI(model="gpt-4o-mini")
+        self.model = ChatOpenAI(model="gpt-4o")
         self.bound_model = self.model.bind_tools(self.tools)
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
 
@@ -241,80 +258,38 @@ class LLMNode(Node):
         self.config_think = {"configurable": {"thread_id": "CoT1"}} # CoT = Chain of Thoughts
 
         self.initial_prompt_Janise = SystemMessage(content = """
-            Your name is Janise. You are an AI robotic arm assistant using the LLM gpt-4o for task reasoning and manipulation tasks. You are to assume the persona of a butler.
+            Your name is Janise. You are an AI robotic arm assistant for task reasoning and manipulation tasks.
 
             Context for your Workspace:
             - You operate in a dual-arm robotic cell consisting of two collaborative KUKA iiwa 7 robots, each with 7 degrees of freedom (DoF). Both robots are mounted on a fixed frame positioned on top of a table, which provides a stable working surface.
             - The setup includes a left and right side, each equipped with its respective robot arm:
                 - The left arm is equipped with a RobotIQ 2F-85 gripper for precise, standard gripping tasks.
-                - The right arm is equipped with a RobotIQ 3F gripper, offering more versatile grasping options.
-            - The grippers are initially both fully open. 
-            - An Intel RealSense D435i depth camera is mounted to view the workspace from an overhead perspective, allowing for accurate depth perception and object detection on the table.
+                - The right arm is equipped with a RobotIQ 3F gripper, offering more versatile grasping options. 
+            - An Intel RealSense D435i depth camera is mounted on the left robot arm to view the workspace from its perspective, allowing for accurate depth perception and object detection on the table.
 
             Spatial and Coordinate Understanding:
-            - Your workspace operates within a "world" coordinate system with its origin (0,0,0) located at the outermost right edge of the table (from the camera's viewpoint). The axes are defined as follows:
-                - *X-axis* extends horizontally across the table from the right edge to the left edge.
-                - *Y-axis* extends from the outer right edge towards the back (inner right edge), moving inward toward the robot.
-                - *Z-axis* points upward, perpendicular to the tabletop.
-            - The table is 1 metre wide and 0.67 metres long, and the grippers must never go below 0 in height as they will then collide with the table. To be more exact, the table extends from 0.0 to 1.0 on the X-axis and from 0.0 to 0.67 on the Y-axis.
-            - A middle line on the table divides the workspace into the left and right side, at the point where the X-axis is 0.5. From 0.0 to 0.5 on the X-axis is the right side, and from 0.5 to 1.0 is the left side. Any objects within 0.4 to 0.6 on the X-axis are considered to be in the center where both the left and right arm can operate.
-            - The camera is located at the [0.486, 0.785, 0.707] position in the world coordinate system.
-            - When objects are detected by the camera, they are initially located in the camera's coordinate system. However, the coordinates are automatically transformed into the world coordinate system using a transformation matrix. This means that all coordinate interactions with you will be in regard to the world coordinate system that has been specified.
+            - Your workspace operates within a "world" coordinate system with its origin (0,0,0) located at the outermost right edge of the table (from the camera's viewpoint). The division of the workspdace can be considered as follows:
+                - *Left side*: All x-values above 0.5.
+                - *Right side*: All x-values below 0.5
+                - *Front of table*: All y-values below 0.3
+                - *Back of table*: All y-values above 0.3
+                - *Middle of table*: All values near the specified value above
+            - The table extends from 0.0 to 1.0 on the X-axis and from 0.0 to 0.67 on the Y-axis.
+            - The grippers must never go below 0 in height as they will then collide with the table.
+
 
             Operational Instructions:
-            - Always be aware of the distinction between the left and right sides and the unique tools on each arm when executing tasks.
-            - Always be aware of how far you have come during tasks. For example, if you have moved to a location or picked up and object, you should be aware of this and not forget it.
-            - Be aware of the spatial context of your actions. For example, if you are moving to pick up an object, you should have the gripper fully opened, and only during carrying the object should you close the gripper.
-            - Avoid stating specific coordinates when acknowledging movement commands; only acknowledge the destination to maintain efficiency.
-            - If you receive any errors during operation, notify the operator. You may come with suggestions as to what to do next, but you must not try to do anything on your own afterwards without the operators permission.
-            - If a task fails (e.g. no objects are found), you must log the failure and notify the operator. However, when the operator repeats the request or asks you to retry, you must reattempt the task instead of assuming the outcome will be the same. Always process each command independently while considering the possibility of changed conditions (e.g. new objects may be visible now).
-            - If an operation fails, do not assume the result of a retry without executing the appropriate function again.      
-
-            Multi-step Task Execution:
-            - By default message looping is enabled, allowing for continuous workflow until task completion.
-            - Some tasks may require multiple steps to complete. In other words, a single task may consist of several sub-tasks that need to be executed in sequence e.g a pickup task. 
-            - You should assume that almost all tasks will be multi-step tasks and therefore you should consider possible future actions.
-            - When asked to move to a specific location, this implies that you should both plan and execute the movement to that location. The robot will not move on its own without the execution command.
-            - When all steps have been completed, disable message looping to conclude the task and provide a final response to the user.
-            - Tasks exceeding 10 steps should automatically transition into sub-tasks, with you notifying the operator and resuming seamlessly.by default enable message looping to allow for continuous workflow until task completion.
-
-            Interaction Style:
-            - You must always reply to the user in a manner fitting a butler persona, using the following styles when executing movement tasks:
-                - "Yes. Moving the gripper to the yellow brick."
-                - "Right away. The gripper will be moved to home position."
-                - "Understood. The gripper will be moved to the red brick."
-
-            A pickup task is one of many functionalities that you are capable of, among tasks that include assembly, disassembly, or sorting, but you must do correctly because pickup tasks are a prerequisite for all these and other tasks. Therefore, the flow for a pickup task should always be done in the following order:
-            - Prior to the pickup task, you already know the location of the object you are supposed to pick up.
-            - Step 1: Plan a trajectory to the object's position, which is the position that you first detected the object at with the find_object function.
-            - Step 2: Execute the planned trajectory to get into pickup position of the object.
-            - Step 3: Close the gripper to grasp the object.
-            - Step 4: Continue with the next task or provide a final response to the user.
-
-            Mistakes you have made in the past and should avoid (you should not refer to these in your responses, but be aware of them):
-            - You wrongfully assume that you have picked up an object and notify this to the operator, which is not great.
-            - You forget to execute a planned trajectory after planning it, which leads to the robot not moving to the desired location or you just keep planning new trajectories endlessly.
-            - You input a negative z-coordinate when planning a trajectory, which leads to the robot moving too close to the table.
-            - You fail when inputting the coordinates correctly when planning a trajectory, because you forget to input some of the coordinates. You should always input in order: x, y, and z coordinates and roll, pitch, and yaw angles, all as floating-points, when planning a trajectory.
-                                
-            Remember:
-            - You cannot move the robot below 0, that is any negative values, in the z-direction as it will collide with the table and give you an error, which will interrupt the system.
-            - Only close the gripper when you have planned and executed a trajectory to the object's position and are ready to pick it up.
-            - It is important that you do not make random assumptions about having completed a task. Always ensure that you have completed each step of a task before moving on to the next one.
-
-            Your primary task is to execute movements and manipulations as requested, utilizing precise understanding of your left and right sides, grippers, and the overview provided by the RealSense camera.
-        
-            You must explain the reasoning behind each action before executing it. If you are unsure about a task or need further clarification, you should ask the user for more information or request assistance from the operator.
-                          
-            Before you are to make decisions, another agents named Socrates will provide you with insights and guidance to ensure that the correct actions are taken. You should always consider the suggestions made by Socrates before making a decision.
-                                
-            Example of a tasks with chained thoughts:                    
+            - Given a user request you must perform the most appropriate action that you are capable.
+            - Before you are to make decisions, another agent named Socrates will provide you with insights and guidance to ensure that the correct actions are taken. You should always consider the suggestions made by Socrates before making a decision.
+            - If not specified by the user, use the left arm for operations on the left side and use the right arm for operations on the right side.
+            - Perform steps in an appropriate order e.g. move arm to object before closing gripper and plan trajectory before executing it.
+            - Safety is of utmost importance, so when in doubt always consult the user first. Especially for actions that move the robot.
+                  
         """)
 
         self.initial_prompt = [
             self.initial_prompt_Janise,
             HumanMessage(content = "To which poses can the robot arm be moved?"),
-            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
             HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                       name = "Socrates"),
             AIMessage(content = "",
@@ -322,7 +297,6 @@ class LLMNode(Node):
                       name = "Janise"),
             ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}",
                         tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
-            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
             HumanMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user."),
             AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
 
@@ -337,7 +311,6 @@ class LLMNode(Node):
                     Should you desire to move one of the arms to one of these positions, feel free to let me know.""",
                     name = "Janise"),
             HumanMessage(content = "What objects can you find?"),
-            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
             HumanMessage(content = "To answer this Janise should consider the available functions. The function \"get_available_objects\" returns predefined objects that can be detcted. This seems like an appropriate function to call.",
                       name = "Socrates"),
             AIMessage(content = "",
@@ -345,7 +318,6 @@ class LLMNode(Node):
                       name = "Janise"),
             ToolMessage(content = "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
                         tool_call_id = "call_KZ4pgcOBYotzY1QERRB0OiFn"),
-            #SystemMessage(content = "Current state: {\"left_gripper\": {\"width\": 85}, \"right_gripper\": {\"width\": 167}, \"services_unavailable\": null}"),
             HumanMessage(content = "The returned objects are the predefined objects that can be detected. Janise should now return this information to the user.",
                       name = "Socrates"),
             AIMessage(content = """I am able to locate the following objects within the workspace:
@@ -365,13 +337,15 @@ class LLMNode(Node):
             ]
         
         self.initial_prompt_CoT = SystemMessage(content = """Your name is Socrates. You act as a critical thinker and must help the other LLM agent Janise to take proper action based on a user's request. 
-                                                                You are to provide reasoning and guidance to Janise to ensure that the correct actions are taken. Your message is appended to the conversation for Janise to consider.
+                                                                You are to provide short and precise reasoning and guidance to Janise to ensure that the correct actions are taken. Your message is appended to the conversation for Janise to consider.
                                                                 As Janise is controlling a dual arm robot you must provide her with insights to the physical world, while considering the robot's capabilities and limitations.
                                                                 You are NOT allowed to call any tools yourself and can therefore only make suggestions for Janise to consider. You should always provide reasoning for your suggestions.
                                                                 You are set to make suggestions to Janise after an incoming user request or after a tool call has returned.
                                                                 You are never answering directly to the user, but only to Janise. Therefore, never take "you" in the user's request as if the user is talking to you. Janise is the only model communicating with the user.
                                                  
                                                                 To help you reason better you are given an image of the workspace. This you can use to provide better guidance to Janise.
+
+                                                                Also apply your guidance in the context of the user request. You are to ensure that the overarching goal is not forgotten.
                                                                 """)
         
 
@@ -423,6 +397,17 @@ class LLMNode(Node):
     #######################################################################################
     # --------------------------------- EXTRA FUNCTIONS --------------------------------- #
     #######################################################################################
+
+    def convert_to_color_img(self, msg):
+        try:
+            # Convert the ROS Image message to an OpenCV image
+            color_img_rgb = self.bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
+            
+            # Convert RGB to BGR for OpenCV display (OpenCV uses BGR by default)
+            self.color_img = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
+
+        except CvBridgeError as e:
+            self.get_logger().error(f'Error converting color image: {e}')
 
     # Implemented to handle nested callbacks
     # Principle taken from https://gist.github.com/driftregion/14f6da05a71a57ef0804b68e17b06de5
@@ -572,6 +557,89 @@ class LLMNode(Node):
 
         self.get_logger().info(f"State snapshot saved to {state_snapshot_file}")
 
+    def quaternion_to_euler_angle(self, w, x, y, z):
+        ysqr = y * y
+
+        t0 = +2.0 * (w * x + y * z)
+        t1 = +1.0 - 2.0 * (x * x + ysqr)
+        X = math.degrees(math.atan2(t0, t1))
+
+        t2 = +2.0 * (w * y - z * x)
+        t2 = +1.0 if t2 > +1.0 else t2
+        t2 = -1.0 if t2 < -1.0 else t2
+        Y = math.degrees(math.asin(t2))
+
+        t3 = +2.0 * (w * z + x * y)
+        t4 = +1.0 - 2.0 * (ysqr + z * z)
+        Z = math.degrees(math.atan2(t3, t4))
+
+        return X, Y, Z
+    
+    def convert_to_transformation_matrix(self, rotation, translation):
+        """
+        Converts a rotation matrix and translation vector into a 4x4 transformation matrix.
+        """
+        transformation_matrix = np.eye(4)
+        transformation_matrix[:3, :3] = np.array(rotation)
+        transformation_matrix[:3, 3] = np.array(translation).flatten()
+        return transformation_matrix
+    
+    def get_cam2world_transform(self):
+        """Get the transformation matrix from camera to gripper coordinates."""
+        T_cam_gripper = np.array([
+            [-0.0917179, -0.99558678, 0.01986943, 0.09246569],
+            [-0.99558723, 0.09128373, -0.02175657, 0.02742328],
+            [0.0198468, -0.02177722, -0.99956583, 0.1631206],
+            [0.0, 0.0, 0.0, 1.0]
+        ])
+
+        # Get gripper pose (try a few times if not successful)
+        for i in range(5):
+            try:
+                transform_3: TransformStamped = self.tf_buffer.lookup_transform(
+                    "world", "2f_tool0", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=2.0))
+
+                # Assuming transform_3 is your TransformStamped object
+                quaternion = [
+                    transform_3.transform.rotation.w,
+                    transform_3.transform.rotation.x,
+                    transform_3.transform.rotation.y,
+                    transform_3.transform.rotation.z,
+                ]
+
+                # Convert quaternion to Euler angles
+                roll, pitch, yaw = self.quaternion_to_euler_angle(*quaternion)
+
+                t_gripper_moveit =  [
+                    transform_3.transform.translation.x,
+                    transform_3.transform.translation.y,
+                    transform_3.transform.translation.z
+                ]
+
+                R_gripper_moveit = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
+                T_gripper_moveit = self.convert_to_transformation_matrix(R_gripper_moveit, t_gripper_moveit)
+                self.get_logger().info("Succefully got gripper pose")
+
+                break
+
+            except tf2_ros.LookupException:
+                if i < 4:
+                    self.get_logger().info("Retrying...")
+                    #rclpy.spin_once(self, timeout_sec=0.1)
+                else:
+                    self.get_logger().error("Failed to get gripper pose after multiple attempts")
+
+        T_moveit_world = np.array([
+            [0.99993911, 0.01089142, -0.00177746, 0.02532091],
+            [-0.01089373, 0.99993982, -0.00129526, 0.03899785],
+            [0.00176324, 0.00131455, 0.99999758, -0.80131387],
+            [0., 0., 0., 1.]
+        ])
+
+        T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
+
+        return T_cam_world
+
     def request_rvis_image(self):
         """Implemented workaround to get a screenshot of the RViz GUI using the GetImage service.
         Used to simulate a camera image for the object detection service."""
@@ -627,12 +695,14 @@ class LLMNode(Node):
     
     def think(self, state: MessagesState):
         # We append an image to the CoT message
-        image_path = "image.jpg"
+        #image_path = "image.jpg"
 
         # Resize the image to 524x524
         # Change this to get the actual image from the camera
-        original_image = cv2.imread(image_path)
+        #original_image = cv2.imread(image_path)
+        original_image = self.color_img
         resized_image = cv2.resize(original_image, (524, 524))
+        
         resized_image_path = "resized_image.jpg"
         cv2.imwrite(resized_image_path, resized_image)
 
@@ -776,10 +846,12 @@ class LLMNode(Node):
             self.get_logger().info(f"Grasping widths: {response.grasp_widths}\n")
 
             # Calibrated transformation matrix from coordinates to camera world
-            T_world_cam = np.array([[ 0.9998524,  -0.00382788,  0.01674907,  0.48649258],
-                                    [ 0.00545733, -0.85361904, -0.52086923,  0.78510204],
-                                    [ 0.01629115,  0.52088376, -0.85347215,  0.70742285],
-                                    [ 0.0,          0.0,          0.0,          1.0, ]])
+            #T_cam_world = np.array([[ 0.9998524,  -0.00382788,  0.01674907,  0.48649258],
+            #                        [ 0.00545733, -0.85361904, -0.52086923,  0.78510204],
+            #                        [ 0.01629115,  0.52088376, -0.85347215,  0.70742285],
+            #                        [ 0.0,          0.0,          0.0,          1.0, ]])
+            
+            T_cam_world = self.get_cam2world_transform()
             
             # Extract the position from the pose and append 1 to make it a 4D vector
             center_pts = []
@@ -787,7 +859,7 @@ class LLMNode(Node):
                 center_pts.append([point.x, point.y, point.z, 1])
 
             # Transform the position from camera to world coordinates
-            center_pts_world = np.dot(T_world_cam, np.array(center_pts).T).T
+            center_pts_world = np.dot(T_cam_world, np.array(center_pts).T).T
 
             # Save the object information in a dictionary
             for i, center in enumerate(center_pts_world):
