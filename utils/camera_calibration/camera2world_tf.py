@@ -13,34 +13,98 @@ T_world_moveit = np.array([ [ 0.99993911, -0.01089373,  0.00176324, -0.02348162]
                             [-0.00177746, -0.00129526,  0.99999758,  0.80140745],
                             [ 0.0,         0.0,         0.0,         1.0       ] ])
 
-trasnform = {"DANIILIDIS": {
+trasnform = {"TSAI": {
         "depth": {
             "R_cam2gripper": [
                 [
-                    -0.10104078926288541,
-                    -0.9947340176622806,
-                    0.017175360566569656
+                    -0.06744800002191353,
+                    -0.997657205229066,
+                    -0.011439761692147951
                 ],
                 [
-                    -0.9947541970636232,
-                    0.10073571066061836,
-                    -0.01778774921139175
+                    -0.9968795690289045,
+                    0.06785786534849092,
+                    -0.04032908334058157
                 ],
                 [
-                    0.015963907085691006,
-                    -0.018882550229205486,
-                    -0.9996942547436206
+                    0.0410108783835393,
+                    0.008683948691422527,
+                    -0.9991209620908448
                 ]
             ],
             "t_cam2gripper": [
                 [
-                    0.09402568876136451
+                    0.09418764019918663
                 ],
                 [
-                    0.02717960285044562
+                    0.03548134921377813
                 ],
                 [
-                    0.1578761903166473
+                    0.15157627093988113
+                ]
+            ]
+        },
+    },
+    "ANDREFF": {
+        "depth": {
+            "R_cam2gripper": [
+                [
+                    -0.06850426897763806,
+                    -0.9976508143653564,
+                    -0.00013314645418649462
+                ],
+                [
+                    -0.9975734400126068,
+                    0.06850061703552174,
+                    -0.012445772260728072
+                ],
+                [
+                    0.012425655445589434,
+                    -0.0007197651642537051,
+                    -0.999922539512364
+                ]
+            ],
+            "t_cam2gripper": [
+                [
+                    0.09447571487589179
+                ],
+                [
+                    0.032735971348943564
+                ],
+                [
+                    0.15255042431036295
+                ]
+            ]
+        },
+    },
+    "DANIILIDIS": {
+        "depth": {
+            "R_cam2gripper": [
+                [
+                    -0.06925314729841853,
+                    -0.9975991170021818,
+                    -5.7842293843586405e-05
+                ],
+                [
+                    -0.9975258499086903,
+                    0.06924876359030913,
+                    -0.0121155893442643
+                ],
+                [
+                    0.012090506739131004,
+                    -0.0007813435101384899,
+                    -0.9999266018809135
+                ]
+            ],
+            "t_cam2gripper": [
+                [
+                    0.09448763063503254
+                ],
+                [
+                    0.032654063467359926
+                ],
+                [
+                    0.152542250934529
                 ]
             ]
         },
@@ -49,34 +113,35 @@ trasnform = {"DANIILIDIS": {
         "depth": {
             "R_cam2gripper": [
                 [
-                    -0.08239743142594505,
-                    -0.9963432571467553,
-                    0.022600381249022077
+                    -0.06984840593817425,
+                    -0.9975570841668818,
+                    0.001031511689110063
                 ],
                 [
-                    -0.9963163659903803,
-                    0.0818122625150218,
-                    -0.02569927162189075
+                    -0.9974706804500669,
+                    0.06982862998482915,
+                    -0.013274188371509038
                 ],
                 [
-                    0.023756307670369237,
-                    -0.024634683687184286,
-                    -0.9994142135298573
+                    0.013169731598500592,
+                    -0.001956083564301766,
+                    -0.9999113620250114
                 ]
             ],
             "t_cam2gripper": [
                 [
-                    0.09090569068801656
+                    0.0975278574299204
                 ],
                 [
-                    0.027666959247674087
+                    0.0353767235871735
                 ],
                 [
-                    0.1683650133548136
+                    0.15173113700127955
                 ]
             ]
         },
     }
+
 }
 
 def convert_to_transformation_matrix(rotation, translation):
@@ -88,21 +153,30 @@ def convert_to_transformation_matrix(rotation, translation):
     transformation_matrix[:3, 3] = np.array(translation).flatten()
     return transformation_matrix
 
-# Combine the two transformations by averaging the rotation and translation components
-def average_transformations(T1, T2):
+# Combine multiple transformations by averaging the rotation and translation components
+def average_transformations(*matrices):
     """
-    Averages two 4x4 transformation matrices by averaging their rotation and translation components.
+    Averages multiple 4x4 transformation matrices by averaging their rotation and translation components.
     """
-    R1, t1 = T1[:3, :3], T1[:3, 3]
-    R2, t2 = T2[:3, :3], T2[:3, 3]
+    if len(matrices) == 0:
+        raise ValueError("At least one transformation matrix is required.")
+
+    # Initialize accumulators for rotation and translation
+    R_sum = np.zeros((3, 3))
+    t_sum = np.zeros(3)
+
+    # Sum up the rotation matrices and translation vectors
+    for T in matrices:
+        R_sum += T[:3, :3]
+        t_sum += T[:3, 3]
 
     # Average the rotation matrices and re-orthogonalize using SVD
-    R_avg = (R1 + R2) / 2
+    R_avg = R_sum / len(matrices)
     U, _, Vt = np.linalg.svd(R_avg)
     R_avg = np.dot(U, Vt)
 
     # Average the translation vectors
-    t_avg = (t1 + t2) / 2
+    t_avg = t_sum / len(matrices)
 
     # Construct the averaged transformation matrix
     T_avg = np.eye(4)
@@ -153,8 +227,10 @@ for key, value in trasnform.items():
         t_matrices.append(T)
         #print(f"Transformation matrix for {key} ({depth_key}):\n{T}\n")
 
+print(t_matrices)
+
 # Compute the averaged transformation matrix
-T_combined = average_transformations(t_matrices[0], t_matrices[1])
+T_combined = average_transformations(*t_matrices)
 #print(f"Combined Transformation Matrix from cam to gripper:\n{T_combined}\n")
 
 t_matrices.append(T_combined)
