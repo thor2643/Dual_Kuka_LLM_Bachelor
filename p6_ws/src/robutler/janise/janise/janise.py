@@ -815,14 +815,16 @@ class LLMNode(Node):
         future = self.detector_client.call_async(self.detector_req)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=45)
+        response = self.wait_future(future, timeout=125)
 
         # Check if the response is valid or if it timeouted
         if response is None:
             self.get_logger().error("Failed to retrieve object detection response")
             return None
 
-        # for case where no object is found
+        self.get_logger().info(f"\nObjects found: {response.object_count}\n")
+
+        # For case where no object is found
         if response.object_count == 0:
             self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
             for i, detected_obj in enumerate(response.detected_objects):
@@ -868,6 +870,7 @@ class LLMNode(Node):
                         'width': grasp.grasp_width
                     }
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
+
         return self.objects_on_table
 
 
