@@ -37,7 +37,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import tf2_ros
 
 # ROS 2 messages
-from project_interfaces.srv import GetObjectInfo, DefineObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
+from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
 from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
@@ -68,13 +68,6 @@ class LLMNode(Node):
         self.detector_client = self.create_client(GetObjectInfo, 'get_object_info', callback_group=client_cb_group)
         self.detector_req = GetObjectInfo.Request()
         self.objects_on_table = {}
-
-        self.define_objects_client = self.create_client(DefineObjectInfo, 'define_object_info', callback_group=client_cb_group)
-        self.define_objects_req = DefineObjectInfo.Request()
-
-        self.detector_client_yolo = self.create_client(GetObjectInfo, 'get_object_info_yolo', callback_group=client_cb_group)
-        self.detector_req_yolo = GetObjectInfo.Request()
-        self.objects_on_table_yolo = {}
 
         self.get_image_client = self.create_client(GetImage, 'get_image_from_rviz')
         self.get_image_req = GetImage.Request()
@@ -119,7 +112,6 @@ class LLMNode(Node):
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
         self.get_logger().info(f"Current time and date: {self.current_time}")
 
-        self.object_file = 'src/robutler/object_detector/object_detector/lego_bricks_config.json'
         self.conversation_log_folder = 'src/robutler/janise/resource/conversation_logs'
         self.conversation_log_file = self.conversation_log_folder + f'/{self.current_time}.json'
 
@@ -134,11 +126,6 @@ class LLMNode(Node):
                 pass
         """
 
-        self.lego_bricks = {}
-
-        with open(self.object_file, 'r') as file:
-            self.lego_bricks = json.load(file)
-
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
@@ -147,10 +134,7 @@ class LLMNode(Node):
 
         # Define the tools available to the LLM
         self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
-                      StructuredTool.from_function(self.find_object), 
-                      StructuredTool.from_function(self.get_available_objects), 
-                      StructuredTool.from_function(self.find_object_yolo), 
-                      StructuredTool.from_function(self.define_object_thresholds), 
+                      StructuredTool.from_function(self.find_object),
                       StructuredTool.from_function(self.plan_robot_trajectory), 
                       StructuredTool.from_function(self.execute_planned_trajectory), 
                       StructuredTool.from_function(self.manipulate_right_gripper), 
@@ -284,7 +268,7 @@ class LLMNode(Node):
         """)
 
         self.initial_prompt = [
-            self.initial_prompt_Janise,
+            self.initial_prompt_Janise, #TODO get_available_objects does not ecxist anymore
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                       name = "Socrates"),
@@ -509,7 +493,7 @@ class LLMNode(Node):
                 'width': 85,
             },
             'right_gripper': {
-                'width': 167,
+                'width': 155, # 167 before but thats wrong
             },
             'services_unavailable': None,
         }
@@ -760,21 +744,6 @@ class LLMNode(Node):
         print("\nMessage looping has been disabled.")
 
         return "Message looping has been disabled."  
-    
-    #@tool
-    def get_available_objects(self) -> list:
-        """
-        Retrieves a list of predefined objects with associated thresholds.
-
-        This function returns a list of object names that have predefined thresholds 
-        and can be identified by the `find_object` function. It does not indicate 
-        the presence of these objects in the workspace but serves as a reference 
-        for valid object names that can be passed as parameters to `find_object`.
-
-        Returns:
-            list: A list of object names with predefined thresholds.
-        """
-        return list(self.lego_bricks.keys())
 
     #@tool
     def get_predefined_locations_and_poses(self) -> dict:
@@ -792,214 +761,115 @@ class LLMNode(Node):
 
         return self.coordinates
 
-    #@tool
+    #@tool   
     def find_object(self, object_name: str) -> GetObjectInfo.Response:
         """
-        Finds an object in the environment using the object detector service.
-        This function communicates with an object detection service to locate a specified object 
-        in the environment. It retrieves information about the object's position, orientation, 
-        and grasping width, and transforms the detected coordinates from the camera frame to 
-        the world frame using a calibrated transformation matrix. The detected objects are stored 
-        in a dictionary with unique names.
+        Uses the object detection service to locate and retrieve grasp poses for a specified object, 
+        or if none of the specified object is found returns possible objects and thier center points.
+
+        This method sends a service request to the object detector, providing the object name and a 4x4 transformation
+        matrix (flattened) to convert camera coordinates to world coordinates.
+         
+        It receives a structured response containing detected objects with their 3D center points and possible grasp poses 
+        (grasps only if the object was found). These are stored in a structured dictionary for easy access.
 
         Args:
-            object_name (str): The name of the object to be located.
+            object_name (str): The name of the object to search for (e.g., "bottle", "book").
 
-        Returns:
-            GetObjectInfo.Response: A response object containing information about the detected 
-            objects. If no objects are found or the service call fails, an empty response is returned.
+        Service returns:
+            GetObjectInfo.Response: A response object that includes the number of detected objects and their grasp details.
+            (objects found, center of object, 6D pose, grasp with). If no object is found, it returns the possible objects and their center points. 
+
+        Function returns:
+            -`self.objects_on_table` with structured grasp information in the following format:
+            {
+                'object_name i': {
+                    'center_object': {x, y, z},
+                    'grasps': {
+                        'grasp j': {
+                            'center': {x, y, z},
+                            'orientation': {roll, pitch, yaw},
+                            'width': float
+                        },
+                        ...
+                    }
+                },
+                ...
+            }
 
         Notes:
-            - The function clears the `objects_on_table` dictionary before adding new objects.
-            - The transformation matrix `T_world_cam` is hardcoded and should be calibrated for 
-              the specific setup.
-            - If multiple objects with the same name are detected, unique names are generated 
-              by appending an index to the original name.
-            - The function waits for the service call to complete with a timeout of 15 seconds.
+            - Grasp orientation is stored in degrees (roll, pitch, yaw).
+            - Each object is given a unique name (e.g., "bottle 0", "bottle 1") to avoid conflicts.
+            - Requires the object detection service to be available and responsive.
         """
+        
+        self.get_logger().info(f"\Requesting the Object detector service to find grasps for: {object_name}\n")
 
-        print(f"\nRequesting the detector service to find {object_name}")  # Debugging
-        self.get_logger().info(f"\nLooking for object: {object_name}\n")
+        # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
+        T = self.get_cam2world_transform()
+        transform_msg = TransformMatrix()
+        transform_msg.matrix = T.flatten().tolist()
+        self.detector_req.transform = transform_msg
 
         future = self.detector_client.call_async(self.detector_req)
 
-        self.objects_on_table.clear() # Clear the dictionary before adding new objects (temporary solution)
-
         # Wait for the result
-        response = self.wait_future(future, timeout=15)
+        response = self.wait_future(future, timeout=45)
 
-        print("The service call has been completed.")  # Debugging
-
+        # Check if the response is valid or if it timeouted
         if response is None:
-            self.get_logger().error('Service call failed')
-            return GetObjectInfo.Response()
+            self.get_logger().error("Failed to retrieve object detection response")
+            return None
 
-        if response.object_count != 0:
-            self.get_logger().info(f"\nObjects found: {response.object_count}")
-            self.get_logger().info(f"Center points: {response.centers}")
-            self.get_logger().info(f"Object orientations: {response.orientations}")
-            self.get_logger().info(f"Grasping widths: {response.grasp_widths}\n")
+        # for case where no object is found
+        if response.object_count == 0:
+            self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
+            for i, detected_obj in enumerate(response.detected_objects):
+                object_name = detected_obj.name
 
-            # Calibrated transformation matrix from coordinates to camera world
-            #T_cam_world = np.array([[ 0.9998524,  -0.00382788,  0.01674907,  0.48649258],
-            #                        [ 0.00545733, -0.85361904, -0.52086923,  0.78510204],
-            #                        [ 0.01629115,  0.52088376, -0.85347215,  0.70742285],
-            #                        [ 0.0,          0.0,          0.0,          1.0, ]])
-            
-            T_cam_world = self.get_cam2world_transform()
-            
-            # Extract the position from the pose and append 1 to make it a 4D vector
-            center_pts = []
-            for point in response.centers:
-                center_pts.append([point.x, point.y, point.z, 1])
-
-            # Transform the position from camera to world coordinates
-            center_pts_world = np.dot(T_cam_world, np.array(center_pts).T).T
-
-            # Save the object information in a dictionary
-            for i, center in enumerate(center_pts_world):
-                # Make sure the object name is unique
-                object_name_temp = object_name
-                count = 1
-                while object_name_temp in self.objects_on_table:
-                    object_name_temp = f"{object_name}_{count}"
-                    count += 1
-
-                self.objects_on_table[object_name_temp] = {
-                    'center': center.tolist()[0:3],
-                    'orientation': response.orientations[i],
-                    'grasp_width': response.grasp_widths[i]
+                self.objects_on_table[object_name] = {
+                    'center_object': {
+                        'x': detected_obj.center_of_object.x,
+                        'y': detected_obj.center_of_object.y,
+                        'z': detected_obj.center_of_object.z
+                    }
                 }
-
-            return self.objects_on_table
+        # For case where object is found
         else:
-            self.get_logger().error('No objects found')
-            return GetObjectInfo.Response()
+            self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
 
-    #@tool   
-    def find_object_yolo(self, object_name: str) -> GetObjectInfo.Response:
-        """
-        Uses the YoloWorld object detection service to locate a specified object in the environment.
-        This function interacts with the YoloWorld detector service to identify the specified object 
-        and retrieve its details, including its Cartesian center point, orientation, and grasping width. 
-        If the object is found, its position is transformed from camera coordinates to world coordinates 
-        using a calibrated transformation matrix. The detected objects are stored in a dictionary with 
-        unique names to avoid conflicts.
+            self.objects_on_table = {}  # Reset table
 
-        Args:
-            object_name (str): The name of the object to locate.
+            for i, detected_obj in enumerate(response.detected_objects):
+                object_name = detected_obj.name
 
-        Returns:
-            GetObjectInfo.Response: A response object containing the details of the detected objects. 
-            If no objects are found or the service call fails, an empty response is returned.
-
-        Raises:
-            None
-
-        Notes:
-            - The function waits for the YoloWorld service call to complete with a timeout of 40 seconds.
-            - If multiple objects with the same name are detected, unique names are generated by appending 
-              an incrementing number to the object name.
-            - The transformation matrix `T_world_cam` is hardcoded and used to convert coordinates from 
-              the camera frame to the world frame.
-            - Detected objects are stored in the `self.objects_on_table_yolo` dictionary with their 
-              transformed center points, orientations, and grasp widths.
-        """
-        
-        print(f"\nRequesting the YoloWorld detector service to find {object_name}")
-        self.get_logger().info(f"\nLooking for object: {object_name}\n")
-        self.detector_req_yolo.object_name = object_name
-        #transform_msg = TransformMatrix()
-        #transform_msg.matrix = T.flatten().tolist() : Insert transformation matrix(T) here it must be flat for message to work TODO
-        #self.detector_req_yolo.transform = transform_msg
-
-
-        future = self.detector_client_yolo.call_async(self.detector_req_yolo)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=40)
-
-        print("The service call has been completed.")  # Debugging
-
-        if response is None:
-            self.get_logger().error('Service call failed')
-            return GetObjectInfo.Response()
-        
-        
-        
-        if response.object_count != 0:
-            self.get_logger().info(f"\nObjects found: {response.object_count}")
-            self.get_logger().info(f"Center points: {response.centers}")
-            self.get_logger().info(f"Object orientations: {response.orientations}")
-            self.get_logger().info(f"Grasping widths: {response.grasp_widths}\n")
-
-            # Calibrated transformation matrix from coordinates to camera world
-            T_world_cam = np.array([[ 0.9998524,  -0.00382788,  0.01674907,  0.48649258],
-                                    [ 0.00545733, -0.85361904, -0.52086923,  0.78510204],
-                                    [ 0.01629115,  0.52088376, -0.85347215,  0.70742285],
-                                    [ 0.0,          0.0,          0.0,          1.0, ]])
-            
-            # Extract the position from the pose and append 1 to make it a 4D vector
-            center_pts = []
-            for point in response.centers:
-                center_pts.append([point.x, point.y, point.z, 1])
-
-            # Transform the position from camera to world coordinates
-            center_pts_world = np.dot(T_world_cam, np.array(center_pts).T).T
-
-            # Save the object information in a dictionary
-            for i, center in enumerate(center_pts_world):
-                # Make sure the object name is unique
-                object_name_temp = object_name
-                count = 1
-                while object_name_temp in self.objects_on_table_yolo:
-                    object_name_temp = f"{object_name}_{count}"
-                    count += 1
-
-                self.objects_on_table_yolo[object_name_temp] = {
-                    'center': center.tolist()[0:3],
-                    'orientation': response.orientations[i],
-                    'grasp_width': response.grasp_widths[i]
+                self.objects_on_table[object_name] = {
+                    'center_object': {
+                        'x': detected_obj.center_of_object.x,
+                        'y': detected_obj.center_of_object.y,
+                        'z': detected_obj.center_of_object.z
+                    },
+                    'grasps': {}
                 }
 
-            return self.objects_on_table_yolo
-    
-    #@tool
-    def define_object_thresholds(self, object_name: str) -> DefineObjectInfo.Response:
-        """
-        Allows the user to define threshold values for object detection.
+                for j, grasp in enumerate(detected_obj.grasps):
+                    self.objects_on_table[object_name]['grasps'][f'grasp {j}'] = {
+                        'center': {
+                            'x': grasp.position.x,
+                            'y': grasp.position.y,
+                            'z': grasp.position.z
+                        },
+                        'orientation': {
+                            'roll': grasp.orientation.x,
+                            'pitch': grasp.orientation.y,
+                            'yaw': grasp.orientation.z
+                        },
+                        'width': grasp.grasp_width
+                    }
+        print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
+        return self.objects_on_table
 
-        This function enables the user to interactively adjust the thresholds for 
-        the object detector service. An image will be displayed with trackbars 
-        that allow the user to modify the thresholds and observe the resulting 
-        changes in real-time. The object for which thresholds are being defined 
-        should be specified as an argument, using underscores (_) in place of spaces.
-
-        Once the thresholds are defined, they are saved and utilized by the object 
-        detector service. The updated object information is also stored in a 
-        dictionary for future use.
-
-        Args:
-            object_name (str): The name of the object for which thresholds are 
-                               being defined. Use underscores (_) instead of spaces.
-
-        Returns:
-            DefineObjectInfo.Response: The response from the object detector service 
-                                       after the thresholds have been defined.
-        """
-        self.define_objects_req.object_name = object_name
-
-        future = self.define_objects_client.call_async(self.define_objects_req)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=600)
-
-        # Save the updated object information in a dictionary
-        with open(self.object_file, 'r') as file:
-            self.lego_bricks = json.load(file)
-
-        return response
 
     #@tool
     def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:

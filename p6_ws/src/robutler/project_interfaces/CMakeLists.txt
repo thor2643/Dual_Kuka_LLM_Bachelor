@@ -34,7 +34,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/TransformMatrix.msg"
   "srv/GetObjectInfo.srv"
   "srv/PlanMoveCommand.srv"
-  "srv/DefineObjectInfo.srv"
   "srv/ExecuteMoveCommand.srv"
   "srv/PromptJanice.srv"
   "srv/GetCurrentPose.srv"

@@ -10,14 +10,6 @@
     {
         "type": "function",
         "function": {
-            "name": "get_available_objects",
-            "description": "Used only to retrieve a list of objects that have predefined thresholds. This list of objects only shows which objects the find_object function is able to find and does not in any way tell what objects are currently present in the workspace. It must be called before the find_object function to ensure that the object_name parameter is indeed a valid parameter.",
-            "parameters": {}
-        }
-    },
-    {
-        "type": "function",
-        "function": {
             "name": "get_predefined_locations_and_poses",
             "description": "Used only to retrieve a dictionary of predefined robot poses in world coordinates for specific predefined locations. It does not move the robot",
             "parameters": {}
@@ -27,30 +19,13 @@
         "type": "function",
         "function": {
             "name": "find_object",
-            "description": "Find the object in the environment using the object detector service. The object name should be provided as an argument to this function. The object detector service will return the number of objects found as well as the Cartesian center point, width, height and orientation of each object.",
+            "description": "Finds the object in the environment using the object detector service. The object name should be provided as an argument to this function. The object detector service will return the number of objects found, the objects' center point, as well as possible grasps for each object, given by a cartesian grasp point and orientation for each of the grasps.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "object_name": {
                         "type": "string",
                         "description": "The name of the object that must be found. Only one name can be provided. Must use _ (underscore) instead of spaces."
-                    }
-                },
-                "required": ["object_name"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "define_object_thresholds",
-            "description": "Lets the user define the object thresholds for the object detector service. An image will pop up with trackbars to the side, where the user can adhust the thresholds and see the resulting image. The object to define thresholds for should be provided as an argument. Use underscore _ (underscore) as spaces. The thresholds will be saved and used for the object detector service.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "object_name": {
-                        "type": "string",
-                        "description": "The name of the object for which new thresholds must be defined. Only one name can be provided. Must use _ (underscore) instead of spaces."
                     }
                 },
                 "required": ["object_name"]
@@ -161,23 +136,6 @@
                     }
                 },
                 "required": ["width"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "find_object_yolo",
-            "description": "This function uses Yolo World to find the object in the environment. This function is to be used when requested directly for yolo world or id no object was found using find_object. The object name should be provided as an argument to this function. The object detector service will return the number of objects found as well as the Cartesian center point, width, height and orientation of each object. In the case where it does not find any objects it will return a message saying what other objects was found.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "object_name": {
-                        "type": "string",
-                        "description": "The name of the object that must be found. Only one name can be provided. Must use _ (underscore) instead of spaces."
-                    }
-                },
-                "required": ["object_name"]
             }
         }
     }

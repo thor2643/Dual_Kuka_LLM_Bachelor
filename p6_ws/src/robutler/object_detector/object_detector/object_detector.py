@@ -106,7 +106,7 @@ class RealSenseCamera(Node):
         self.camera_info = msg.k
 
 
-"""   THERE ARE TODO IN THE CODE: FIX THEM WHEN CALIBRATION HAS BEEN CALCULATED!
+""" 
 
 In the grasp pipeline the following parameters are of importance: DO NOT CHANGE THEM UNLESS YOU KNOW WHAT YOU ARE DOING!!!! (Ask Signe, She doesent even know so dont touch them!!!!)
     - conf: Yolo World confidence threshold (currently not used so default(0.25))
@@ -124,7 +124,7 @@ In the grasp pipeline the following parameters are of importance: DO NOT CHANGE 
 class ObjectDetector(Node):
     def __init__(self):
         super().__init__('object_detector')
-        self.yolo_world_srv = self.create_service(GetObjectInfo, 'get_object_info_yolo', self.get_object_information_yolo)
+        self.object_detector_srv = self.create_service(GetObjectInfo, 'get_object_info', self.get_object_information)
 
         self.image_publisher = self.create_publisher(Image, 'video_frames', 10)
 
@@ -198,7 +198,7 @@ class ObjectDetector(Node):
 
     
     #The callback function for the detector service for YOLO World
-    def get_object_information_yolo(self, request, response, clustered = True):
+    def get_object_information(self, request, response, clustered = True):
         object = request.object_name
         self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
         self.get_logger().info(f'Requested to find {object} with Yolo World\n')
@@ -214,10 +214,24 @@ class ObjectDetector(Node):
         # If no objects are found with the specified class, try to find any object and return the class
         if len(self.yolo_results[0].boxes.data) == 0:
             self.get_logger().info(f'No {object} found\n')
-            self.apply_yolo_world(image, object, verbose=False, name_objects = True)
+            objects_found_list = self.apply_yolo_world(image, object, verbose=False, name_objects = True)
             image = self.yolo_results[0].plot()
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
+            if False: 
+                cv2.imshow("Yolo detections", image)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
             response.object_count = 0
+            for i, name in enumerate(objects_found_list):
+                obj = DetectedObject()
+                obj.name = name
+                x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+                # Convert pixel coordinates to 3D coordinates
+                cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+                # Fill in the message
+                obj.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
+                obj.grasps = []  # No grasps since no object mask was found
+                response.detected_objects.append(obj)
             return response
         
         image_with_bbx = self.yolo_results[0].plot()
@@ -238,7 +252,7 @@ class ObjectDetector(Node):
 
         for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
-            self.get_logger().info(f'SAM segments bounding box [{x_min}, {y_min}, {x_max}, {y_max}]\n')
+            self.get_logger().info(f'SAM segmenting bounding box.\n')
             self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
             # checks if the mask size matches the point cloud size
             if self.sam_masks.shape[1] != self.point_cloud.shape[0]:
@@ -276,19 +290,24 @@ class ObjectDetector(Node):
 
             detected_object = DetectedObject()
             detected_object.grasps = []
-            detected_object.name = f"{object} {i}"
+
+            # Find center of the object in 3D space
+            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+            # Convert pixel coordinates to 3D coordinates
+            cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+            # Fill in the message
+            detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
+            detected_object.name = ( f"{object} {i}")
+            detected_object.center_of_object
 
             for grasp in grasps:
                 grasp_msg = Grasp6D()
-                
                 # Fill position
                 grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
-                
                 # Fill orientation
                 grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
-
+                # Fill width
                 grasp_msg.grasp_width = grasp[6] #grasp width
-
                 detected_object.grasps.append(grasp_msg) 
 
             response.detected_objects.append(detected_object)
@@ -307,6 +326,8 @@ class ObjectDetector(Node):
                 center = np.array([x, y, z])
 
                 # Get rotation matrix from RPY
+                # Convert orientation from degrees to radians
+                roll, pitch, yaw = np.deg2rad([roll, pitch, yaw])
                 rot = ROT.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
 
                 # Grasp opening direction (gripper x-axis)
@@ -332,10 +353,13 @@ class ObjectDetector(Node):
                 if pt_center and pt_handle:
                     cv2.line(image_copy, pt_center, pt_handle, (0, 0, 255), 2)  # approach dir
 
-            cv2.imshow("Grasp Pose Overlay", image_copy)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            if False: # Set to True to visualize the grasp lines on the image 
+                cv2.imshow("Grasp Pose Overlay", image_copy)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+            self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_copy))
 
+        self.get_logger().info(f'Grasps found for {response.object_count} objects.\n')
         return response
 
     def filter_by_depth_jump_np(self, pc_np, z_jump_threshold=0.04): #4 cm
@@ -498,7 +522,7 @@ class ObjectDetector(Node):
             center = surface_points.mean(axis=0)
 
             
-            if False: #TODO
+            if True: 
                 # shift grasp center z value to grasp height
                 if max(surface_points[:, 2]) - min(surface_points[:, 2]) > 0.02: # if the object is not flat
                     grasp_height = 0.25 # Controls how far up to grasp
@@ -570,13 +594,14 @@ class ObjectDetector(Node):
         pcd = o3d.geometry.PointCloud() #point cloud object
         pcd.points = o3d.utility.Vector3dVector(pc_np_filtered)
 
-        # Downsample the point cloud into 1 mm cubes
-        pcd = pcd.voxel_down_sample(voxel_size=0.001) 
+        if len(pcd.points) > 20000:
+            # Downsample the point cloud into 1 mm cubes
+            pcd = pcd.voxel_down_sample(voxel_size=0.001) # 1 mm cubes
 
         # filter out points with large depth jumps as voxel downsampling can create noise
         pcd = self.filter_by_depth_jump(pcd.points, jump_threshold=0.02) 
 
-        if True: #True: transform the point cloud to the global frame 
+        if True: #True: transform the point cloud to the global frame TODO
             # transform the point cloud from local to global frame
             pcd = self.transform_pointcloud_to_global(pcd, self.transformation_matrix)
 
@@ -587,7 +612,12 @@ class ObjectDetector(Node):
         pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.2, max_nn=30))
 
         #orient normals consistently. Important for surface estimation !!!
-        pcd.orient_normals_consistent_tangent_plane(k=30) # k is the number of neighbors to consider
+        try:
+            pcd.orient_normals_consistent_tangent_plane(k=30) # k is the number of neighbors to consider
+        except RuntimeError:
+            camera_location_global = (self.transformation_matrix @ np.array([0, 0, 0, 1]))[:3] 
+            pcd.orient_normals_towards_camera_location(camera_location_global)
+            self.get_logger().info("Points to flat for orienting normals using tangent plane. Instead using camera location to orient normals.")
 
 
         ################################################################
@@ -856,7 +886,8 @@ class ObjectDetector(Node):
             for i in range(len(self.yolo_results[0].boxes.data)):
                 objects_found.append(model.names[int(self.yolo_results[0].boxes.data[i][5])])
 
-            self.get_logger().info(f'No {object_name} were found, but a {objects_found} was located.\n')
+            self.get_logger().info(f'No {object_name} were found, but {objects_found} was located.\n')
+            return objects_found
 
     
 
@@ -879,8 +910,6 @@ class ObjectDetector(Node):
         if self.depth_frame[pixel_y, pixel_x] == 0:
             print("No depth data available at the selected pixel.")
             return None
-
-        print(f"size of depth frame: {self.depth_frame.shape}")
 
         # Calculate the x, y, z coordinates
         z = self.depth_frame[pixel_y, pixel_x] / 1000  # Convert to meters
