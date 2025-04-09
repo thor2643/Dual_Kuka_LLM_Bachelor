@@ -1,0 +1,11 @@
+{ 
+    "function_call_1": "get_available_objects()",
+    "function_call_2": "find_object('red_brick')",
+    "function_call_3": "plan_trajectory([0.5, 0.3, 0.03, 0, 0, 0], 'right')",
+    "function_call_4": "execute_trajectory('right')",
+    "function_call_5": "manipulate_right_gripper(0)",
+    "function_call_6": "get_predefined_locations_and_poses()",
+    "function_call_7": "plan_trajectory([0.1, 0.1, 0.3, 0, 0, 0], 'right')",
+    "function_call_8": "execute_trajectory('right')",
+    "function_call_9": "manipulate_right_gripper(155)"
+}
