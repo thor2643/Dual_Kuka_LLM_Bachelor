@@ -923,7 +923,7 @@
 	    <material name="white"/>
 	  </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0.1 0" xyz="0 0 0"/>
       <geometry>
 	        <mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
       </geometry>

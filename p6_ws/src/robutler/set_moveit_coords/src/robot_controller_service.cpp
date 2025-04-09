@@ -161,8 +161,8 @@ private:
       return;
     }
 
-    // --- Constraint the planner so the end effector link (3f_tool0) is always inside a box ---
-    // Link to this code: https://moveit.picknik.ai/main/doc/how_to_guides/using_ompl_constrained_planning/ompl_constrained_planning.html
+    // --- Constraint the planner so the end effector link (3f_tool0 and 2f_tool0) is always inside a box ---
+    // Link to this constraint code: https://moveit.picknik.ai/main/doc/how_to_guides/using_ompl_constrained_planning/ompl_constrained_planning.html
     moveit_msgs::msg::PositionConstraint box_constraint;
     box_constraint.header.frame_id = move_group_interface->getPoseReferenceFrame(); // This is the link world, as set in the xacro.
     box_constraint.link_name = move_group_interface->getEndEffectorLink(); // Find the end effector link for planner group, which is 3f_tool0 for right arm, and (2f_tool0?) for left arm

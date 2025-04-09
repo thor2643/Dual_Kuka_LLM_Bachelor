@@ -10,10 +10,15 @@ from rclpy.executors import MultiThreadedExecutor
 from robotiq_3f_gripper_ros2_interfaces.msg import Robotiq3FGripperInputRegisters
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 
+#from moveit_commander import MoveGroupCommander
+from moveit_commander import MovegroupCommander
+
 # Others
 import time, threading, math
 from pymodbus.client import ModbusTcpClient
 import numpy as np
+import logging
+
 
 
 ####### Helper function #######
@@ -23,6 +28,7 @@ import numpy as np
 ###############################
 
 class GripperServiceServer(Node):
+    
     '''
     Notes:
     * Starts a service server for controlling the gripper.
@@ -214,17 +220,14 @@ class GripperServiceServer(Node):
 
 
         
-    
-    
     def shutdown_callback(self):
         self.get_logger().warn("Shutting down...")
         
         
         
-        
 def main(args=None):
     rclpy.init(args=args)
-
+    
     # Instansiate node class
     control_service_server_node = GripperServiceServer()
 
