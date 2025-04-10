@@ -4,9 +4,6 @@ import glob
 from cv_bridge import CvBridge, CvBridgeError
 
 #ROS stuff
-from project_interfaces.srv import GetObjectInfo
-from project_interfaces.srv import DefineObjectInfo
-from geometry_msgs.msg import Point
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
