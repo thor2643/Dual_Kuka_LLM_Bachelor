@@ -858,6 +858,16 @@ class LLMNode(Node):
                 }
 
                 for j, grasp in enumerate(detected_obj.grasps):
+                    
+                    # rotate the grasp 90 degrees around the z-axis of the grasp
+
+                    # Define the rotation matrix for 90 degrees around the z-axis
+                    R_90z = Rotation.from_euler('z', 90, degrees=True).as_matrix()
+                    # Define grasp rotation matrix from World to Grasp coordinates
+                    R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
+                    R_new = R_W_G @ R_90z
+                    roll, pitch, yaw = Rotation.from_matrix(R_new).as_euler('xyz', degrees=True)
+
                     self.objects_on_table[object_name]['grasps'][f'grasp {j}'] = {
                         'center': {
                             'x': grasp.position.x,
@@ -865,9 +875,9 @@ class LLMNode(Node):
                             'z': grasp.position.z
                         },
                         'orientation': {
-                            'roll': grasp.orientation.x,
-                            'pitch': grasp.orientation.y,
-                            'yaw': grasp.orientation.z
+                            'roll': roll,
+                            'pitch': pitch,
+                            'yaw': yaw
                         },
                         'width': grasp.grasp_width
                     }
