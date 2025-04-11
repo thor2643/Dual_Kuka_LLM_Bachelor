@@ -324,7 +324,7 @@ class ObjectDetector(Node):
             cx = self.camera_info[2]
             cy = self.camera_info[5]
 
-            for grasp in all_grasps:
+            for grasp in all_grasps: 
                 x, y, z, roll, pitch, yaw, grasp_witdh = grasp
                 center = np.array([x, y, z])
 
@@ -343,23 +343,6 @@ class ObjectDetector(Node):
                 grasp_right = center + x_axis
                 handle = center + z_axis
 
-                # Transform points back to camera frame
-                rot_90_z_remove = ROT.from_euler('z', -90, degrees=True).as_matrix()
-                T_90_z_remove = np.block([[rot_90_z_remove, np.zeros((3, 1))], [np.zeros((1, 3)), 1]])
-
-                
-                T = self.invert_transformation_matrix(self.transformation_matrix)
-                grasp_left = T_90_z_remove @ T @ np.array([*grasp_left, 1]) 
-                grasp_right = T_90_z_remove @ T @ np.array([*grasp_right, 1])
-                handle = T_90_z_remove @ T @ np.array([*handle, 1])
-                center = T_90_z_remove @ T @ np.array([*center, 1])
-
-                # Remove the last entry (homogeneous coordinate) by slicing the array
-                grasp_left = grasp_left[:3]
-                grasp_right = grasp_right[:3]
-                handle = handle[:3]
-                center = center[:3]
-
                 # Project points to image
                 pt_left = self.project(grasp_left, fx, fy, cx, cy)
                 pt_right = self.project(grasp_right, fx, fy, cx, cy)
@@ -377,6 +360,7 @@ class ObjectDetector(Node):
                     cv2.line(image_copy, pt_center, pt_handle, (0, 0, 255), 2)  # approach dir
                 
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_copy))
+
 
         self.get_logger().info(f'Grasps found for {response.object_count} objects. Object detector Done.\n')
         return response
@@ -560,19 +544,10 @@ class ObjectDetector(Node):
             U, _, Vt = np.linalg.svd(R_matrix)
             R_ortho = U @ Vt
 
-            # Tranform to camera frame rotate 90 degrees around z-axis and transform back to global frame again
-            T_camera_world = self.transformation_matrix
-            T_world_camera = self.invert_transformation_matrix(T_camera_world)
-            rot_90_z = ROT.from_euler('z', 90, degrees=True).as_matrix() 
-            T_90_z = np.block([[rot_90_z, np.zeros((3, 1))], [np.zeros((1, 3)), 1]])
-            T_ortho = np.block([[R_ortho, center.reshape(3, 1)], [np.zeros((1, 3)), 1]])
-
-            T_ortho = T_world_camera @ T_ortho #from global to camera frame
-            T_ortho = T_90_z @ T_ortho # rotate 90 degrees around z-axis of gripper
-            T_ortho = T_camera_world @ T_ortho # from camera to global frame
+            
 
             # Convert to roll-pitch-yaw
-            rpy = ROT.from_matrix(T_ortho[:3,:3]).as_euler('xyz', degrees=True)
+            rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
 
             # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
             plane_normal = approach
@@ -769,19 +744,9 @@ class ObjectDetector(Node):
         U, _, Vt = np.linalg.svd(R_matrix)
         R_ortho = U @ Vt
 
-         # Tranform to camera frame rotate 90 degrees around z-axis and transform back to global frame again
-        T_camera_world = self.transformation_matrix
-        T_world_camera = self.invert_transformation_matrix(T_camera_world)
-        rot_90_z = ROT.from_euler('z', 90, degrees=True).as_matrix() 
-        T_90_z = np.block([[rot_90_z, np.zeros((3, 1))], [np.zeros((1, 3)), 1]])
-        T_ortho = np.block([[R_ortho, center.reshape(3, 1)], [np.zeros((1, 3)), 1]])
-
-        T_ortho = T_world_camera @ T_ortho #from global to camera frame
-        T_ortho = T_90_z @ T_ortho # rotate 90 degrees around z-axis of gripper
-        T_ortho = T_camera_world @ T_ortho # from camera to global frame
 
         # Convert to roll-pitch-yaw
-        rpy = ROT.from_matrix(T_ortho[:3,:3]).as_euler('xyz', degrees=True)
+        rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
 
         # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
         plane_normal = approach
