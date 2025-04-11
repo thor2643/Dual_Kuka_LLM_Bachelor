@@ -93,13 +93,13 @@
         "type": "function",
         "function": {
             "name": "manipulate_right_gripper",
-            "description": "Adjusts the right gripper, so that it opens or closes or anywhere inbetween depending on the situation. The width, speed, and force of the gripper can be specified as an argument. The default width is 167, default speed is 110, and default force is 15. This executes at once, so do not call together with plan_robot_trajectory and expect it to first execute when executing the trajectory. In other words, only call this function after having executed a trajectory when doing pickup tasks",
+            "description": "Adjusts the right gripper, so that it opens or closes or anywhere inbetween depending on the situation. The width, speed, and force of the gripper can be specified as an argument. The default width is 155, default speed is 110, and default force is 15. This executes at once, so do not call together with plan_robot_trajectory and expect it to first execute when executing the trajectory. In other words, only call this function after having executed a trajectory when doing pickup tasks",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "width": {
                         "type": "number",
-                        "description": "An integer representing the width of the right gripper. The range is 0-167 with 0 being fully closed and 167 being fully open. The default width is 167, and the unit is millimetres [mm]."
+                        "description": "An integer representing the width of the right gripper. The range is 0-155 with 0 being fully closed and 167 being fully open. The default width is 155, and the unit is millimetres [mm]."
                     },
                     "speed": {
                         "type": "number",

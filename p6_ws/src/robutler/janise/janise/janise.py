@@ -263,6 +263,8 @@ class LLMNode(Node):
             - Before you are to make decisions, another agent named Socrates will provide you with insights and guidance to ensure that the correct actions are taken. You should always consider the suggestions made by Socrates before making a decision.
             - If not specified by the user, use the left arm for operations on the left side and use the right arm for operations on the right side.
             - Perform steps in an appropriate order e.g. move arm to object before closing gripper and plan trajectory before executing it.
+            - Never manipulate the grippers before the arms are moved to the desired position!! 
+            - Close the gripper to 0 and not grasp_width for the object you must grasp.
             - Safety is of utmost importance, so when in doubt always consult the user first. Especially for actions that move the robot.
                   
         """)

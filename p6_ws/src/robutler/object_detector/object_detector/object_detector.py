@@ -3,6 +3,7 @@ from ultralytics import YOLOWorld    #pip install ultralytics
 
 #SAM
 from ultralytics import SAM
+import torch
 
 #Point cloud
 import open3d as o3d
@@ -151,7 +152,7 @@ class ObjectDetector(Node):
         # Publish initial image to GUI
         self.retrieve_aligned_frames()
         image = self.get_color_image()
-        self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(cv2.rotate(image, cv2.ROTATE_180)))
+        self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
 
 
     def retrieve_aligned_frames(self):      
@@ -238,7 +239,7 @@ class ObjectDetector(Node):
 
         self.get_logger().info(f'Found {len(self.yolo_results[0].boxes.data)} {object}\n')
 
-        self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_with_bbx))
+        #self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_with_bbx))
 
         if False:
             # Show the image with bounding boxes
@@ -254,6 +255,7 @@ class ObjectDetector(Node):
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
             self.get_logger().info(f'SAM segmenting bounding box.\n')
             self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
+            torch.cuda.empty_cache() # Clear GPU memory TODO
             # checks if the mask size matches the point cloud size
             if self.sam_masks.shape[1] != self.point_cloud.shape[0]:
                 self.get_logger().warn("Mask size doesn't match point cloud...")
@@ -284,7 +286,8 @@ class ObjectDetector(Node):
                 
             #Apply the mask to the point cloud
             point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
-            grasps = self.grasp_prediction(point_cloud_masked, num_candidates=2) # num_candidates is the number of grasps to be generated
+            grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
+            self.get_logger().info(f'Grasps found: {len(grasps)}\n')
             all_grasps.extend(grasps)
 
 
@@ -340,11 +343,31 @@ class ObjectDetector(Node):
                 grasp_right = center + x_axis
                 handle = center + z_axis
 
+                # Transform points back to camera frame
+                rot_90_z_remove = ROT.from_euler('z', -90, degrees=True).as_matrix()
+                T_90_z_remove = np.block([[rot_90_z_remove, np.zeros((3, 1))], [np.zeros((1, 3)), 1]])
+
+                
+                T = self.invert_transformation_matrix(self.transformation_matrix)
+                grasp_left = T_90_z_remove @ T @ np.array([*grasp_left, 1]) 
+                grasp_right = T_90_z_remove @ T @ np.array([*grasp_right, 1])
+                handle = T_90_z_remove @ T @ np.array([*handle, 1])
+                center = T_90_z_remove @ T @ np.array([*center, 1])
+
+                # Remove the last entry (homogeneous coordinate) by slicing the array
+                grasp_left = grasp_left[:3]
+                grasp_right = grasp_right[:3]
+                handle = handle[:3]
+                center = center[:3]
+
                 # Project points to image
                 pt_left = self.project(grasp_left, fx, fy, cx, cy)
                 pt_right = self.project(grasp_right, fx, fy, cx, cy)
                 pt_handle = self.project(handle, fx, fy, cx, cy)
                 pt_center = self.project(center, fx, fy, cx, cy)
+                self.get_logger().info(f'Grasp left: {grasp_left}, Grasp right: {grasp_right}, Handle: {handle}, Center: {center}\n')
+                self.get_logger().info(f'Projected points: {pt_left}, {pt_right}, {pt_handle}, {pt_center}\n')
+
 
                 # Draw lines if all are valid
                 if pt_left and pt_right:
@@ -352,14 +375,10 @@ class ObjectDetector(Node):
 
                 if pt_center and pt_handle:
                     cv2.line(image_copy, pt_center, pt_handle, (0, 0, 255), 2)  # approach dir
-
-            if False: # Set to True to visualize the grasp lines on the image 
-                cv2.imshow("Grasp Pose Overlay", image_copy)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+                
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_copy))
 
-        self.get_logger().info(f'Grasps found for {response.object_count} objects.\n')
+        self.get_logger().info(f'Grasps found for {response.object_count} objects. Object detector Done.\n')
         return response
 
     def filter_by_depth_jump_np(self, pc_np, z_jump_threshold=0.04): #4 cm
@@ -413,7 +432,7 @@ class ObjectDetector(Node):
                                             probs=True) 
         
         # Publish the image to the GUI
-        self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(self.sam_result_img))
+        #self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(self.sam_result_img))
         
         # Convert all masks to NumPy and scale binary mask
         self.sam_masks = (results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
@@ -502,7 +521,7 @@ class ObjectDetector(Node):
         grasps = []
 
         # Generate a top-down grasp (approaching from above)
-        if True:
+        if False: # Set to True to generate a top-down grasp
             top_grasp = self.generate_top_down_grasp(pcd)
             grasps.append(top_grasp) # dummy grasp
 
@@ -532,6 +551,8 @@ class ObjectDetector(Node):
 
             # Opening direction = PCA component 1 (shorter in-plane axis)
             x_axis = pca.components_[1]
+
+
             y_axis = np.cross(approach, x_axis)
 
             # Re-orthonormalize (ensures that no numerical errors occur in the calculated rotation matrix and that they are orthognormal) 
@@ -539,8 +560,19 @@ class ObjectDetector(Node):
             U, _, Vt = np.linalg.svd(R_matrix)
             R_ortho = U @ Vt
 
+            # Tranform to camera frame rotate 90 degrees around z-axis and transform back to global frame again
+            T_camera_world = self.transformation_matrix
+            T_world_camera = self.invert_transformation_matrix(T_camera_world)
+            rot_90_z = ROT.from_euler('z', 90, degrees=True).as_matrix() 
+            T_90_z = np.block([[rot_90_z, np.zeros((3, 1))], [np.zeros((1, 3)), 1]])
+            T_ortho = np.block([[R_ortho, center.reshape(3, 1)], [np.zeros((1, 3)), 1]])
+
+            T_ortho = T_world_camera @ T_ortho #from global to camera frame
+            T_ortho = T_90_z @ T_ortho # rotate 90 degrees around z-axis of gripper
+            T_ortho = T_camera_world @ T_ortho # from camera to global frame
+
             # Convert to roll-pitch-yaw
-            rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
+            rpy = ROT.from_matrix(T_ortho[:3,:3]).as_euler('xyz', degrees=True)
 
             # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
             plane_normal = approach
@@ -566,6 +598,19 @@ class ObjectDetector(Node):
             grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
 
         return grasps
+
+    def invert_transformation_matrix(self, T):
+            """
+            Inverts a 4x4 transformation matrix.
+            """
+            R = T[:3, :3]
+            t = T[:3, 3]
+            R_inv = R.T
+            t_inv = -np.dot(R_inv, t)
+            T_inv = np.eye(4)
+            T_inv[:3, :3] = R_inv
+            T_inv[:3, 3] = t_inv
+            return T_inv
 
 
     def grasp_prediction(self, point_cloud_masked, num_candidates):
@@ -724,8 +769,19 @@ class ObjectDetector(Node):
         U, _, Vt = np.linalg.svd(R_matrix)
         R_ortho = U @ Vt
 
+         # Tranform to camera frame rotate 90 degrees around z-axis and transform back to global frame again
+        T_camera_world = self.transformation_matrix
+        T_world_camera = self.invert_transformation_matrix(T_camera_world)
+        rot_90_z = ROT.from_euler('z', 90, degrees=True).as_matrix() 
+        T_90_z = np.block([[rot_90_z, np.zeros((3, 1))], [np.zeros((1, 3)), 1]])
+        T_ortho = np.block([[R_ortho, center.reshape(3, 1)], [np.zeros((1, 3)), 1]])
+
+        T_ortho = T_world_camera @ T_ortho #from global to camera frame
+        T_ortho = T_90_z @ T_ortho # rotate 90 degrees around z-axis of gripper
+        T_ortho = T_camera_world @ T_ortho # from camera to global frame
+
         # Convert to roll-pitch-yaw
-        rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
+        rpy = ROT.from_matrix(T_ortho[:3,:3]).as_euler('xyz', degrees=True)
 
         # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
         plane_normal = approach
@@ -867,7 +923,7 @@ class ObjectDetector(Node):
         return np.asanyarray(self.color_frame)
 
     def show_image(self, image):
-        cv2.imshow("Image", cv2.rotate(image, cv2.ROTATE_180))
+        cv2.imshow("Image", image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
@@ -981,7 +1037,7 @@ class ObjectDetector(Node):
         file_path = os.path.join(save_folder, file_name)
 
         # Save the image
-        cv2.imwrite(file_path, cv2.rotate(image, cv2.ROTATE_180))  # Rotate if needed
+        cv2.imwrite(file_path, image)  # Rotate if needed
         print(f"Image saved: {file_path}")
 
 
