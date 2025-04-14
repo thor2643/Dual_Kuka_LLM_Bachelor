@@ -1,0 +1,8 @@
+# Request
+bool request
+string gripper
+
+---
+# Response
+string log
+float64[] grasp_candidates
