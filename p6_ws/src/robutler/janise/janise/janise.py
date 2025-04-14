@@ -166,6 +166,7 @@ class LLMNode(Node):
                                    StructuredTool.from_function(self.detected_success)]
                 
         self.tool_node = ToolNode(self.tools)
+        self.task_detector_tool_node = ToolNode(self.task_detector_tools)
 
         # Initialize Ollama client or OpenAI client with API key and optional project ID
         if self.use_ollama:
@@ -359,31 +360,33 @@ class LLMNode(Node):
 
         # Define model nodes
         self.task_detector_model = self.model.bind_tools(self.task_detector_tools)
-        self.correction_model = self.model.bind_tools(self.tools, tool_choice='none')
+        self.correction_model = self.model.bind_tools(self.tools)
 
         self.cell_workflow = StateGraph(MessagesState)
         self.cell_config = {"configurable": {"thread_id": "cell_1"}}
         self.cell_memory = MemorySaver()
 
-        self.cell_workflow.add_node("success detector", self.call_success_detector)
-        self.cell_workflow.add_node("error corrector", self.call_error_corrector)
+        self.cell_workflow.add_node("success_detector", self.call_success_detector)
+        self.cell_workflow.add_node("error_corrector", self.call_error_corrector)
+        self.cell_workflow.add_node("detector_action", self.task_detector_tool_node)
+        self.cell_workflow.add_node("corrector_action", self.tool_node)
 
-        self.cell_workflow.add_edge(START, "success detector")
-        self.cell_workflow.add_edge("success detector", "error corrector")
+        self.cell_workflow.add_edge(START, "success_detector")
+        self.cell_workflow.add_edge("success_detector", "detector_action")
 
         self.cell_workflow.add_conditional_edges(
             # First, we define the start node. We use `agent`.
             # This means these are the edges taken after the `agent` node is called.
-            "success detector",
+            "detector_action",
             # Next, we pass in the function that will determine which node is called next.
             self.successful_task,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["error corrector", END],
+            ["error_corrector", END],
         )
 
-        # We now add a normal edge from `tools` to `thought`.
-        self.cell_workflow.add_edge("error corrector", "success detector")
-        #self.isaac_workflow.add_edge("thought", "agent")
+        #TODO: Add a condition to check if the task was successful
+        self.cell_workflow.add_edge("error_corrector", "corrector_action")
+        self.cell_workflow.add_edge("corrector_action", "success_detector")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
@@ -426,7 +429,10 @@ class LLMNode(Node):
                                                                         Therefore, your task is to determine whether the subtask or tool call was successful or not. 
                                                                         To determine this, you are given the called tool name and its returned results.
                                                                         If you consider the tool call / subtask to be successful, you should call the function "detected_success".
-                                                                        Otherwise call the function "detected_failure".
+                                                                        Otherwise call the function "detected_failure". Notice, it is not enough for the tool to simply return a result to bes successful.
+                                                                        You must read the results and determine whether the tool call was successful or not.
+                                                             
+                                                                        Always provide reasoning for your decision before calling the tool.
                                                              
                                                                         Based on your response the pipeline will either continue to the next subtask or correct the previous one by using another corrector agent.""")       
 
@@ -444,6 +450,10 @@ class LLMNode(Node):
                                                                 If the subtask was not successful, you are to provide a correction to the previous tool call.
                                                                 You are given the called tool name and a failure description from the previous agent.
                                                                 Given this information and the tool available to you, you are to provide a correction that completes the current subtask, so the next tool in the sequence can be called.
+                                                      
+                                                                A correction here refers to calling another tool or calling the same tool again with different parameters.
+                                                                Notice you can not get any help or request any information from the other agent. Based on the chat history you must determine what the next step is.
+                                                                Always call a tool.
                                                                 """)
 
         # Append the initial prompt to the message state
@@ -773,14 +783,18 @@ class LLMNode(Node):
     # If a tool is to be called, the action node is called otherwise the agent node is called
     def successful_task(self, state: MessagesState):
         """Determines whether the error corrector should be called or not."""
-        last_message = state["messages"][-1]
+        self.get_logger().info("Checking if task was successful")
+
+        tool = state["messages"][-1]
+
         # Check if the model has called the "detected_failure" or "detected_success" function
-        if last_message.tool_calls:
-            for tool_call in last_message.tool_calls:
-                if tool_call["name"] == "detected_failure":
-                    return "error corrector"
-                elif tool_call["name"] == "detected_success":
-                    return END
+        if tool.name == "detected_failure":
+            self.get_logger().info("Detected failure")
+            return "error_corrector"
+        elif tool.name == "detected_success":
+            self.get_logger().info("Detected success")
+            return END
+ 
         # If no relevant function call, finish
         return END
     
@@ -792,12 +806,19 @@ class LLMNode(Node):
     
     def call_success_detector(self, state: MessagesState):
         # We append the initial prompt to Janise
-        state["messages"][0] = self.initial_prompt_success_detector
+        state_shortened = {"messages": [self.initial_prompt_success_detector]}
 
-        # Append the initial prompt to the message state
-        self.cell_agent.update_state(self.cell_config, {"messages": state["messages"]})
+        # Check if the last message is a HumanMessage or ToolMessage
+        last_message = state["messages"][-1]
+        
+        if isinstance(last_message, HumanMessage):
+            state_shortened["messages"].append(last_message)
+        elif isinstance(last_message, ToolMessage):
+            # A tool message must be preceeded by an AI message containg the tool call
+            state_shortened["messages"].append(state["messages"][-2])
+            state_shortened["messages"].append(last_message)
 
-        response = self.task_detector_model.invoke(state["messages"])
+        response = self.task_detector_model.invoke(state_shortened["messages"])
         # We return a list, because this will get added to the existing list
         response.name = "Success_Detector"
         return {"messages": response}
@@ -806,10 +827,8 @@ class LLMNode(Node):
         # We append the initial prompt to Janise
         state["messages"][0] = self.initial_prompt_corrector
 
-        # Append the initial prompt to the message state
-        self.cell_agent.update_state(self.cell_config, {"messages": state["messages"]})
+        response = self.correction_model.invoke(state["messages"])
 
-        response = self.task_detector_model.invoke(state["messages"])
         # We return a list, because this will get added to the existing list
         response.name = "Error_Corrector"
         return {"messages": response}
@@ -883,11 +902,9 @@ class LLMNode(Node):
         """Indicates that a failure has occurred in the system.
 
         This function is used to signal that an error or unexpected situation has been detected. 
-        It can be used for debugging or logging purposes to track the occurrence of failures in 
-        the system.
 
         Returns:
-            bool: False that a failure has been detected.
+            bool: True
         """
         self.get_logger().error("Failure detected")
         return True
@@ -897,11 +914,9 @@ class LLMNode(Node):
         """Indicates that a success has occurred in the system.
 
         This function is used to signal that a successful operation or event has been detected. 
-        It can be used for debugging or logging purposes to track the occurrence of successes in 
-        the system.
 
         Returns:
-            bool: True when a message indicating that a success has been detected.
+            bool: True
         """
         self.get_logger().info("Success detected")
         return True
@@ -1447,6 +1462,9 @@ class LLMNode(Node):
         
         """
 
+        # Is changed if all tool have been called
+        response.message = "Failed to run from tool list."
+
         # Read the tool list from the tool_calls.json file
         tool_calls_path = 'src/robutler/janise/tool_calls.json'
         try:
@@ -1456,10 +1474,10 @@ class LLMNode(Node):
             self.get_logger().info(f"Tool calls loaded from {tool_calls_path}")
         except FileNotFoundError:
             self.get_logger().error(f"File {tool_calls_path} not found.")
-            return
+            return response
         except json.JSONDecodeError as e:
             self.get_logger().error(f"Error decoding JSON from {tool_calls_path}: {e}")
-            return
+            return response
 
         # Iterate through the tool calls and execute them
         for function_num, details in tool_calls.items():
@@ -1472,7 +1490,7 @@ class LLMNode(Node):
                 result = func(**details["args"])
 
                 # Convert to langgraph message
-                query = HumanMessage(f"Was calling {details['function_name']} successful with result: {result}")
+                query = HumanMessage(f"Called {details['function_name']} which returned: {result}")
 
                 # Check if the function call was successful and correct if necessary
                 for event in self.cell_agent.stream({"messages": [query]}, self.cell_config, stream_mode="values"):
@@ -1484,8 +1502,11 @@ class LLMNode(Node):
         
         self.get_logger().info("Finished running from tool list")
 
-        
-        
+        # If all tools have been called, we can return a success message
+        response.message = "All tools have been called successfully."
+
+        return response
+
 
     def gui_handle_service(self, request, response):
         prompt = request.prompt  # prompt is a string
