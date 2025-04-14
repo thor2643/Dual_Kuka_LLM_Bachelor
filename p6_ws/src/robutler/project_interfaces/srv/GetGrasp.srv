@@ -1,6 +1,7 @@
 # Request
 bool request
 string gripper
+string object_name
 
 ---
 # Response

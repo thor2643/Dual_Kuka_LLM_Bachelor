@@ -2,6 +2,9 @@ from project_interfaces.srv import GetGrasp
 import rclpy
 from rclpy.node import Node
 
+import logging
+logging.getLogger().setLevel(logging.ERROR) # Supress warnings
+
 
 class GraspClient(Node):
     def __init__(self):
@@ -13,6 +16,7 @@ class GraspClient(Node):
     def send_request(self):
         self.req.request = True
         self.req.gripper = "right"
+        self.req.object_name = "book"
         self.future = self.cli.call_async(self.req)
         rclpy.spin_until_future_complete(self, self.future)
         
