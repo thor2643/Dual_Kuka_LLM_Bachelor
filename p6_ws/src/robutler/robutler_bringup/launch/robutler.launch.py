@@ -15,10 +15,10 @@ def generate_launch_description():
         #),
         
         # 3F Gripper - Service
-        Node(
-            package='robotiq_3f_gripper_ros2_control',
-            executable='gripper_control_service_server'
-        ),
+        #Node(
+        #    package='robotiq_3f_gripper_ros2_control',
+        #    executable='gripper_control_service_server'
+        #),
          
         # 2F Gripper - Service
         #Node(
@@ -27,29 +27,29 @@ def generate_launch_description():
         #),
 
         # Janise
-        #Node(
-        #    package='janise',
-        #    executable='omni_client',
-        #    prefix=['gnome-terminal -- bash -c "ros2 run janise omni_client; exec bash"']
-        #),
+        Node(
+            package='janise',
+            executable='omni_client',
+            prefix=['gnome-terminal -- bash -c "ros2 run janise omni_client; exec bash"']
+        ),
 
         #GUI
-        #Node(
-        #    package='gui_package',
-        #    executable='gui_node',
-        #    prefix=['gnome-terminal -- bash -c "ros2 run gui_package gui_node; exec bash"']
-        #),
+        Node(
+            package='gui_package',
+            executable='gui_node',
+            prefix=['gnome-terminal -- bash -c "ros2 run gui_package gui_node; exec bash"']
+        ),
 
         # Moveit Coords - Set_moveit_coords.launch
-        #IncludeLaunchDescription(
-        #    PythonLaunchDescriptionSource(
-        #        os.path.join(
-        #            get_package_share_directory('set_moveit_coords'),
-        #            'launch',
-        #            'set_moveit_coords.launch.py'
-        #        )
-        #    )
-        #),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory('set_moveit_coords'),
+                    'launch',
+                    'set_moveit_coords.launch.py'
+                )
+            )
+        ),
         
         # Realsense
         #IncludeLaunchDescription(
@@ -63,13 +63,13 @@ def generate_launch_description():
         #),
 
         # Dual Arm - Demo Launch
-        #IncludeLaunchDescription(
-        #    PythonLaunchDescriptionSource(
-        #        os.path.join(
-        #            get_package_share_directory('dual_arm_moveit_config'),
-        #            'launch',
-        #            'demo.launch.py'
-        #        )
-        #    )
-        #),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory('dual_arm_moveit_config'),
+                    'launch',
+                    'demo.launch.py'
+                )
+            )
+        ),
     ])

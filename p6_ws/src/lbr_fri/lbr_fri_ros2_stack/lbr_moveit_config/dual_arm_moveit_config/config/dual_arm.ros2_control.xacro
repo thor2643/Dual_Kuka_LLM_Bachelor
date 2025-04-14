@@ -368,7 +368,13 @@
         <param name="initial_value">0.0</param>
       </state_interface>
     </joint>
+  </ros2_control>
 
+  <!-- Setup of Hardware for 2F Gripper -->
+  <ros2_control name="2FGripper" type="system">
+    <hardware>
+      <plugin>mock_components/GenericSystem</plugin>
+    </hardware>
   <!-- Setup of Hardware for 2F Gripper -->
     <joint name="left_2f_robotiq_85_left_knuckle_joint">
       <param name="max_velocity">2</param>

@@ -22,7 +22,8 @@ def generate_launch_description():
     package_path_cont = get_package_share_directory('isaac_dual_arm_moveit_config')
     
     xacro_file = os.path.join(package_path_xacro, 'urdf', 'isaac_dual_arm', 'isaac_dual_arm.xacro')
-    controllers_yaml = os.path.join(package_path_cont, 'config', 'ros2_controllers.yaml')
+    
+    #controllers_yaml = os.path.join(package_path_cont, 'config', 'ros2_controllers.yaml')
     
     # Process the xacro file
     doc = xacro.parse(open(xacro_file))

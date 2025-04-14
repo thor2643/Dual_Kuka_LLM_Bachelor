@@ -29,6 +29,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/GripperMoveit.srv"
   "srv/GetObjectInfo.srv"
   "srv/PlanMoveCommand.srv"
   "srv/DefineObjectInfo.srv"

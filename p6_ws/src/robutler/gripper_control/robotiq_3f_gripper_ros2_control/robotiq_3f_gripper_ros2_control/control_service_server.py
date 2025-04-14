@@ -10,15 +10,13 @@ from rclpy.executors import MultiThreadedExecutor
 from robotiq_3f_gripper_ros2_interfaces.msg import Robotiq3FGripperInputRegisters
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 
-#from moveit_commander import MoveGroupCommander
-from moveit_commander import MovegroupCommander
+# Moveit2 
+#import moveit_commander ewww
 
 # Others
 import time, threading, math
 from pymodbus.client import ModbusTcpClient
 import numpy as np
-import logging
-
 
 
 ####### Helper function #######

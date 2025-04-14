@@ -1465,7 +1465,37 @@
       <material name="white"/>
     </visual>
   </link>
-
+  <link name="left_side_wall">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_side_wall">
+    <collision>
+      <origin rpy="0 0 0" xyz="-1.411 0 0"/>
+      <geometry>
+        <mesh filename="package://lbr_description/meshes/table/collision/Side_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="back_wall">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0.1 0"/>
+      <geometry>
+        <mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0.1 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
   <link name="left_box">
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
@@ -1524,7 +1554,21 @@
     <parent link="table_top"/>
     <child link="wooden_top"/>
   </joint>
-
+  <joint name="left_side_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="left_side_wall"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <joint name="right_side_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="right_side_wall"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <joint name="back_wall_joint" type="fixed">
+    <parent link="world"/>
+    <child link="back_wall"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
   <joint name="left_box_joint" type="fixed">
     <parent link="world"/>
     <child link="left_box"/>

@@ -7,6 +7,7 @@
 #include "project_interfaces/srv/plan_move_command.hpp"
 #include "project_interfaces/srv/execute_move_command.hpp"
 #include "project_interfaces/srv/get_current_pose.hpp"
+#include "project_interfaces/srv/gripper_moveit.hpp"
 //include <moveit_visual_tools/moveit_visual_tools.h>
 #include <string>
 #include <sstream>
@@ -27,6 +28,14 @@ public:
     RCLCPP_INFO(this->get_logger(), "Creating MoveGroupInterface for left arm");
     moveit::planning_interface::MoveGroupInterface::Options options_left("left_arm", "robot_description", "");
     move_group_interface_left = std::make_shared<moveit::planning_interface::MoveGroupInterface>(std::make_shared<rclcpp::Node>(this->get_name()), options_left);
+
+    RCLCPP_INFO(this->get_logger(), "Creating MoveGroupInterface for 3f gripper");
+    moveit::planning_interface::MoveGroupInterface::Options options_3f("3f_gripper", "robot_description", "");
+    move_group_3f = std::make_shared<moveit::planning_interface::MoveGroupInterface>(std::make_shared<rclcpp::Node>(this->get_name()), options_3f);
+
+    RCLCPP_INFO(this->get_logger(), "Creating MoveGroupInterface for 2f gripper");
+    moveit::planning_interface::MoveGroupInterface::Options options_2f("2f_gripper", "robot_description", "");
+    move_group_2f = std::make_shared<moveit::planning_interface::MoveGroupInterface>(std::make_shared<rclcpp::Node>(this->get_name()), options_2f);
 
     // Fix bug in MoveGroupInterface
     ee_link_right = move_group_interface_right->getEndEffectorLink();
@@ -65,6 +74,9 @@ public:
     joint_state_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
       "joint_states", 10, std::bind(&RobotControllerService::joint_state_callback, this, std::placeholders::_1));
 
+    gripper_service = this->create_service<project_interfaces::srv::GripperMoveit>(
+      "gripper_moveit", std::bind(&RobotControllerService::handle_gripper_service, this, std::placeholders::_1, std::placeholders::_2));
+
     // Print the pose
     //RCLCPP_INFO(this->get_logger(), "End effector pose:\n%s", end_effector_state.matrix().format(Eigen::IOFormat()).c_str());
   }
@@ -72,10 +84,13 @@ public:
 private:
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_right;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_left;
+  std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_3f;
+  std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_2f;
 
   rclcpp::Service<project_interfaces::srv::PlanMoveCommand>::SharedPtr planner_service;
   rclcpp::Service<project_interfaces::srv::ExecuteMoveCommand>::SharedPtr execute_service;
   rclcpp::Service<project_interfaces::srv::GetCurrentPose>::SharedPtr get_pose_service;
+  rclcpp::Service<project_interfaces::srv::GripperMoveit>::SharedPtr gripper_service;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber;
   moveit::planning_interface::MoveGroupInterface::Plan plan_right;
   moveit::planning_interface::MoveGroupInterface::Plan plan_left;
@@ -124,7 +139,7 @@ private:
             }
         }
     }
-
+  
   // Callback to plan the trajectory to the target pose
   void handle_planner_service(const std::shared_ptr<project_interfaces::srv::PlanMoveCommand::Request> request,
                       const std::shared_ptr<project_interfaces::srv::PlanMoveCommand::Response> response) {
@@ -139,7 +154,7 @@ private:
     std::string right_array[7] = {"right_A1", "right_A2", "right_A3", "right_A4", "right_A5", "right_A6", "right_A7"};
     std::string left_array[7] = {"left_A1", "left_A2", "left_A3", "left_A4", "left_A5", "left_A6", "left_A7"};
     // Pointer to point to the chosen array
-    std::string (*linkArray)[7] = nullptr;
+    //std::string (*linkArray)[7] = nullptr;
 
     // Check if the request is for the right or left arm
     if (request->arm == "right") {
@@ -147,13 +162,13 @@ private:
       move_group_interface = move_group_interface_right;
       plan = &plan_right;
       plan_available = &plan_available_right;
-      linkArray = &right_array;
+      //linkArray = &right_array;
     } else if (request->arm == "left") {
       RCLCPP_INFO(this->get_logger(), "Planning for left arm");
       move_group_interface = move_group_interface_left;
       plan = &plan_left;
       plan_available = &plan_available_left;
-      linkArray = &left_array;
+      //linkArray = &left_array;
     } else {
       RCLCPP_ERROR(this->get_logger(), "Invalid arm specified");
       response->log = "Invalid arm specified";
@@ -394,6 +409,36 @@ private:
     }
     }
     */
+
+    void handle_gripper_service(const std::shared_ptr<project_interfaces::srv::GripperMoveit::Request> request,
+      const std::shared_ptr<project_interfaces::srv::GripperMoveit::Response> response) {
+      // This service is to ensure that the grippers in rviz / moveit mirrors the state of the real grippers.
+      RCLCPP_INFO(this->get_logger(), "Received gripper command: %s", request->gripper_name.c_str());
+
+      std::string gripper_goal;
+
+      // These poses are set in the SRDF.
+      if (request->width > 10) {
+        gripper_goal = "open";
+      } else {
+        gripper_goal = "closed";
+      }
+
+      if (request->gripper_name == "3f") {
+        move_group_3f->setNamedTarget(gripper_goal);
+        move_group_3f->move();
+        response->success = true;
+
+      } else if (request->gripper_name == "2f") {
+        move_group_2f->setNamedTarget(gripper_goal);
+        move_group_2f->move();
+        response->success = true;
+
+      } else {
+        RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified");
+        response->success = false;
+      }
+    }
     
     void handle_pose_request_service(const std::shared_ptr<project_interfaces::srv::GetCurrentPose::Request> request,
                       const std::shared_ptr<project_interfaces::srv::GetCurrentPose::Response> response) {
@@ -507,7 +552,7 @@ private:
     return T;
   }
 
-};
+}; // class RobotControllerService
 
 
 int main(int argc, char **argv) {
