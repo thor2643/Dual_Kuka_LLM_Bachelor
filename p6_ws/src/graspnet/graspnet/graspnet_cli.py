@@ -7,7 +7,7 @@ from rclpy.node import Node
 class GraspClient(Node):
     def __init__(self):
         super().__init__('minimal_grasp_client')
-        self.cli = self.create_client(GetObjectInfo, 'get_grasp_anygrasp')
+        self.cli = self.create_client(GetObjectInfo, 'get_any_object_info')
 
         self.req = GetObjectInfo.Request()
 

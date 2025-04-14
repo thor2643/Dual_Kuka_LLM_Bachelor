@@ -95,7 +95,7 @@ class AnyGraspPipeline(Node):
         ])
         self.factor_depth = np.array([1000.0])
 
-        self.grasp_srv = self.create_service(GetObjectInfo, 'get_grasp_anygrasp', self.get_grasps)
+        self.grasp_srv = self.create_service(GetObjectInfo, 'get_any_object_info', self.get_grasps)
 
 
     def get_grasps(self, request, response):
