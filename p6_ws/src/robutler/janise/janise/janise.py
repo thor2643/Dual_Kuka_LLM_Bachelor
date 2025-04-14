@@ -161,6 +161,9 @@ class LLMNode(Node):
                       StructuredTool.from_function(self.manipulate_left_gripper), 
                       StructuredTool.from_function(self.get_current_pose), 
                       StructuredTool.from_function(self.stop_message_looping)]
+        
+        self.task_detector_tools = [StructuredTool.from_function(self.detected_failure), 
+                                   StructuredTool.from_function(self.detected_success)]
                 
         self.tool_node = ToolNode(self.tools)
 
@@ -178,37 +181,39 @@ class LLMNode(Node):
                 os.environ["OPENAI_API_KEY"] = API_KEY 
 
         # Initialise the model
-        # Change this to the model you want to use
+        # Change this to the model you want to use. We might implement more
         self.model = ChatOpenAI(model="gpt-4o")
+
+        # In Isaac
         self.bound_model = self.model.bind_tools(self.tools)
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
 
         self.memory = MemorySaver()
 
+        # ------------------------- Isaac Sim Workflow ------------------------- #
+
         # Define a new graph
         # Using graphs allows us to define the flow of the conversation
         # To grasp this, it might be helpful to read a bit about graph theory
         # For each node action taken, we can will store the state of the conversation i.e. the messages
-        self.workflow = StateGraph(MessagesState)
+        self.isaac_workflow = StateGraph(MessagesState)
 
         # Define the two nodes we will cycle between
         # The action node is the node that can actually call the tool using langgraphs's ToolNode class
         # We could for an example also add an observation node for our evaluating model
-        self.workflow.add_node("agent", self.call_model)
-        self.workflow.add_node("action", self.tool_node)
-
-        # Consider adding another system message for this model
-        self.workflow.add_node("thought", self.think)
+        self.isaac_workflow.add_node("agent", self.call_model)
+        self.isaac_workflow.add_node("action", self.tool_node)
+        self.isaac_workflow.add_node("thought", self.think)
 
         # Set the entrypoint as `agent`
         # This means that this node is the first one called
-        # self.workflow.add_edge(START, "agent")
-        self.workflow.add_edge(START, "thought")
-        self.workflow.add_edge("thought", "agent")
+        # self.isaac_workflow.add_edge(START, "agent")
+        self.isaac_workflow.add_edge(START, "thought")
+        self.isaac_workflow.add_edge("thought", "agent")
 
         # We now add a conditional edge
         # This means that the edge taken is determined by the function passed in
-        self.workflow.add_conditional_edges(
+        self.isaac_workflow.add_conditional_edges(
             # First, we define the start node. We use `agent`.
             # This means these are the edges taken after the `agent` node is called.
             "agent",
@@ -218,15 +223,14 @@ class LLMNode(Node):
             ["action", END],
         )
 
-        # We now add a normal edge from `tools` to `agent`.
-        # This means that after `tools` is called, `agent` node is called next.
-        self.workflow.add_edge("action", "thought")
-        self.workflow.add_edge("thought", "agent")
+        # We now add a normal edge from `tools` to `thought`.
+        self.isaac_workflow.add_edge("action", "thought")
+        self.isaac_workflow.add_edge("thought", "agent")
 
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
-        self.agent = self.workflow.compile(checkpointer=self.memory)
+        self.agent = self.isaac_workflow.compile(checkpointer=self.memory)
 
         # Comment in to save a png of the graph and show it
         """
@@ -254,8 +258,7 @@ class LLMNode(Node):
         """
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.config = {"configurable": {"thread_id": "1"}}
-        self.config_think = {"configurable": {"thread_id": "CoT1"}} # CoT = Chain of Thoughts
+        self.isaac_config = {"configurable": {"thread_id": "isaac_1"}}
 
         self.initial_prompt_Janise = SystemMessage(content = """
             Your name is Janise. You are an AI robotic arm assistant for task reasoning and manipulation tasks.
@@ -348,9 +351,89 @@ class LLMNode(Node):
                                                                 Also apply your guidance in the context of the user request. You are to ensure that the overarching goal is not forgotten.
                                                                 """)
         
+        # Append the initial prompt to the message state
+        self.agent.update_state(self.isaac_config, {"messages": self.initial_prompt})
+
+        
+        # ------------------------- Cell Workflow ------------------------- #
+
+        # Define model nodes
+        self.task_detector_model = self.model.bind_tools(self.task_detector_tools)
+        self.correction_model = self.model.bind_tools(self.tools)
+
+        self.cell_workflow = StateGraph(MessagesState)
+        self.cell_config = {"configurable": {"thread_id": "cell_1"}}
+        self.cell_memory = MemorySaver()
+
+        self.cell_workflow.add_node("success detector", self.call_model)
+        self.cell_workflow.add_node("error corrector", self.tool_node)
+
+        self.cell_workflow.add_edge(START, "success detector")
+        self.cell_workflow.add_edge("success detector", "error corrector")
+
+        self.cell_workflow.add_conditional_edges(
+            # First, we define the start node. We use `agent`.
+            # This means these are the edges taken after the `agent` node is called.
+            "success detector",
+            # Next, we pass in the function that will determine which node is called next.
+            self.successful_task,
+            # Next, we pass in the path map - all the possible nodes this edge could go to
+            ["error corrector", END],
+        )
+
+        # We now add a normal edge from `tools` to `thought`.
+        self.isaac_workflow.add_edge("action", "thought")
+        self.isaac_workflow.add_edge("thought", "agent")
+
+        # Finally, we compile it!
+        # This compiles it into a LangChain Runnable,
+        self.cell_agent = self.cell_workflow.compile(checkpointer=self.cell_memory)
+
+        # Comment in to save a png of the graph and show it
+        """
+        graph = self.cell_agent.get_graph()
+
+        # Display the workflow graph using OpenCV
+        graph_image_path = f"{self.conversation_log_folder}/workflow_graph_{self.current_time}.png"
+        graph.draw_mermaid_png(
+            draw_method=MermaidDrawMethod.API,
+            output_file_path=graph_image_path,
+        )
+
+        # Load and display the image using OpenCV
+        try:
+            graph_image = cv2.imread(graph_image_path)
+            if graph_image is not None:
+                cv2.imshow("Workflow Graph", graph_image)
+                cv2.waitKey(0)  # Wait for a key press to close the window
+                cv2.destroyAllWindows()
+            else:
+                self.get_logger().error("Failed to load the workflow graph image.")
+        except ImportError:
+            self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
+
+        """
+
+        self.initial_prompt_success_detector = SystemMessage(content = """ 
+                                                                        You are a part of a robotic cell consisting of two collaborative KUKA iiwa 7 robots, each with 7 degrees of freedom (DoF).
+                                                                        The setup includes a left and right side, each equipped with its respective robot arm.
+                                                                        Given a task a fully featured pipeline of LLM and VLM agents are generating a list of tool calls required to solve the task.
+                                                                        This pipeline is integrated in an Isaac Sim environment where the robot cell is simulated with all it components.
+                                                                        A valid sequence of tool calls is generated by iteratively trying different sequences in the simulation.
+                                                                        The sequence is then passed to the pipeline that runs the physical cell. This pipeline calls the tool one at a time in the provided order.
+
+                                                                        As the given sequence has only been validated in simulation, it is possible that the sequence of tool calls is not valid in the real world.
+                                                                        Therefore, your task is to determine whether the subtask or tool call was successful or not. 
+                                                                        To determine this, you are given the called tool name and its returned results.
+                                                                        If you consider the tool call / subtask to be successful, you should call the function "detected_success".
+                                                                        Otherwise call the function "detected_failure".
+                                                             
+                                                                        Based on your response the pipeline will either continue to the next subtask or correct the previous one by using another corrector agent.""")       
+
+        self.initial_prompt_corrector = SystemMessage(content = )
 
         # Append the initial prompt to the message state
-        self.agent.update_state(self.config, {"messages": self.initial_prompt})
+        self.cell_agent.update_state(self.cell_config, {"messages": self.initial_prompt_success_detector})
 
 
     ##############################################################################
@@ -541,7 +624,7 @@ class LLMNode(Node):
 
         # Save the current state snapshot of the agent app to a file
         state_snapshot_file = self.conversation_log_folder + f"/state_snapshot_{self.current_time}.json"
-        snapshot = self.agent.get_state(self.config).values
+        snapshot = self.agent.get_state(self.isaac_config).values
 
         serializable_snapshot = {
             key: [self.serialize_message(msg) for msg in value] if isinstance(value, list) else value
@@ -673,6 +756,20 @@ class LLMNode(Node):
         # Otherwise if there is, we continue
         return "action"
     
+    # If a tool is to be called, the action node is called otherwise the agent node is called
+    def successful_task(self, state: MessagesState):
+        """Determines whether the error corrector should be called or not."""
+        last_message = state["messages"][-1]
+        # Check if the model has called the "detected_failure" or "detected_success" function
+        if last_message.tool_calls:
+            for tool_call in last_message.tool_calls:
+                if tool_call["name"] == "detected_failure":
+                    return "error corrector"
+                elif tool_call["name"] == "detected_success":
+                    return END
+        # If no relevant function call, finish
+        return END
+    
     # This is a simple helper function to filter the messages
     # Modify this to fit your use case or use off-the-shelf tools from langchain_core
     def filter_messages(self, messages: list):
@@ -686,7 +783,7 @@ class LLMNode(Node):
         state["messages"][0] = self.initial_prompt_Janise
 
         # Append the initial prompt to the message state
-        self.agent.update_state(self.config, {"messages": state["messages"]})
+        self.agent.update_state(self.isaac_config, {"messages": state["messages"]})
 
         response = self.bound_model.invoke(state["messages"])
         # We return a list, because this will get added to the existing list
@@ -743,6 +840,34 @@ class LLMNode(Node):
     # -------------------------- FUNCTIONS AVAILABLE TO THE LLM -------------------------- #
     ########################################################################################
 
+    #@tool
+    def detected_failure(self) -> bool:
+        """Indicates that a failure has occurred in the system.
+
+        This function is used to signal that an error or unexpected situation has been detected. 
+        It can be used for debugging or logging purposes to track the occurrence of failures in 
+        the system.
+
+        Returns:
+            bool: False that a failure has been detected.
+        """
+        self.get_logger().error("Failure detected")
+        return True
+    
+    #@tool
+    def detected_success(self) -> bool:
+        """Indicates that a success has occurred in the system.
+
+        This function is used to signal that a successful operation or event has been detected. 
+        It can be used for debugging or logging purposes to track the occurrence of successes in 
+        the system.
+
+        Returns:
+            bool: True when a message indicating that a success has been detected.
+        """
+        self.get_logger().info("Success detected")
+        return True
+    
     #@tool
     def stop_message_looping(self) -> str:
         """ Disables the message looping mechanism used for sequential function calls.
@@ -1159,6 +1284,7 @@ class LLMNode(Node):
         # Call the service asynchronously
         future = self._3f_controller_cli.call_async(self._3f_controller)
 
+
         # Wait for the result
         response = self.wait_future(future, timeout=15)
 
@@ -1276,6 +1402,51 @@ class LLMNode(Node):
     # -------------------------- INTERACTION WITH LARGE LANGUAGE MODELS -------------------------- #
     ################################################################################################
 
+    def run_from_tool_list(self):
+        """Runs the tool list created by the Isaac Sim pipeline.
+        LLMs or VLMs are only used to check if a subtask has been fulfilled
+        and to correct potential failures.
+        
+        """
+
+        # Read the tool list from the tool_calls.json file
+        tool_calls_path = os.path.join(os.path.dirname(__file__), 'tool_calls.json')
+        try:
+            with open(tool_calls_path, 'r') as file:
+                tool_calls = json.load(file)
+        except FileNotFoundError:
+            self.get_logger().error(f"File {tool_calls_path} not found.")
+            return
+        except json.JSONDecodeError as e:
+            self.get_logger().error(f"Error decoding JSON from {tool_calls_path}: {e}")
+            return
+
+        # Iterate through the tool calls and execute them
+        for function_num, details in tool_calls.items():
+            self.get_logger().info(f"Executing {function_num}: {details.function_name}")
+            try:
+                # Call function
+                func = getattr(self, details.function_name)
+
+                #TODO: Pass actual arguments to the function e.g. poses retrieved from the physical cell
+                result = func(**details.args)
+
+                # Convert to langgraph message
+                query = HumanMessage(f"Was calling {details.function_name} successful with result: {result}")
+
+                # Check if the function call was successful and correct if necessary
+                for event in self.cell_agent.stream({"messages": [query]}, self.cell_config, stream_mode="values"):
+                    event["messages"][-1].pretty_print()
+
+            except Exception as e:
+                self.get_logger().error(f"Error executing {details.function_name}: {e}")
+
+        
+        self.get_logger().info("Finished running from tool list")
+
+        
+        
+
     def gui_handle_service(self, request, response):
         prompt = request.prompt  # prompt is a string
 
@@ -1296,22 +1467,22 @@ class LLMNode(Node):
             self.save_snapshot()
 
             # Update config
-            current_id = int(self.config["configurable"]["thread_id"])
+            current_id = int(self.isaac_config["configurable"]["thread_id"])
             new_id = current_id + 1
-            self.config["configurable"]["thread_id"] = str(new_id)
+            self.isaac_config["configurable"]["thread_id"] = str(new_id)
 
             # Append the initial prompt to the message state
-            self.agent.update_state(self.config, {"messages": self.initial_prompt})
+            self.agent.update_state(self.isaac_config, {"messages": self.initial_prompt})
 
             return response
         
         # Run the graph
         # We stream the message through the agent (consider using this for updating GUI continuously)
-        for event in self.agent.stream({"messages": [query]}, self.config, stream_mode="values"):
+        for event in self.agent.stream({"messages": [query]}, self.isaac_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
 
         # Retrieve the last message from the agent and send it back to the user
-        response.message = self.agent.get_state(self.config).values["messages"][-1].content
+        response.message = self.agent.get_state(self.isaac_config).values["messages"][-1].content
 
         return response       
 
