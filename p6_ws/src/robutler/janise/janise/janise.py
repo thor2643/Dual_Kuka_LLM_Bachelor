@@ -703,12 +703,12 @@ class LLMNode(Node):
         original_image = self.color_img
         resized_image = cv2.resize(original_image, (524, 524))
         
-        resized_image_path = "resized_image.jpg"
-        cv2.imwrite(resized_image_path, resized_image)
+        #resized_image_path = "resized_image.jpg"
+        #cv2.imwrite(resized_image_path, resized_image)
 
         # Encode the resized image
-        image = self.encode_image(resized_image_path)
-        image = self.encode_image(resized_image_path)
+        image = self.encode_image(resized_image)
+        image = self.encode_image(resized_image)
 
         message = HumanMessage(
             content=[
