@@ -1,9 +1,7 @@
 { 
     "function_call_1": {
         "function_name": "get_available_objects",
-        "args": {
-            "object_type": "brick"
-        }
+        "args": {}
     },
     "function_call_2": {
         "function_name": "find_object",
@@ -12,14 +10,14 @@
         }
     },
     "function_call_3": {
-        "function_name": "plan_trajectory",
+        "function_name": "plan_robot_trajectory",
         "args": {
-            "pose": [0.5, 0.3, 0.03, 0, 0, 0],
+            "pose": [0.4, 0.3, 0.2, 0, 0, 0],
             "arm": "right"
         }
     },
     "function_call_4": {
-        "function_name": "execute_trajectory",
+        "function_name": "execute_planned_trajectory",
         "args": {
             "arm": "right"
         }
@@ -35,14 +33,14 @@
         "args": {}
     },
     "function_call_7": {
-        "function_name": "plan_trajectory",
+        "function_name": "plan_robot_trajectory",
         "args": {
-            "pose": [0.1, 0.1, 0.3, 0, 0, 0],
+            "pose": [0.1, 0.1, 0.2, 0, 0, 0],
             "arm": "right"
         }
     },
     "function_call_8": {
-        "function_name": "execute_trajectory",
+        "function_name": "execute_planned_trajectory",
         "args": {
             "arm": "right"
         }
