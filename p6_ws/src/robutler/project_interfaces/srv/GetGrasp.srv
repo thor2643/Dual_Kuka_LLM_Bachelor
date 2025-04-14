@@ -1,9 +1,0 @@
-# Request
-bool request
-string gripper
-string object_name
-
----
-# Response
-string log
-float64[] grasp_candidates

@@ -4,8 +4,7 @@ import sys
 import numpy as np
 import open3d as o3d
 import argparse
-import logging
-logging.getLogger().setLevel(logging.ERROR) # Supress warnings
+from scipy.spatial.transform import Rotation as R
 
 # GraspNet / AnyGrasp
 import torch
@@ -20,8 +19,10 @@ from ament_index_python.packages import get_package_share_directory
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from project_interfaces.srv import GetGrasp
+from project_interfaces.srv import GetObjectInfo
+from project_interfaces.msg import Grasp6D, DetectedObject, TransformMatrix
 from cv_bridge import CvBridge
+from geometry_msgs.msg import Point, Vector3
 
 # Image Segmenetation
 from ultralytics import YOLOWorld
@@ -64,12 +65,10 @@ class RealSenseCamera(Node):
     # Create callback functions
     def convert_to_depth_img(self, msg):
         # Convert the ROS Image message to OpenCV image (16-bit single-channel)
-        self.get_logger().info("Received depth image")
         self.depth_img = self.bridge.imgmsg_to_cv2(msg, desired_encoding="16UC1")
 
     def convert_to_color_img(self, msg):
         # Convert the ROS Image message to an OpenCV image, NOTE: AnyGrasp uses RGB
-        self.get_logger().info("Received color image")
         self.color_img = self.bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
 
 
@@ -86,6 +85,7 @@ class AnyGraspPipeline(Node):
         self.color = None
         self.mask_binary = None
         self.width = None
+        self.transformation_matrix = None
 
         # Intrinsic camera parameters & mm -> m factor
         self.intrinsic = np.array([
@@ -95,7 +95,105 @@ class AnyGraspPipeline(Node):
         ])
         self.factor_depth = np.array([1000.0])
 
-        self.grasp_srv = self.create_service(GetGrasp, 'get_grasp_anygrasp', self.get_grasps)
+        self.grasp_srv = self.create_service(GetObjectInfo, 'get_grasp_anygrasp', self.get_grasps)
+
+
+    def get_grasps(self, request, response):
+        # Get image
+        self.retrieve_aligned_frames()
+
+        # Check what gripper will be used for grasping
+        gripper = request.gripper
+        if (gripper == "right" or gripper == "Right"):
+             self.width = 0.155
+        elif (gripper == "left" or gripper == "Left"):
+             self.width = 0.085
+        else:
+             print("Error occoured during choice of gripper")
+             return response
+        
+
+        # Use YOLOWorld and SAM for segmenetation
+        flag = self.get_object_information(request)
+        if flag == False:
+            print("Error during YOLO & SAM Intergration")
+            return response
+        print(self.mask_binaries)
+
+        # Run the neural network AnyGrasp
+        net = self.get_net()
+
+        response.object_count = 0  # Initialize object_count
+
+        for obj in self.mask_binaries:
+            class_name, index, mask, cart = obj
+            self.mask_binary = mask
+            end_points, cloud = self.get_and_process_data()
+            gg = self.infer_grasps(net, end_points)
+            if cfgs.collision_thresh > 0:
+                gg = self.collision_detection(gg, np.array(cloud.points))
+            
+            # -- Debug feature
+            #self.vis_grasps(gg, cloud)
+
+            # Post-process and pick best grasp
+            gg.nms()
+            gg.sort_by_score()
+
+            detected_object = DetectedObject()
+            detected_object.name = f"{class_name} {index}"
+
+            self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
+
+            position_homogeneous = np.array([cart[0], cart[1], cart[2], 1.0])
+            position_world_homogeneous = np.dot(self.transformation_matrix, position_homogeneous)
+
+            detected_object.center_of_object = Point(x=position_world_homogeneous[0], y=position_world_homogeneous[1], z=position_world_homogeneous[2])
+            detected_object.grasps = []
+
+            rotation_matrix = self.transformation_matrix[:3, :3]
+
+            if len(gg) > 0:
+                top_grasp = gg[0]
+
+                # Create Grasp6D message for the top grasp
+                grasp_msg = Grasp6D()
+
+                # Extract position
+                grasp_position_homogeneous = np.array([top_grasp.translation[0], top_grasp.translation[1], top_grasp.translation[2], 1.0])
+                grasp_position_world_homogeneous = np.dot(self.transformation_matrix, grasp_position_homogeneous)
+
+                grasp_msg.position = Point(
+                    x=grasp_position_world_homogeneous[0],
+                    y=grasp_position_world_homogeneous[1],
+                    z=grasp_position_world_homogeneous[2]
+                )
+
+                # Extract orientation
+                grasp_rotation_matrix = np.array(top_grasp.rotation_matrix).reshape(3, 3)
+
+                combined_rotation_matrix = np.dot(rotation_matrix, grasp_rotation_matrix)
+
+                r = R.from_matrix(combined_rotation_matrix)
+                roll, pitch, yaw = r.as_euler('xyz', degrees=True)
+
+                grasp_msg.orientation = Vector3(
+                    x=roll,
+                    y=pitch,
+                    z=yaw
+                )
+
+                # Set grasp width
+                grasp_msg.grasp_width = float(top_grasp.width)
+
+                # Append the grasp to the list of grasps
+                detected_object.grasps.append(grasp_msg)
+
+            # Fill the response
+            response.detected_objects.append(detected_object)
+            response.object_count += 1
+
+        return response
 
 
     # Callback for image capture
@@ -115,64 +213,8 @@ class AnyGraspPipeline(Node):
         self.color = self.color_frame / 255.0
 
 
-    def get_grasps(self, request, response):
-        # Get image
-        self.retrieve_aligned_frames()
-
-        # Check what gripper will be used for grasping
-        gripper = request.gripper
-        if (gripper == "right" or gripper == "Right"):
-             self.width = 0.155
-        elif (gripper == "left" or gripper == "Left"):
-             self.width = 0.085
-        else:
-             response.log = "Invalid gripper choice, pick either 'right' or 'left'"
-             return response
-        
-
-        # Use YOLOWorld and SAM for segmenetation
-        flag = self.get_object_information(request)
-        self.get_logger().info(f'Flag is {flag}')
-        if flag == False:
-            response.log = f"YOLOWorld failed to detect any {request.object_name}. However, {self.objects_found} was found!"
-            return response
-
-        # Run the neural network AnyGrasp
-        net = self.get_net()
-        end_points, cloud = self.get_and_process_data()
-        gg = self.infer_grasps(net, end_points)
-        if cfgs.collision_thresh > 0:
-            gg = self.collision_detection(gg, np.array(cloud.points))
-        
-        # -- Debug feature
-        #self.vis_grasps(gg, cloud)
-        
-        # Determine the best grasp candidate.
-        gg.nms()
-        gg.sort_by_score()
-        gg = gg[:1]
-        
-        # Fill ROS message with grasp information and return.
-        if len(gg) > 0:
-            top_grasp = gg[0]
-
-            response.grasp_candidates = [
-            float(top_grasp.score),
-            float(top_grasp.width),
-            float(top_grasp.height),
-            float(top_grasp.depth),
-            *[float(v) for v in top_grasp.translation],
-            *[float(v) for v in np.array(top_grasp.rotation_matrix).flatten()]
-        ]
-            response.log = "Grasp extracted successfully."
-        else:
-            response.log = "No valid grasp found."
-        return response
-
-
     def get_object_information(self, request):
         det_object = request.object_name
-        mask_binary = None
         
         #Compute workspace_mask using YOLO & SAM
         model = YOLOWorld("yolov8l-world.pt")  # or select yolov8{s/m/l}-world.pt for different sizes
@@ -185,16 +227,39 @@ class AnyGraspPipeline(Node):
 
         # Sanity check - Was object detected?
         if len(yolo_results[0].boxes.data) > 0:
+            self.mask_binaries = []
             for i in range(len(yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
-                x_min, y_min, x_max, y_max, _ , _ = yolo_results[0].boxes.data[i]  #_, _ = confidence and class
+                box = yolo_results[0].boxes.data[i]
+                x_min, y_min, x_max, y_max = box[:4]
+                class_id = int(box[5])
+                class_name = model.names[class_id]  # get class name
 
+                # Getting the center coordinate to follow the format:
+                pixel_x = int((x_min + x_max) / 2)
+                pixel_y = int((y_min + y_max) / 2)
+
+                # Extract camera intrinsic parameters
+                fx = self.intrinsic[0, 0]
+                fy = self.intrinsic[1, 1]
+                cx = self.intrinsic[0, 2]
+                cy = self.intrinsic[1, 2]
+
+                depth_value = self.depth_frame[pixel_y, pixel_x]
+
+                z = depth_value / 1000.0
+                x = (pixel_x - cx) * z / fx  # X coordinate
+                y = (pixel_y - cy) * z / fy  # Y coordinate
+
+                cart_point = np.array([x, y, z])
+
+                # Use SAM on image using YOLO bounding boxes.
                 sam_results = sam.predict(self.color_frame, stream=False, bboxes=[x_min, y_min, x_max, y_max], points=None, labels=None)
                 sam_masks = (sam_results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
                 
                 #convert the mask to binary
                 mask_binary = (sam_masks > 0).astype(np.uint8)
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
-            self.mask_binary = mask_binary.astype(np.bool_)
+                self.mask_binaries.append([class_name, i, mask_binary.astype(np.bool_), cart_point])
             return True
         else:
             self.objects_found = []
@@ -221,7 +286,6 @@ class AnyGraspPipeline(Node):
         checkpoint = torch.load(checkpoint_path)
         net.load_state_dict(checkpoint['model_state_dict'])
         start_epoch = checkpoint['epoch']
-        print("-> loaded checkpoint %s (epoch: %d)"%(checkpoint_path, start_epoch))
         
         # Set model to eval mode
         net.eval()

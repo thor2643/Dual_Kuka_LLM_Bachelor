@@ -1,26 +1,23 @@
-from project_interfaces.srv import GetGrasp
+from project_interfaces.srv import GetObjectInfo
+from project_interfaces.msg import Grasp6D, DetectedObject, TransformMatrix
 import rclpy
 from rclpy.node import Node
-
-import logging
-logging.getLogger().setLevel(logging.ERROR) # Supress warnings
 
 
 class GraspClient(Node):
     def __init__(self):
         super().__init__('minimal_grasp_client')
-        self.cli = self.create_client(GetGrasp, 'get_grasp_anygrasp')
+        self.cli = self.create_client(GetObjectInfo, 'get_grasp_anygrasp')
 
-        self.req = GetGrasp.Request()
+        self.req = GetObjectInfo.Request()
 
     def send_request(self):
-        self.req.request = True
         self.req.gripper = "right"
         self.req.object_name = "book"
         self.future = self.cli.call_async(self.req)
         rclpy.spin_until_future_complete(self, self.future)
         
-        results = self.future.result().grasp_candidates
+        results = self.future.result()
         return results
 
 
@@ -28,7 +25,8 @@ def main(args=None):
     rclpy.init(args=args)
     minimal_grasp_client = GraspClient()
     response = minimal_grasp_client.send_request()
-    print(response)
+    print(response.object_count)
+    print(response.detected_objects)
     rclpy.shutdown()
 
 

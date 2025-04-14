@@ -1,9 +1,9 @@
 # Request
 string object_name  # Name of the object to search for
+string gripper
+TransformMatrix transform #trasformation matrix for non-stationary camera 
 
 ---
 # Response
-int32 object_count                # The number of objects found
-geometry_msgs/Point[] centers      # The center coordinates (X, Y, Z) of each object found
-float32[] orientations  # The orientation of each object (in angle)
-float32[] grasp_widths            # The grasping width of each object found
+int32 object_count                  # The number of objects found
+DetectedObject[] detected_objects   # nested msg´es as ROS cant take nested arrays. |-;
