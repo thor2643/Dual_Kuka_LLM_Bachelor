@@ -20,12 +20,10 @@
         <joint name="left_2f_robotiq_85_left_inner_knuckle_joint"/>
         <joint name="left_2f_robotiq_85_left_finger_tip_joint"/>
         <joint name="left_2f_robotiq_85_left_finger_joint"/>
-
         <joint name="left_2f_robotiq_85_right_knuckle_joint"/>
         <joint name="left_2f_robotiq_85_right_inner_knuckle_joint"/>
         <joint name="left_2f_robotiq_85_right_finger_tip_joint"/>
-        <joint name="left_2f_robotiq_85_right_finger_joint"/>   
-
+        <joint name="left_2f_robotiq_85_right_finger_joint"/>
     </group>
     <group name="3f_gripper">
         <joint name="a_3f_finger_middle_joint_3"/>
@@ -66,7 +64,9 @@
     <group_state name="closed" group="2f_gripper">
         <joint name="left_2f_robotiq_85_left_knuckle_joint" value="0.7"/>
     </group_state>
-    <group_state name="brick_grasp" group="2f_gripper"/>
+    <group_state name="brick_grasp" group="2f_gripper">
+        <joint name="left_2f_robotiq_85_left_knuckle_joint" value="0.7"/>
+    </group_state>
     <group_state name="open" group="3f_gripper">
         <joint name="a_3f_finger_1_joint_1" value="0.3758"/>
         <joint name="a_3f_finger_1_joint_2" value="0"/>
@@ -94,15 +94,15 @@
         <joint name="a_3f_palm_finger_2_joint" value="0"/>
     </group_state>
     <group_state name="brick_grip" group="3f_gripper">
-        <joint name="a_3f_finger_1_joint_1" value="0.8785"/>
+        <joint name="a_3f_finger_1_joint_1" value="1.1276"/>
         <joint name="a_3f_finger_1_joint_2" value="0"/>
-        <joint name="a_3f_finger_1_joint_3" value="-1"/>
-        <joint name="a_3f_finger_2_joint_1" value="0.8785"/>
-        <joint name="a_3f_finger_2_joint_2" value="0"/>
-        <joint name="a_3f_finger_2_joint_3" value="-1"/>
-        <joint name="a_3f_finger_middle_joint_1" value="0.749"/>
-        <joint name="a_3f_finger_middle_joint_2" value="0"/>
-        <joint name="a_3f_finger_middle_joint_3" value="-0.7501"/>
+        <joint name="a_3f_finger_1_joint_3" value="-0.4334"/>
+        <joint name="a_3f_finger_2_joint_1" value="1.1276"/>
+        <joint name="a_3f_finger_2_joint_2" value="0.1215"/>
+        <joint name="a_3f_finger_2_joint_3" value="-0.6318"/>
+        <joint name="a_3f_finger_middle_joint_1" value="1.1276"/>
+        <joint name="a_3f_finger_middle_joint_2" value="0.0868"/>
+        <joint name="a_3f_finger_middle_joint_3" value="-0.7169"/>
         <joint name="a_3f_palm_finger_1_joint" value="0"/>
         <joint name="a_3f_palm_finger_2_joint" value="0"/>
     </group_state>
@@ -125,197 +125,6 @@
         <joint name="left_A7" value="0"/>
     </group_state>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="a_3f_finger_1_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="a_3f_finger_2_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="camera_arm_mount" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="right_side_wall" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Default"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="a_3f_finger_1_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="a_3f_finger_middle_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="a_3f_finger_middle_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="a_3f_finger_1_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="a_3f_finger_middle_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="a_3f_finger_middle_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="a_3f_finger_middle_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="a_3f_finger_middle_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="a_3f_finger_middle_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_1_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_1_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_1_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_middle_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_middle_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_middle_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="a_3f_finger_middle_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="right_side_wall" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Default"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_1_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_1_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_1_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_2_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_middle_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_middle_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="a_3f_finger_middle_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Adjacent"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="a_3f_finger_1_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="a_3f_finger_1_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="a_3f_finger_middle_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_1_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_1_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_2_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_finger_middle_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="a_3f_palm" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_1_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_1_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_1_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_1_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_2_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_2_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_2_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_middle_link_0" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="a_3f_finger_middle_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="camera_arm_mount" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_1" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_2" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_3" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_4" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_5" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_6" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_7" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="right_box" reason="Never"/>
-    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="right_side_wall" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_1" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_3" reason="Never"/>
@@ -328,7 +137,14 @@
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_middle_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_middle_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_palm" reason="Adjacent"/>
+    <disable_collisions link1="a_3f_finger_1_link_0" link2="camera_arm_mount" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="gripper_mounting_plate" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_0" link2="left_2f_robotiq_85_base_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_0" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_0" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_0" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_0" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_0" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="right_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="right_link_3" reason="Never"/>
@@ -347,7 +163,14 @@
     <disable_collisions link1="a_3f_finger_1_link_1" link2="a_3f_finger_middle_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_1" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_1" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_1_link_1" link2="right_link_1" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_1" link2="left_link_7" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_1" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_1" link2="right_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_1" link2="right_link_4" reason="Never"/>
@@ -363,6 +186,13 @@
     <disable_collisions link1="a_3f_finger_1_link_2" link2="a_3f_finger_middle_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_2" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_2" link2="gripper_mounting_plate" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_2" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_2" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_2" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_2" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_2" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_2" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_2" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_2" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_2" link2="right_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_2" link2="right_link_4" reason="Never"/>
@@ -371,10 +201,16 @@
     <disable_collisions link1="a_3f_finger_1_link_2" link2="right_link_7" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="a_3f_finger_2_link_0" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="a_3f_finger_2_link_1" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_1_link_3" link2="a_3f_finger_2_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="a_3f_finger_middle_link_0" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="gripper_mounting_plate" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_3" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_3" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_3" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_3" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_3" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_3" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_1_link_3" link2="right_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="right_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_3" link2="right_link_4" reason="Never"/>
@@ -390,7 +226,9 @@
     <disable_collisions link1="a_3f_finger_2_link_0" link2="a_3f_finger_middle_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_0" link2="a_3f_palm" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_2_link_0" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_2_link_0" link2="left_box" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_0" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_0" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_0" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_0" link2="right_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_0" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_0" link2="right_link_3" reason="Never"/>
@@ -405,7 +243,10 @@
     <disable_collisions link1="a_3f_finger_2_link_1" link2="a_3f_finger_middle_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_1" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_1" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_2_link_1" link2="right_link_1" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_1" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_1" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_1" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_1" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_1" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_1" link2="right_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_1" link2="right_link_4" reason="Never"/>
@@ -417,7 +258,11 @@
     <disable_collisions link1="a_3f_finger_2_link_2" link2="a_3f_finger_middle_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_2" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_2" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_2_link_2" link2="right_link_1" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_2" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_2" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_2" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_2" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_2" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_2" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_2" link2="right_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_2" link2="right_link_4" reason="Never"/>
@@ -427,6 +272,11 @@
     <disable_collisions link1="a_3f_finger_2_link_3" link2="a_3f_finger_middle_link_0" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_3" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_3" link2="gripper_mounting_plate" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_3" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_3" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_3" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_3" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_2_link_3" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_3" link2="right_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_3" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_2_link_3" link2="right_link_3" reason="Never"/>
@@ -439,7 +289,11 @@
     <disable_collisions link1="a_3f_finger_middle_link_0" link2="a_3f_finger_middle_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_0" link2="a_3f_palm" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_middle_link_0" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_middle_link_0" link2="left_box" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_0" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_0" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_0" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_0" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_0" link2="left_link_7" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_0" link2="right_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_0" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_0" link2="right_link_3" reason="Never"/>
@@ -451,7 +305,8 @@
     <disable_collisions link1="a_3f_finger_middle_link_1" link2="a_3f_finger_middle_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_1" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_1" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_middle_link_1" link2="left_box" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_1" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_1" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_1" link2="right_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_1" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_1" link2="right_link_3" reason="Never"/>
@@ -462,7 +317,14 @@
     <disable_collisions link1="a_3f_finger_middle_link_2" link2="a_3f_finger_middle_link_3" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_middle_link_2" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_2" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_box" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_2" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_2" link2="right_link_1" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_2" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_2" link2="right_link_3" reason="Never"/>
@@ -472,8 +334,14 @@
     <disable_collisions link1="a_3f_finger_middle_link_2" link2="right_link_7" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_3" link2="a_3f_palm" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_3" link2="gripper_mounting_plate" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_box" reason="Never"/>
-    <disable_collisions link1="a_3f_finger_middle_link_3" link2="right_link_1" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="a_3f_finger_middle_link_3" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_3" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_3" link2="right_link_3" reason="Never"/>
     <disable_collisions link1="a_3f_finger_middle_link_3" link2="right_link_4" reason="Never"/>
@@ -499,6 +367,16 @@
     <disable_collisions link1="back_wall" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="back_wall" link2="right_side_wall" reason="Adjacent"/>
     <disable_collisions link1="back_wall" link2="table_top" reason="Adjacent"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_base_link" reason="Adjacent"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="camera_arm_mount" link2="left_link_0" reason="Never"/>
     <disable_collisions link1="camera_arm_mount" link2="left_link_1" reason="Never"/>
     <disable_collisions link1="camera_arm_mount" link2="left_link_2" reason="Never"/>
     <disable_collisions link1="camera_arm_mount" link2="left_link_3" reason="Never"/>
@@ -516,6 +394,122 @@
     <disable_collisions link1="gripper_mounting_plate" link2="right_link_5" reason="Never"/>
     <disable_collisions link1="gripper_mounting_plate" link2="right_link_6" reason="Never"/>
     <disable_collisions link1="gripper_mounting_plate" link2="right_link_7" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_finger_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_0" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="right_box" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_base_link" link2="right_side_wall" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_left_finger_tip_link" reason="Default"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_0" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_link" link2="right_box" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_left_inner_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_finger_tip_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_left_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_0" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_inner_knuckle_link" link2="right_box" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_finger_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_0" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="right_box" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_left_knuckle_link" link2="right_side_wall" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_2f_robotiq_85_right_finger_tip_link" reason="Default"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_0" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_link" link2="right_box" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_2f_robotiq_85_right_inner_knuckle_link" reason="Adjacent"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_finger_tip_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_2f_robotiq_85_right_knuckle_link" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_0" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_inner_knuckle_link" link2="right_box" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_0" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_1" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_2" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_3" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_4" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="left_link_7" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="right_box" reason="Never"/>
+    <disable_collisions link1="left_2f_robotiq_85_right_knuckle_link" link2="right_side_wall" reason="Never"/>
     <disable_collisions link1="left_box" link2="left_link_0" reason="Never"/>
     <disable_collisions link1="left_box" link2="left_link_1" reason="Never"/>
     <disable_collisions link1="left_box" link2="left_link_2" reason="Never"/>
@@ -538,6 +532,8 @@
     <disable_collisions link1="left_link_0" link2="left_link_3" reason="Never"/>
     <disable_collisions link1="left_link_0" link2="left_link_4" reason="Never"/>
     <disable_collisions link1="left_link_0" link2="left_link_5" reason="Never"/>
+    <disable_collisions link1="left_link_0" link2="left_link_6" reason="Never"/>
+    <disable_collisions link1="left_link_0" link2="left_link_7" reason="Never"/>
     <disable_collisions link1="left_link_0" link2="left_side_wall" reason="Never"/>
     <disable_collisions link1="left_link_0" link2="right_box" reason="Never"/>
     <disable_collisions link1="left_link_0" link2="right_link_0" reason="Never"/>
@@ -619,6 +615,8 @@
     <disable_collisions link1="right_link_0" link2="right_link_2" reason="Never"/>
     <disable_collisions link1="right_link_0" link2="right_link_3" reason="Never"/>
     <disable_collisions link1="right_link_0" link2="right_link_4" reason="Never"/>
+    <disable_collisions link1="right_link_0" link2="right_link_6" reason="Never"/>
+    <disable_collisions link1="right_link_0" link2="right_link_7" reason="Never"/>
     <disable_collisions link1="right_link_0" link2="right_side_wall" reason="Never"/>
     <disable_collisions link1="right_link_0" link2="table_top" reason="Adjacent"/>
     <disable_collisions link1="right_link_1" link2="right_link_2" reason="Adjacent"/>

@@ -1,14 +1,21 @@
 <?xml version="1.0"?>
 
 <!-- top level -->
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="isaac_dual_arm">
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dual_arm">
   <!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
   <xacro:include filename="$(find dual_arm_moveit_config)/config/dual_arm.ros2_control.xacro"/>
 
+  <xacro:include filename="$(find isaac_dual_arm_moveit_config)/config/isaac_dual_arm.ros2_control.xacro"/>
+  
   <!-- Gripper -->
   <xacro:include filename="$(find lbr_description)/urdf/robotiq-2f-85-gripper/robotiq_85_gripper.urdf.xacro"/>
 
+  <!-- Intel realsnese 
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro"/>
+  -->
+
   <!-- MATERIAL LIST -->
+  <!--  (Aluminum and plastic is already defined in realsense2_description) -->
   <material name="aluminum">
     <color rgba="0.5 0.5 0.5 1"/>
   </material>
@@ -30,6 +37,13 @@
   <material name="gray">
 	<color rgba="0.6 0.6 0.6 1"/>
   </material>
+
+  <!-- Camera joint 
+  <xacro:arg name="use_nominal_extrinsics" default="false" />
+  <xacro:sensor_d435i parent="camera_arm_mount" use_nominal_extrinsics="$(arg use_nominal_extrinsics)">
+    <origin xyz="-0.1 0 0" rpy="0 -1.57079633 0"/>
+  </xacro:sensor_d435i>
+  -->
 
   <!-- Links & Joints for the Right Arm -->
   <link name="right_link_0">

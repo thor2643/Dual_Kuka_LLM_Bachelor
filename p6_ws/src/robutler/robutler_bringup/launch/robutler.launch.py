@@ -8,23 +8,23 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     return LaunchDescription([
         # Camera Package - Service (We need to make it spin by default, if not done already)
-        #Node(
-        #    package='object_detector',
-        #    executable='detector_service',
-        #    #prefix=['gnome-terminal -- bash -c "ros2 run object_detector detector_service; exec bash"']
-        #),
+        Node(
+            package='object_detector',
+            executable='detector_service',
+            #prefix=['gnome-terminal -- bash -c "ros2 run object_detector detector_service; exec bash"']
+        ),
         
         # 3F Gripper - Service
-        #Node(
-        #    package='robotiq_3f_gripper_ros2_control',
-        #    executable='gripper_control_service_server'
-        #),
+        Node(
+            package='robotiq_3f_gripper_ros2_control',
+            executable='gripper_control_service_server'
+        ),
          
         # 2F Gripper - Service
-        #Node(
-        #    package='robotiq_2f_85_control',
-        #    executable='gripper_control_service_node'
-        #),
+        Node(
+            package='robotiq_2f_85_control',
+            executable='gripper_control_service_node'
+        ),
 
         # Janise
         Node(
@@ -52,15 +52,15 @@ def generate_launch_description():
         ),
         
         # Realsense
-        #IncludeLaunchDescription(
-        #    PythonLaunchDescriptionSource(
-        #        os.path.join(
-        #            get_package_share_directory('realsense2_camera'),
-        #            'launch',
-        #            'rs_launch.py'
-        #        )
-        #    )
-        #),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    get_package_share_directory('realsense2_camera'),
+                    'launch',
+                    'rs_launch.py'
+                )
+            )
+        ),
 
         # Dual Arm - Demo Launch
         IncludeLaunchDescription(

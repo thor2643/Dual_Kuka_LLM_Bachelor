@@ -86,12 +86,12 @@ private:
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_interface_left;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_3f;
   std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_2f;
-
   rclcpp::Service<project_interfaces::srv::PlanMoveCommand>::SharedPtr planner_service;
   rclcpp::Service<project_interfaces::srv::ExecuteMoveCommand>::SharedPtr execute_service;
   rclcpp::Service<project_interfaces::srv::GetCurrentPose>::SharedPtr get_pose_service;
   rclcpp::Service<project_interfaces::srv::GripperMoveit>::SharedPtr gripper_service;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber;
+  
   moveit::planning_interface::MoveGroupInterface::Plan plan_right;
   moveit::planning_interface::MoveGroupInterface::Plan plan_left;
   const moveit::core::JointModelGroup* joint_model_group_right;
