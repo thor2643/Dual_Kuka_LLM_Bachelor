@@ -1,6 +1,6 @@
 # Request
 string object_name  # Name of the object to search for
-
+bool use_sim        # True if using Isaac Sim 
 ---
 # Response
 int32 object_count                # The number of objects found

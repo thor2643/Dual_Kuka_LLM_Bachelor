@@ -13,6 +13,7 @@ import os
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
 from project_interfaces.srv import DefineObjectInfo
+from project_interfaces.srv import GetSimCameraData
 from geometry_msgs.msg import Point
 import rclpy
 from rclpy.node import Node
@@ -90,9 +91,46 @@ class RealSenseCamera(Node):
         self.camera_info = msg.k
 
 
+class SimCamera(Node):
+    def __init__(self):
+        super().__init__('sim_camera_node')
+        self.bridge = CvBridge()
+
+        self.color_img = None
+        self.depth_img = None
+        self.camera_info = None
+
+        self.client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
+
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for simulated camera data service...')
+
+    def update_images(self):
+        request = GetSimCameraData.Request()
+        future = self.client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is not None:
+            response = future.result()
+
+            # Convert image messages to OpenCV
+            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
+
+            color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
+            self.color_img = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
+
+            self.camera_info = response.camera_info.k
+        else:
+            self.get_logger().error("Failed to get simulated camera data")
+
+
 class ObjectDetector(Node):
     def __init__(self):
         super().__init__('object_detector')
+        self.sim_enabled = False
+
+        self.camera_source = RealSenseCamera()
+
         self.detector_srv = self.create_service(GetObjectInfo, 'get_object_info', self.get_object_information)
         self.threshold_adjust_srv = self.create_service(DefineObjectInfo, 'define_object_info', self.define_object_thresholds)
         self.yolo_world_srv = self.create_service(GetObjectInfo, 'get_object_info_yolo', self.get_object_information_yolo)
@@ -123,8 +161,15 @@ class ObjectDetector(Node):
         self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(cv2.rotate(image, cv2.ROTATE_180)))
 
 
-    def retrieve_aligned_frames(self):      
-        # Retrieve aligned frames from the RealSense camera by spinning the node untill new frames are available
+    def retrieve_aligned_frames(self):
+        if self.sim_enabled:
+            sim_camera = SimCamera()
+        
+            sim_camera.update_images()
+    
+            self.depth_frame = sim_camera.depth_img
+            self.color_frame = sim_camera.color_img
+            self.camera_info = sim_camera.camera_info
 
         while self.realsense_camera.depth_img is None or self.realsense_camera.color_img is None or self.realsense_camera.camera_info is None:
                 rclpy.spin_once(self.realsense_camera)
@@ -136,11 +181,11 @@ class ObjectDetector(Node):
         self.color_frame = self.realsense_camera.color_img
         self.camera_info = self.realsense_camera.camera_info
         
-        
     
     #The callback function for the detector service
     def get_object_information(self, request, response):
         object = request.object_name
+        self.sim_enabled = request.use_sim
         self.get_logger().info(f'Requested to find {object}\n')
 
         self.found_objects.clear()
@@ -797,7 +842,6 @@ def main(args=None):
 
     # Create an ObjectDetector instance
     detector = ObjectDetector()
-
 
     #this was commented out
     rclpy.spin(detector) 
