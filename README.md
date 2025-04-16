@@ -64,7 +64,79 @@ Before starting the installation of this project, we recommend grabbing a snack 
     # Remember to write the file, ctrl + s then ctrl + x
     ```
 
-6. Colcon build - Re-run if any packages timeout during compile
+This next step is without a doubt the hardest, and may require manuel intervention. If the quickstart guide fails, confer to: [GraspNet-Baseline](https://github.com/graspnet/graspnet-baseline)
+
+For transparency, our GraspNet-Baseline was built with the following: Nvidia Driver 550.144.03, Cuda 11.8, cuDNN 8700, Torch 2.0.0+cu118 - 4060 Laptop GPU. If you have any other version of these installed, you may have to build GraspNet-Baseline from scratch.
+    
+6. Building GraspNet-Baseline (The quick way)
+
+   ```shell
+    pip install gdown
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/dataset
+    gdown 1DcjGGhZIJsxd61719N0iWA7L6vNEK0ci
+    tar -xvf tolerance.tar
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/graspnetAPI
+    pip install .
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet
+    mkdir -p logs/log_kn
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/logs/log_kn
+    gdown 1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk
+    ```
+
+7. Building GraspNet-Baseline (From scratch)
+
+   ```shell
+    # Start by building GraspNet-Baseline
+    
+    pip install gdown
+    cd ~
+    git clone https://github.com/graspnet/graspnet-baseline.git
+    cd ~/graspnet-baseline/pointnet2
+    python setup.py install
+    cd ~/graspnet-baseline/knn
+    python setup.py install
+    cd ~
+    git clone https://github.com/graspnet/graspnetAPI.git
+    cd ~/graspnetAPI
+    pip install .
+    cd ~/graspnet-baseline/dataset
+    gdown 1DcjGGhZIJsxd61719N0iWA7L6vNEK0ci
+    tar -xvf tolerance.tar
+    cd ~/graspnet-baseline
+    mkdir -p logs/log_kn
+    cd ~/graspnet-baseline/logs/log_kn
+    gdown 1hd0G8LN6tRpi4742XOTEisbTXNZ-1jmk
+    
+    # Now you have all the files, and just need them to follow the structure used in our ROS2 implementation
+    
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet
+    rm -rf dataset graspnetAPI knn models pointnet2 utils
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/graspnet
+    rm -rf graspnetAPI models
+    mkdir graspnetAPI models
+    cd ~/graspnet-baseline
+    mv dataset knn models pointnet2 utils ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/
+    cd ~
+    mv graspnetAPI ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet
+    cp -r graspnetAPI/graspnetAPI/* graspnet/graspnetAPI
+    cp graspnetAPI/copy_rect_labels.py graspnetAPI/gen_pickle_dexmodel.py graspnet/graspnetAPI
+    
+    cp models/backbone.py models/graspnet.py models/loss.py models/modules.py graspnet/models
+    cp knn/knn_modules.py graspnet/models
+    cp pointnet2/pointnet2_modules.py pointnet2/pointnet2_utils.py pointnet2/pytorch_utils.py pointnet2/setup.py graspnet/models
+    cp utils/collision_detector.py utils/data_utils.py utils/label_generation.py utils/loss_utils graspnet/models
+    cp dataset/graspnet_dataset.py graspnet/models
+    touch ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/graspnet/models/__init__.py
+    
+    cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/graspnet/models
+    sed -i 's/def pred_decode(end_points):/def pred_decode(end_points, gripper_max_width):/' graspnet.py
+    sed -i 's/GRASP_MAX_WIDTH/gripper_max_width/I' graspnet.py
+    sed -i 's/grasp_width = 1.2 \* end_points\[\'grasp_width_pred\'\]\[i\]/grasp_width = 1.8 \* end_points\[\'grasp_width_pred\'\]\[i\]/' graspnet.py
+    ```
+
+
+8. Colcon build - Re-run if any packages timeout during compile
 
     ```shell
     cd ~/Dual_Kuka_LLM_Bachelor/p6_ws
@@ -72,9 +144,9 @@ Before starting the installation of this project, we recommend grabbing a snack 
     colcon build --mixin release
     ```
  
-8. NOTE: If you are running on our setup, remember to set your IP to 172.31.1.148 and Netmask to 255.255.255.0, also ensure that you are correctly connected to the setup (2 USB's 1 Ethernet). ([Static IP configuration](https://linuxconfig.org/how-to-configure-static-ip-address-on-ubuntu-22-04-jammy-jellyfish-desktop-server))
+9. NOTE: If you are running on our setup, remember to set your IP to 172.31.1.148 and Netmask to 255.255.255.0, also ensure that you are correctly connected to the setup (2 USB's 1 Ethernet). ([Static IP configuration](https://linuxconfig.org/how-to-configure-static-ip-address-on-ubuntu-22-04-jammy-jellyfish-desktop-server))
    
-9. Running the system
+10. Running the system
 
     ```shell
     cd ~/Dual_Kuka_LLM_Bachelor/p6_ws
@@ -82,7 +154,7 @@ Before starting the installation of this project, we recommend grabbing a snack 
     ros2 launch robutler_bringup robutler.launch.py
     ```
     
-10. Recommendations - *Don't do this, if you run multiple ROS Distros*
+11. Recommendations - *Don't do this, if you run multiple ROS Distros*
 
     ```shell
     echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc

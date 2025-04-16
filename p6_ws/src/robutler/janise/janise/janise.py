@@ -37,13 +37,8 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import tf2_ros
 
 # ROS 2 messages
-from project_interfaces.srv import GetObjectInfo
-from project_interfaces.srv import DefineObjectInfo
-from project_interfaces.srv import PlanMoveCommand
-from project_interfaces.srv import ExecuteMoveCommand
-from project_interfaces.srv import PromptJanice
-from project_interfaces.srv import GetCurrentPose
-from project_interfaces.msg import TransformMatrix
+from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
+from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
@@ -69,13 +64,15 @@ class LLMNode(Node):
         self._2f_client = self.create_client(Robotiq2F85GripperCommand, 'gripper_2f_service', callback_group=client_cb_group)
         self._2f_req = Robotiq2F85GripperCommand.Request()
 
-        #Object detector service client - (Change to get_object_info for normal grasping)
-        self.detector_client = self.create_client(GetObjectInfo, 'get_any_object_info', callback_group=client_cb_group)
+        #Object detector service client
+        self.detector_client = self.create_client(GetObjectInfo, 'get_object_info', callback_group=client_cb_group)
         self.detector_req = GetObjectInfo.Request()
         self.objects_on_table = {}
 
-        self.define_objects_client = self.create_client(DefineObjectInfo, 'define_object_info', callback_group=client_cb_group)
-        self.define_objects_req = DefineObjectInfo.Request()
+        #Object detector service client
+        self.detector_client_any = self.create_client(GetObjectInfo, 'get_any_object_info', callback_group=client_cb_group)
+        self.detector_req_any = GetObjectInfo.Request()
+        self.objects_on_table_any = {}
 
         self.get_image_client = self.create_client(GetImage, 'get_image_from_rviz')
         self.get_image_req = GetImage.Request()
@@ -120,7 +117,6 @@ class LLMNode(Node):
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
         self.get_logger().info(f"Current time and date: {self.current_time}")
 
-        self.object_file = 'src/robutler/object_detector/object_detector/lego_bricks_config.json'
         self.conversation_log_folder = 'src/robutler/janise/resource/conversation_logs'
         self.conversation_log_file = self.conversation_log_folder + f'/{self.current_time}.json'
 
@@ -135,11 +131,6 @@ class LLMNode(Node):
                 pass
         """
 
-        self.lego_bricks = {}
-
-        with open(self.object_file, 'r') as file:
-            self.lego_bricks = json.load(file)
-
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
@@ -148,9 +139,8 @@ class LLMNode(Node):
 
         # Define the tools available to the LLM
         self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
-                      StructuredTool.from_function(self.find_object), 
-                      StructuredTool.from_function(self.get_available_objects), 
-                      StructuredTool.from_function(self.define_object_thresholds), 
+                      StructuredTool.from_function(self.find_object),
+                      StructuredTool.from_function(self.find_object_anygrasp),
                       StructuredTool.from_function(self.plan_robot_trajectory), 
                       StructuredTool.from_function(self.execute_planned_trajectory), 
                       StructuredTool.from_function(self.manipulate_right_gripper), 
@@ -279,12 +269,14 @@ class LLMNode(Node):
             - Before you are to make decisions, another agent named Socrates will provide you with insights and guidance to ensure that the correct actions are taken. You should always consider the suggestions made by Socrates before making a decision.
             - If not specified by the user, use the left arm for operations on the left side and use the right arm for operations on the right side.
             - Perform steps in an appropriate order e.g. move arm to object before closing gripper and plan trajectory before executing it.
+            - Never manipulate the grippers before the arms are moved to the desired position!! 
+            - Close the gripper to 0 and not grasp_width for the object you must grasp.
             - Safety is of utmost importance, so when in doubt always consult the user first. Especially for actions that move the robot.
                   
         """)
 
         self.initial_prompt = [
-            self.initial_prompt_Janise,
+            self.initial_prompt_Janise, #TODO get_available_objects does not ecxist anymore
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                       name = "Socrates"),
@@ -509,7 +501,7 @@ class LLMNode(Node):
                 'width': 85,
             },
             'right_gripper': {
-                'width': 167,
+                'width': 155, # 167 before but thats wrong
             },
             'services_unavailable': None,
         }
@@ -583,9 +575,9 @@ class LLMNode(Node):
     def get_cam2world_transform(self):
         """Get the transformation matrix from camera to gripper coordinates."""
         T_cam_gripper = np.array([
-            [-0.0917179, -0.99558678, 0.01986943, 0.09246569],
-            [-0.99558723, 0.09128373, -0.02175657, 0.02742328],
-            [0.0198468, -0.02177722, -0.99956583, 0.1631206],
+            [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
+            [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
+            [0.0196773, 0.00130301, -0.99980553, 0.15210002],
             [0.0, 0.0, 0.0, 1.0]
         ])
 
@@ -760,21 +752,6 @@ class LLMNode(Node):
         print("\nMessage looping has been disabled.")
 
         return "Message looping has been disabled."  
-    
-    #@tool
-    def get_available_objects(self) -> list:
-        """
-        Retrieves a list of predefined objects with associated thresholds.
-
-        This function returns a list of object names that have predefined thresholds 
-        and can be identified by the `find_object` function. It does not indicate 
-        the presence of these objects in the workspace but serves as a reference 
-        for valid object names that can be passed as parameters to `find_object`.
-
-        Returns:
-            list: A list of object names with predefined thresholds.
-        """
-        return list(self.lego_bricks.keys())
 
     #@tool
     def get_predefined_locations_and_poses(self) -> dict:
@@ -792,8 +769,8 @@ class LLMNode(Node):
 
         return self.coordinates
 
-    #@tool
-    def find_object(self, object_name: str, gripper: str) -> GetObjectInfo.Response:
+    #@tool   
+    def find_object(self, object_name: str) -> GetObjectInfo.Response:
         """
         Uses the object detection service to locate and retrieve grasp poses for a specified object, 
         or if none of the specified object is found returns possible objects and thier center points.
@@ -806,7 +783,6 @@ class LLMNode(Node):
 
         Args:
             object_name (str): The name of the object to search for (e.g., "bottle", "book").
-            gripper (str): The desired gripper to be used for grasping (e.g., "right", "left").
 
         Service returns:
             GetObjectInfo.Response: A response object that includes the number of detected objects and their grasp details.
@@ -839,7 +815,6 @@ class LLMNode(Node):
 
         # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
-        self.detector_req.gripper = gripper
         T = self.get_cam2world_transform()
         transform_msg = TransformMatrix()
         transform_msg.matrix = T.flatten().tolist()
@@ -915,42 +890,136 @@ class LLMNode(Node):
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 
         return self.objects_on_table
-    
-    #@tool
-    def define_object_thresholds(self, object_name: str) -> DefineObjectInfo.Response:
+
+
+    #@tool   
+    def find_object_anygrasp(self, object_name: str, gripper: str) -> GetObjectInfo.Response:
         """
-        Allows the user to define threshold values for object detection.
+        The primary detection service avaliable to you, this service allows you to perfrom object detection for any desired object.
+        If the desired object is detected, the service will also generate grasp poses for the object.
 
-        This function enables the user to interactively adjust the thresholds for 
-        the object detector service. An image will be displayed with trackbars 
-        that allow the user to modify the thresholds and observe the resulting 
-        changes in real-time. The object for which thresholds are being defined 
-        should be specified as an argument, using underscores (_) in place of spaces.
+        If the request object is not detected by the service, the service will instead return a list of all objects and their center points in the workspace.
+        This service utilizes AnyGrasp (A Deeplearning Neural Network) and will provide high resolution grasps.
 
-        Once the thresholds are defined, they are saved and utilized by the object 
-        detector service. The updated object information is also stored in a 
-        dictionary for future use.
+        This method sends a service request to the object detector, providing the object name, what gripper should be used and a 4x4 transformation
+        matrix (flattened) to convert camera coordinates to world coordinates.
+         
+        It receives a structured response containing detected objects with their 3D center points and possible grasp poses 
+        (grasps only if the object was found). These are stored in a structured dictionary for easy access.
 
         Args:
-            object_name (str): The name of the object for which thresholds are 
-                               being defined. Use underscores (_) instead of spaces.
+            object_name (str): The name of the object to search for (e.g., "bottle", "book").
+            gripper (str): The desired gripper to be used for grasping (e.g., "right", "left").
 
-        Returns:
-            DefineObjectInfo.Response: The response from the object detector service 
-                                       after the thresholds have been defined.
+        Service returns:
+            GetObjectInfo.Response: A response object that includes the number of detected objects and their grasp details.
+            (objects found, center of object, 6D pose, grasp with). If no object is found, it returns the possible objects and their center points. 
+
+        Function returns:
+            -`self.objects_on_table` with structured grasp information in the following format:
+            {
+                'object_name i': {
+                    'center_object': {x, y, z},
+                    'grasps': {
+                        'grasp j': {
+                            'center': {x, y, z},
+                            'orientation': {roll, pitch, yaw},
+                            'width': float
+                        },
+                        ...
+                    }
+                },
+                ...
+            }
+
+        Notes:
+            - Should be used for all grasping / object detection tasks. find_object functions as a fallback, in case this service fails.
+            - Grasp orientation is stored in degrees (roll, pitch, yaw).
+            - Each object is given a unique name (e.g., "bottle 0", "bottle 1") to avoid conflicts.
+            - Requires the object detection service to be available and responsive.
         """
-        self.define_objects_req.object_name = object_name
+        
+        self.get_logger().info(f"\Requesting the Object detector service to find grasps for: {object_name}\n")
 
-        future = self.define_objects_client.call_async(self.define_objects_req)
+        # Call the object detection service, with the object name and the transformation matrix
+        self.detector_req_any.object_name = object_name
+        self.detector_req_any.gripper = gripper
+        T = self.get_cam2world_transform()
+        transform_msg_any = TransformMatrix()
+        transform_msg_any.matrix = T.flatten().tolist()
+        self.detector_req_any.transform = transform_msg_any
+
+        future = self.detector_client_any.call_async(self.detector_req_any)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=600)
+        response = self.wait_future(future, timeout=125)
 
-        # Save the updated object information in a dictionary
-        with open(self.object_file, 'r') as file:
-            self.lego_bricks = json.load(file)
+        # Check if the response is valid or if it timeouted
+        if response is None:
+            self.get_logger().error("Failed to retrieve object detection response")
+            return None
 
-        return response
+        self.get_logger().info(f"\nObjects found: {response.object_count}\n")
+
+        # For case where no object is found
+        if response.object_count == 0:
+            self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
+            for i, detected_obj in enumerate(response.detected_objects):
+                object_name = detected_obj.name
+
+                self.objects_on_table_any[object_name] = {
+                    'center_object': {
+                        'x': detected_obj.center_of_object.x,
+                        'y': detected_obj.center_of_object.y,
+                        'z': detected_obj.center_of_object.z
+                    }
+                }
+        # For case where object is found
+        else:
+            self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
+
+            self.objects_on_table_any = {}  # Reset table
+
+            for i, detected_obj in enumerate(response.detected_objects):
+                object_name = detected_obj.name
+
+                self.objects_on_table_any[object_name] = {
+                    'center_object': {
+                        'x': detected_obj.center_of_object.x,
+                        'y': detected_obj.center_of_object.y,
+                        'z': detected_obj.center_of_object.z
+                    },
+                    'grasps': {}
+                }
+
+                for j, grasp in enumerate(detected_obj.grasps):
+                    
+                    # rotate the grasp 90 degrees around the z-axis of the grasp
+
+                    # Define the rotation matrix for 90 degrees around the z-axis
+                    R_90z = Rotation.from_euler('z', 90, degrees=True).as_matrix()
+                    # Define grasp rotation matrix from World to Grasp coordinates
+                    R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
+                    R_new = R_W_G @ R_90z
+                    roll, pitch, yaw = Rotation.from_matrix(R_new).as_euler('xyz', degrees=True)
+
+                    self.objects_on_table_any[object_name]['grasps'][f'grasp {j}'] = {
+                        'center': {
+                            'x': grasp.position.x,
+                            'y': grasp.position.y,
+                            'z': grasp.position.z
+                        },
+                        'orientation': {
+                            'roll': roll,
+                            'pitch': pitch,
+                            'yaw': yaw
+                        },
+                        'width': grasp.grasp_width
+                    }
+        print(f"\nThe object detection service returned the following objects: {self.objects_on_table_any}\n")
+
+        return self.objects_on_table_any
+
 
     #@tool
     def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
