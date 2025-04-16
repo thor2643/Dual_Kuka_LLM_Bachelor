@@ -84,7 +84,7 @@ def pred_decode(end_points, gripper_max_width):
         grasp_center = end_points['fp2_xyz'][i].float()
         approaching = -end_points['grasp_top_view_xyz'][i].float()
         grasp_angle_class_score = end_points['grasp_angle_cls_pred'][i]
-        grasp_width = 1.8 * end_points['grasp_width_pred'][i] #Changed from 1.2
+        grasp_width = 1.8 * end_points['grasp_width_pred'][i]
         grasp_width = torch.clamp(grasp_width, min=0, max=gripper_max_width)
         grasp_tolerance = end_points['grasp_tolerance_pred'][i]
 

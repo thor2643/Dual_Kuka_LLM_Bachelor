@@ -132,7 +132,8 @@ For transparency, our GraspNet-Baseline was built with the following: Nvidia Dri
     cd ~/Dual_Kuka_LLM_Bachelor/p6_ws/src/graspnet/graspnet/models
     sed -i 's/def pred_decode(end_points):/def pred_decode(end_points, gripper_max_width):/' graspnet.py
     sed -i 's/GRASP_MAX_WIDTH/gripper_max_width/I' graspnet.py
-    sed -i 's/grasp_width = 1.2 \* end_points\[\'grasp_width_pred\'\]\[i\]/grasp_width = 1.8 \* end_points\[\'grasp_width_pred\'\]\[i\]/' graspnet.py
+    sudo sed -i 's/grasp_width = 1.2 \* end_points\['\''grasp_width_pred'\''\]\[i\]/grasp_width = 1.8 \* end_points\['\''grasp_width_pred'\''\]\[i\]/' graspnet.py
+
     ```
 
 
