@@ -3,8 +3,7 @@
 <!-- top level -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="dual_arm">
   <!-- Setup of Hardware & Joints for Right_Arm_Isaac -->
-  <xacro:include filename="$(find dual_arm_moveit_config)/config/dual_arm.ros2_control.xacro"/>
-  <!-- <xacro:include filename="$(find isaac_dual_arm_moveit_config)/config/isaac_dual_arm.ros2_control.xacro"/> -->
+  <xacro:include filename="$(find isaac_dual_arm_moveit_config)/config/isaac_dual_arm.ros2_control.xacro"/>
   
   <!-- Gripper -->
   <xacro:include filename="$(find lbr_description)/urdf/robotiq-2f-85-gripper/robotiq_85_gripper.urdf.xacro"/>
