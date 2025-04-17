@@ -24,6 +24,7 @@ import numpy as np
 ###############################
 
 class GripperServiceServer(Node):
+    
     '''
     Notes:
     * Starts a service server for controlling the gripper.
@@ -215,17 +216,14 @@ class GripperServiceServer(Node):
 
 
         
-    
-    
     def shutdown_callback(self):
         self.get_logger().warn("Shutting down...")
         
         
         
-        
 def main(args=None):
     rclpy.init(args=args)
-
+    
     # Instansiate node class
     control_service_server_node = GripperServiceServer()
 

@@ -37,6 +37,13 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import tf2_ros
 
 # ROS 2 messages
+from project_interfaces.srv import GetObjectInfo
+from project_interfaces.srv import DefineObjectInfo
+from project_interfaces.srv import PlanMoveCommand
+from project_interfaces.srv import ExecuteMoveCommand
+from project_interfaces.srv import PromptJanice
+from project_interfaces.srv import GetCurrentPose
+from project_interfaces.srv import GripperMoveit
 from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
 from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
@@ -63,6 +70,10 @@ class LLMNode(Node):
 
         self._2f_client = self.create_client(Robotiq2F85GripperCommand, 'gripper_2f_service', callback_group=client_cb_group)
         self._2f_req = Robotiq2F85GripperCommand.Request()
+
+        # Moveit gripper client
+        self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
+        self._gripper_req = GripperMoveit.Request()
 
         #Object detector service client
         self.detector_client = self.create_client(GetObjectInfo, 'get_object_info', callback_group=client_cb_group)
@@ -1048,12 +1059,18 @@ class LLMNode(Node):
         self._3f_controller.output_registers.r_fra = round((force - 15) / (60 - 15) * 255)     # Force limitations [15 - 60N]
 
         # Call the service asynchronously
-        future = self._3f_controller_cli.call_async(self._3f_controller)
+        future1 = self._3f_controller_cli.call_async(self._3f_controller)
+
+        # Rviz gripper 
+        self._gripper_req.width = float(width)   
+        self._gripper_req.gripper_name = "3f"
+        future2 = self._gripper_client.call_async(self._gripper_req)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=15)
+        response1 = self.wait_future(future1, timeout=15)
+        response2 = self.wait_future(future2, timeout=15)
 
-        return response
+        return response1
 
     #@tool
     def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=20) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
@@ -1082,6 +1099,8 @@ class LLMNode(Node):
               `plan_robot_trajectory` expecting it to execute as part of a trajectory plan.
             - Ensure the input parameters are within the specified ranges to avoid errors.
         """
+
+        # The real gripper 
         if width < 0 or width > 85:
             self.get_logger().error('Requested right gripper width exceeds gripper capabilities')
             return 'Requested gripper width exceeds gripper capabilities'
@@ -1097,12 +1116,18 @@ class LLMNode(Node):
         self._2f_req.force = float(force)   # Force in N. Must be between 20 and 235 N.
 
         # Publish command to left gripper
-        future = self._2f_client.call_async(self._2f_req)
+        future1 = self._2f_client.call_async(self._2f_req)
+
+        # Rviz gripper
+        self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
+        self._gripper_req.gripper_name = "2f"
+        future2 = self._gripper_client.call_async(self._gripper_req)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=15)
+        response1 = self.wait_future(future1, timeout=15)
+        response2 = self.wait_future(future2, timeout=15)
 
-        return response
+        return response1
     
     #@tool
     def get_current_pose(self, arm: str) -> GetCurrentPose.Response:

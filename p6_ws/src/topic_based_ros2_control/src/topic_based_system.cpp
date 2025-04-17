@@ -38,9 +38,7 @@
 #include <angles/angles.h>
 #include <rclcpp/executors.hpp>
 #include <topic_based_ros2_control/topic_based_system.hpp>
-
-// This comment is to fix my github mess up
-
+// comment
 namespace
 {
 /** @brief Sums the total rotation for joint states that wrap from 2*pi to -2*pi
@@ -330,11 +328,20 @@ hardware_interface::return_type TopicBasedSystem::write(const rclcpp::Time& /*ti
   if (rclcpp::ok())
   {
     topic_based_joint_commands_publisher_->publish(joint_state);
+
   }
 
   return hardware_interface::return_type::OK;
 }
 }  // end namespace topic_based_ros2_control
+
+
+rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
+topic_based_ros2_control::TopicBasedSystem::on_deactivate(const rclcpp_lifecycle::State &) {
+    RCLCPP_INFO(node_->get_logger(), "IT WORKED !!!!!!!!!! _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
+    return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
+}
+
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(topic_based_ros2_control::TopicBasedSystem, hardware_interface::SystemInterface)

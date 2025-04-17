@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    
     <ros2_control name="lbr_system_interface_right" type="system">
     <hardware>
       <plugin>lbr_ros2_control::SystemInterface</plugin>
@@ -210,7 +211,7 @@
     </joint>
   </ros2_control>
 
-  <ros2_control name="lbr_system_interface_left" type="system">
+   <ros2_control name="lbr_system_interface_left" type="system">
     <hardware>
       <plugin>lbr_ros2_control::SystemInterface</plugin>
       <param name="fri_client_sdk_major_version">1</param>
@@ -419,6 +420,188 @@
       <state_interface name="external_torque"/>
       <state_interface name="ipo_joint_position"/>
     </joint>
+  </ros2_control>
+  
+   <!-- Setup of Hardware for a_3f Gripper -->
+  <ros2_control name="3FGripper" type="system">
+    <hardware>
+      <plugin>mock_components/GenericSystem</plugin>
+    </hardware>
+    <joint name="a_3f_finger_1_joint_1">
+      <param name="max_velocity">1.23</param>
+      <command_interface name="position">
+        <param name="min">0.3758</param>
+        <param name="max">1.1276</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.3758</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_1_joint_2">
+      <param name="max_velocity">1.24</param>
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">1.5708</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_1_joint_3">
+      <param name="max_velocity">1.25</param>
+      <command_interface name="position">
+        <param name="min">-0.9531</param>
+        <param name="max">0.7572</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_2_joint_1">
+      <param name="max_velocity">1.23</param>
+      <command_interface name="position">
+        <param name="min">0.3758</param>
+        <param name="max">1.1276</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.3758</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_2_joint_2">
+      <param name="max_velocity">1.24</param>
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">1.5708</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_2_joint_3">
+      <param name="max_velocity">1.25</param>
+      <command_interface name="position">
+        <param name="min">-0.9531</param>
+        <param name="max">0.7572</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_middle_joint_1">
+      <param name="max_velocity">1.23</param>
+      <command_interface name="position">
+        <param name="min">0.3758</param>
+        <param name="max">1.1276</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.3758</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_middle_joint_2">
+      <param name="max_velocity">1.24</param>
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">1.5708</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_finger_middle_joint_3">
+      <param name="max_velocity">1.25</param>
+      <command_interface name="position">
+        <param name="min">-0.9531</param>
+        <param name="max">0.7572</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_palm_finger_1_joint">
+      <param name="max_velocity">1.23</param>
+      <command_interface name="position">
+        <param name="min">-0.1784</param>
+        <param name="max">0.192</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">-0.1784</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+    
+    <joint name="a_3f_palm_finger_2_joint">
+      <param name="max_velocity">1.23</param>
+      <command_interface name="position">
+        <param name="min">-0.192</param>
+        <param name="max">0.1784</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">-0.192</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+  </ros2_control>
+
+  <!-- Setup of Hardware for 2F Gripper -->
+  <ros2_control name="2FGripper" type="system">
+    <hardware>
+      <plugin>mock_components/GenericSystem</plugin>
+    </hardware>
+  <!-- Setup of Hardware for 2F Gripper -->
+    <joint name="left_2f_robotiq_85_left_knuckle_joint">
+      <param name="max_velocity">2</param>
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">0.8</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+
   </ros2_control>
   
 </robot>

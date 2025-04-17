@@ -204,9 +204,7 @@
     </joint>
 
     <!-- Setup of Hardware for 2F Gripper -->
-
-
-    <joint name="left_finger_joint">
+    <joint name="left_2f_robotiq_85_left_knuckle_joint">
       <param name="max_velocity">2</param>
       <command_interface name="position">
         <param name="min">0.0</param>
@@ -220,14 +218,8 @@
       </state_interface>
     </joint>
 
-    </ros2_control>
-
-   <!--Setup of Hardware for 3F Gripper -->
-  <ros2_control name="3FGripper" type="system">
-    <hardware>
-      <plugin>mock_components/GenericSystem</plugin>
-    </hardware>
-    <joint name="3f_finger_1_joint_1">
+    <!-- Hardware setup fpr 3f gripper -->
+    <joint name="a_3f_finger_1_joint_1">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
         <param name="min">0.3758</param>
@@ -241,7 +233,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_1_joint_2">
+    <joint name="a_3f_finger_1_joint_2">
       <param name="max_velocity">1.24</param>
       <command_interface name="position">
         <param name="min">0.0</param>
@@ -255,7 +247,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_1_joint_3">
+    <joint name="a_3f_finger_1_joint_3">
       <param name="max_velocity">1.25</param>
       <command_interface name="position">
         <param name="min">-0.9531</param>
@@ -269,7 +261,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_2_joint_1">
+    <joint name="a_3f_finger_2_joint_1">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
         <param name="min">0.3758</param>
@@ -283,7 +275,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_2_joint_2">
+    <joint name="a_3f_finger_2_joint_2">
       <param name="max_velocity">1.24</param>
       <command_interface name="position">
         <param name="min">0.0</param>
@@ -297,7 +289,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_2_joint_3">
+    <joint name="a_3f_finger_2_joint_3">
       <param name="max_velocity">1.25</param>
       <command_interface name="position">
         <param name="min">-0.9531</param>
@@ -311,7 +303,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_middle_joint_1">
+    <joint name="a_3f_finger_middle_joint_1">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
         <param name="min">0.3758</param>
@@ -325,7 +317,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_middle_joint_2">
+    <joint name="a_3f_finger_middle_joint_2">
       <param name="max_velocity">1.24</param>
       <command_interface name="position">
         <param name="min">0.0</param>
@@ -339,7 +331,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_finger_middle_joint_3">
+    <joint name="a_3f_finger_middle_joint_3">
       <param name="max_velocity">1.25</param>
       <command_interface name="position">
         <param name="min">-0.9531</param>
@@ -353,7 +345,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_palm_finger_1_joint">
+    <joint name="a_3f_palm_finger_1_joint">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
         <param name="min">-0.1784</param>
@@ -367,7 +359,7 @@
       </state_interface>
     </joint>
     
-    <joint name="3f_palm_finger_2_joint">
+    <joint name="a_3f_palm_finger_2_joint">
       <param name="max_velocity">1.23</param>
       <command_interface name="position">
         <param name="min">-0.192</param>
