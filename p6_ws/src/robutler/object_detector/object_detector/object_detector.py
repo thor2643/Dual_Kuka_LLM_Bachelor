@@ -24,6 +24,8 @@ import os
 
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
+from project_interfaces.srv import DefineObjectInfo
+from project_interfaces.srv import GetSimCameraData
 from project_interfaces.msg import Grasp6D, DetectedObject, TransformMatrix
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3 #for the 6D grasp prediction
@@ -107,8 +109,73 @@ class RealSenseCamera(Node):
         self.camera_info = msg.k
 
 
-""" 
+class SimCamera(Node):
+    def __init__(self):
+        super().__init__('sim_camera_node')
+        self.bridge = CvBridge()
 
+        self.color_img = None
+        self.depth_img = None
+        self.camera_info = None
+
+        self.client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
+
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for simulated camera data service...')
+
+    def update_images(self):
+        request = GetSimCameraData.Request()
+        future = self.client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is not None:
+            response = future.result()
+
+            # Convert image messages to OpenCV
+            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
+
+            color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
+            self.color_img = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
+
+            self.camera_info = response.camera_info.k
+        else:
+            self.get_logger().error("Failed to get simulated camera data")
+
+
+class SimCamera(Node):
+    def __init__(self):
+        super().__init__('sim_camera_node')
+        self.bridge = CvBridge()
+
+        self.color_img = None
+        self.depth_img = None
+        self.camera_info = None
+
+        self.client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
+
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Waiting for simulated camera data service...')
+
+    def update_images(self):
+        request = GetSimCameraData.Request()
+        future = self.client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is not None:
+            response = future.result()
+
+            # Convert image messages to OpenCV
+            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
+
+            color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
+            self.color_img = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
+
+            self.camera_info = response.camera_info.k
+        else:
+            self.get_logger().error("Failed to get simulated camera data")
+
+
+""" 
 In the grasp pipeline the following parameters are of importance: DO NOT CHANGE THEM UNLESS YOU KNOW WHAT YOU ARE DOING!!!! (Ask Signe, She doesent even know so dont touch them!!!!)
     - conf: Yolo World confidence threshold (currently not used so default(0.25))
     - num_candidates: The number of grasps candidates.
@@ -122,10 +189,17 @@ In the grasp pipeline the following parameters are of importance: DO NOT CHANGE 
     - jump_threshold: The threshold for filtering out points with large depth jumps.
     
 """
+
 class ObjectDetector(Node):
     def __init__(self):
         super().__init__('object_detector')
-        self.object_detector_srv = self.create_service(GetObjectInfo, 'get_object_info', self.get_object_information)
+        self.sim_enabled = False
+
+        self.camera_source = RealSenseCamera()
+
+        self.detector_srv = self.create_service(GetObjectInfo, 'get_object_info', self.get_object_information)
+        self.threshold_adjust_srv = self.create_service(DefineObjectInfo, 'define_object_info', self.define_object_thresholds)
+        self.yolo_world_srv = self.create_service(GetObjectInfo, 'get_object_info_yolo', self.get_object_information_yolo)
 
         self.image_publisher = self.create_publisher(Image, 'video_frames', 10)
 
@@ -155,14 +229,30 @@ class ObjectDetector(Node):
         self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
 
 
-    def retrieve_aligned_frames(self):      
-        # Retrieve aligned frames from the RealSense camera by spinning the node untill new frames are available
+    def retrieve_aligned_frames(self):
+        if self.sim_enabled:
+            self.get_logger().info(f'USing sim camera\n')
+            sim_camera = SimCamera()
+        
+            sim_camera.update_images()
 
-        while self.realsense_camera.depth_img is None or self.realsense_camera.color_img is None or self.realsense_camera.camera_info is None:
+            self.get_logger().info(f'Gt image\n')
+    
+            self.depth_frame = sim_camera.depth_img
+            self.color_frame = sim_camera.color_img
+            self.camera_info = sim_camera.camera_info
+        else:
+            self.get_logger().info(f'USing real camera\n')
+            while self.realsense_camera.depth_img is None or self.realsense_camera.color_img is None or self.realsense_camera.camera_info is None:
                 rclpy.spin_once(self.realsense_camera)
 
-        while np.array_equal(self.realsense_camera.depth_img, self.depth_frame) or np.array_equal(self.realsense_camera.color_img, self.color_frame):
+            while np.array_equal(self.realsense_camera.depth_img, self.depth_frame) or np.array_equal(self.realsense_camera.color_img, self.color_frame):
                 rclpy.spin_once(self.realsense_camera)
+            
+            self.depth_frame = self.realsense_camera.depth_img
+            self.color_frame = self.realsense_camera.color_img
+            self.camera_info = self.realsense_camera.camera_info
+        
         
         self.depth_frame = self.realsense_camera.depth_img
         self.color_frame = self.realsense_camera.color_img
@@ -201,6 +291,10 @@ class ObjectDetector(Node):
     #The callback function for the detector service for YOLO World
     def get_object_information(self, request, response, clustered = True):
         object = request.object_name
+        self.sim_enabled = request.use_sim
+        self.get_logger().info(f'Requested to find {object}\n')
+
+        self.found_objects.clear()
         self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
         self.get_logger().info(f'Requested to find {object} with Yolo World\n')
 
@@ -924,12 +1018,14 @@ class ObjectDetector(Node):
         cx = self.camera_info[2]
         cy = self.camera_info[5]
 
+        self.get_logger().info(f"Depth frame size: {self.depth_frame.shape}")
+
         if pixel_x < 0 or pixel_x >= self.depth_frame.shape[1] or pixel_y < 0 or pixel_y >= self.depth_frame.shape[0]:
-            print("Pixel coordinates out of bounds.")
+            self.get_logger().info(f"Pixel coordinates out of bounds: ({pixel_x}, {pixel_y})")
             return None
         
         if self.depth_frame[pixel_y, pixel_x] == 0:
-            print("No depth data available at the selected pixel.")
+            self.get_logger().info(f"No depth data available at the selected pixel: ({pixel_x}, {pixel_y})")
             return None
 
         # Calculate the x, y, z coordinates
@@ -1011,7 +1107,6 @@ def main(args=None):
 
     # Create an ObjectDetector instance
     detector = ObjectDetector()
-
 
     #this was commented out
     rclpy.spin(detector) 

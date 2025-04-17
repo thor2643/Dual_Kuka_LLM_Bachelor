@@ -82,7 +82,8 @@ class LLMNode(Node):
 
         self.bridge = CvBridge()
         self.color_img = None
-        
+        self.use_sim = True
+
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
         self.robot_plan_req = PlanMoveCommand.Request()
@@ -809,6 +810,9 @@ class LLMNode(Node):
 
         # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
+
+        # Set the use_sim flag based on the current mode
+        self.detector_req.use_sim = self.use_sim
         T = self.get_cam2world_transform()
         transform_msg = TransformMatrix()
         transform_msg.matrix = T.flatten().tolist()
