@@ -24,7 +24,6 @@ import os
 
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
-from project_interfaces.srv import DefineObjectInfo
 from project_interfaces.srv import GetSimCameraData
 from project_interfaces.msg import Grasp6D, DetectedObject, TransformMatrix
 from geometry_msgs.msg import Point
@@ -142,39 +141,6 @@ class SimCamera(Node):
             self.get_logger().error("Failed to get simulated camera data")
 
 
-class SimCamera(Node):
-    def __init__(self):
-        super().__init__('sim_camera_node')
-        self.bridge = CvBridge()
-
-        self.color_img = None
-        self.depth_img = None
-        self.camera_info = None
-
-        self.client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
-
-        while not self.client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for simulated camera data service...')
-
-    def update_images(self):
-        request = GetSimCameraData.Request()
-        future = self.client.call_async(request)
-        rclpy.spin_until_future_complete(self, future)
-
-        if future.result() is not None:
-            response = future.result()
-
-            # Convert image messages to OpenCV
-            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
-
-            color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
-            self.color_img = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
-
-            self.camera_info = response.camera_info.k
-        else:
-            self.get_logger().error("Failed to get simulated camera data")
-
-
 """ 
 In the grasp pipeline the following parameters are of importance: DO NOT CHANGE THEM UNLESS YOU KNOW WHAT YOU ARE DOING!!!! (Ask Signe, She doesent even know so dont touch them!!!!)
     - conf: Yolo World confidence threshold (currently not used so default(0.25))
@@ -198,8 +164,6 @@ class ObjectDetector(Node):
         self.camera_source = RealSenseCamera()
 
         self.detector_srv = self.create_service(GetObjectInfo, 'get_object_info', self.get_object_information)
-        self.threshold_adjust_srv = self.create_service(DefineObjectInfo, 'define_object_info', self.define_object_thresholds)
-        self.yolo_world_srv = self.create_service(GetObjectInfo, 'get_object_info_yolo', self.get_object_information_yolo)
 
         self.image_publisher = self.create_publisher(Image, 'video_frames', 10)
 
@@ -236,7 +200,7 @@ class ObjectDetector(Node):
         
             sim_camera.update_images()
 
-            self.get_logger().info(f'Gt image\n')
+            self.get_logger().info(f'Get image\n')
     
             self.depth_frame = sim_camera.depth_img
             self.color_frame = sim_camera.color_img
@@ -252,14 +216,10 @@ class ObjectDetector(Node):
             self.depth_frame = self.realsense_camera.depth_img
             self.color_frame = self.realsense_camera.color_img
             self.camera_info = self.realsense_camera.camera_info
-        
-        
-        self.depth_frame = self.realsense_camera.depth_img
-        self.color_frame = self.realsense_camera.color_img
-        self.camera_info = self.realsense_camera.camera_info    
+         
     
     def create_point_cloud(self):
-         # The camera info message .K contains the camera intrinsics
+        # The camera info message .K contains the camera intrinsics
         #[ fx   0  cx ]
         #[  0  fy  cy ]
         #[  0   0   1 ]
@@ -302,6 +262,8 @@ class ObjectDetector(Node):
         image = self.get_color_image()
         #image = cv2.rotate(image, cv2.ROTATE_180)
 
+        self.get_logger().info(f"Image size: {image.shape}")
+
         #Apply Yolo World, data is stored in self.yolo_results
         self.apply_yolo_world(image, object, verbose=False)
 
@@ -311,18 +273,26 @@ class ObjectDetector(Node):
             self.get_logger().info(f'No {object} found\n')
             objects_found_list = self.apply_yolo_world(image, object, verbose=False, name_objects = True)
             image = self.yolo_results[0].plot()
+
+            self.get_logger().info(f"Image size after plotting: {image.shape}")
+
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
+
             if False: 
                 cv2.imshow("Yolo detections", image)
                 cv2.waitKey(0)
                 cv2.destroyAllWindows()
+
             response.object_count = 0
+
             for i, name in enumerate(objects_found_list):
                 obj = DetectedObject()
                 obj.name = name
                 x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+
                 # Convert pixel coordinates to 3D coordinates
                 cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+
                 # Fill in the message
                 obj.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
                 obj.grasps = []  # No grasps since no object mask was found
@@ -637,8 +607,6 @@ class ObjectDetector(Node):
             R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
             U, _, Vt = np.linalg.svd(R_matrix)
             R_ortho = U @ Vt
-
-            
 
             # Convert to roll-pitch-yaw
             rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
@@ -1029,7 +997,11 @@ class ObjectDetector(Node):
             return None
 
         # Calculate the x, y, z coordinates
-        z = self.depth_frame[pixel_y, pixel_x] / 1000  # Convert to meters
+        if self.sim_enabled:
+            z = self.depth_frame[pixel_y, pixel_x] 
+        else:
+            z = self.depth_frame[pixel_y, pixel_x] / 1000  # Convert to meters
+
         x = ((pixel_x - cx) * z / fx) 
         y = ((pixel_y - cy) * z / fy) 
         
