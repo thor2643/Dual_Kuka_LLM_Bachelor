@@ -36,6 +36,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/PromptJanice.srv"
   "srv/GetCurrentPose.srv"
   "srv/GetImage.srv"
+  "srv/GetSimCameraData.srv"
   DEPENDENCIES geometry_msgs
   DEPENDENCIES sensor_msgs
 )

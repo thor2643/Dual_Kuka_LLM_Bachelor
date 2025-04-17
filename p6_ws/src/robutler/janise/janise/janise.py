@@ -93,7 +93,8 @@ class LLMNode(Node):
 
         self.bridge = CvBridge()
         self.color_img = None
-        
+        self.use_sim = True
+
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
         self.robot_plan_req = PlanMoveCommand.Request()
@@ -826,12 +827,15 @@ class LLMNode(Node):
         self.get_logger().info(f"\nLooking for object: {object_name}\n")
         self.detector_req.object_name = object_name
 
+        # Set the use_sim flag based on the current mode
+        self.detector_req.use_sim = self.use_sim
+
         future = self.detector_client.call_async(self.detector_req)
 
         self.objects_on_table.clear() # Clear the dictionary before adding new objects (temporary solution)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=15)
+        response = self.wait_future(future, timeout=25)
 
         print("The service call has been completed.")  # Debugging
 

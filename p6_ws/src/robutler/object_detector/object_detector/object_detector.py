@@ -163,23 +163,27 @@ class ObjectDetector(Node):
 
     def retrieve_aligned_frames(self):
         if self.sim_enabled:
+            self.get_logger().info(f'USing sim camera\n')
             sim_camera = SimCamera()
         
             sim_camera.update_images()
+
+            self.get_logger().info(f'Gt image\n')
     
             self.depth_frame = sim_camera.depth_img
             self.color_frame = sim_camera.color_img
             self.camera_info = sim_camera.camera_info
-
-        while self.realsense_camera.depth_img is None or self.realsense_camera.color_img is None or self.realsense_camera.camera_info is None:
+        else:
+            self.get_logger().info(f'USing real camera\n')
+            while self.realsense_camera.depth_img is None or self.realsense_camera.color_img is None or self.realsense_camera.camera_info is None:
                 rclpy.spin_once(self.realsense_camera)
 
-        while np.array_equal(self.realsense_camera.depth_img, self.depth_frame) or np.array_equal(self.realsense_camera.color_img, self.color_frame):
+            while np.array_equal(self.realsense_camera.depth_img, self.depth_frame) or np.array_equal(self.realsense_camera.color_img, self.color_frame):
                 rclpy.spin_once(self.realsense_camera)
-        
-        self.depth_frame = self.realsense_camera.depth_img
-        self.color_frame = self.realsense_camera.color_img
-        self.camera_info = self.realsense_camera.camera_info
+            
+            self.depth_frame = self.realsense_camera.depth_img
+            self.color_frame = self.realsense_camera.color_img
+            self.camera_info = self.realsense_camera.camera_info
         
     
     #The callback function for the detector service
@@ -203,6 +207,8 @@ class ObjectDetector(Node):
 
             img_x = self.color_frame.shape[1]
             img_y = self.color_frame.shape[0]
+
+            self.get_logger().info(f'Dictionary of found objects: {self.found_objects}\n')
 
             for i, obj in enumerate(self.found_objects):
                 point = Point()
@@ -445,14 +451,18 @@ class ObjectDetector(Node):
                 # Get the center of the bounding box from the rect variable
                 center_x, center_y = int(rect[0][0]), int(rect[0][1])
 
+                self.get_logger().info(f"Center of bounding box: ({center_x}, {center_y})")
+
                 # Retrieve the world coordinates of the center
                 center_coordinates = self.get_cartesian_coordinates(center_x, center_y)
+
+                self.get_logger().info(f"World coordinates of center: {center_coordinates}")
 
                 if center_coordinates is not None:
                     # Add center coordinates to the dictionary
                     self.found_objects[f"{object_name}_{i+1}"].update({'center_coords': center_coordinates})
                 else:
-                    print("Failed to calculate center coordinates of the object.")
+                    self.get_logger().info(f"Failed to calculate center coordinates of the object.")
 
                 width_point_1, width_point_2 = box[0], box[1] 
                 height_point_1, height_point_2 = box[1], box[2]
@@ -472,7 +482,7 @@ class ObjectDetector(Node):
                     self.found_objects[f"{object_name}_{i+1}"].update({'width': width, 'height': height})
                 else:
                     self.found_objects[f"{object_name}_{i+1}"].update({'width': None, 'height': None})
-                    print("Failed to calculate width and height of the object.")
+                    self.get_logger().info(f"Failed to calculate width and height of the object.")
 
                 
                 # Consider using this to distinguish between different objects
@@ -605,12 +615,14 @@ class ObjectDetector(Node):
         cx = self.camera_info[2]
         cy = self.camera_info[5]
 
+        self.get_logger().info(f"Depth frame size: {self.depth_frame.shape}")
+
         if pixel_x < 0 or pixel_x >= self.depth_frame.shape[1] or pixel_y < 0 or pixel_y >= self.depth_frame.shape[0]:
-            print("Pixel coordinates out of bounds.")
+            self.get_logger().info(f"Pixel coordinates out of bounds: ({pixel_x}, {pixel_y})")
             return None
         
         if self.depth_frame[pixel_y, pixel_x] == 0:
-            print("No depth data available at the selected pixel.")
+            self.get_logger().info(f"No depth data available at the selected pixel: ({pixel_x}, {pixel_y})")
             return None
 
         print(f"size of depth frame: {self.depth_frame.shape}")
