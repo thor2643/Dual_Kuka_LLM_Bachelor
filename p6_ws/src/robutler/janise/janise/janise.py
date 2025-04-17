@@ -38,7 +38,6 @@ import tf2_ros
 
 # ROS 2 messages
 from project_interfaces.srv import GetObjectInfo
-from project_interfaces.srv import DefineObjectInfo
 from project_interfaces.srv import PlanMoveCommand
 from project_interfaces.srv import ExecuteMoveCommand
 from project_interfaces.srv import PromptJanice
@@ -49,6 +48,7 @@ from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
+from project_interfaces.srv import GetSimCameraData
 from geometry_msgs.msg import TransformStamped
 from sensor_msgs.msg import Image
 
@@ -90,6 +90,10 @@ class LLMNode(Node):
             self.convert_to_color_img,  # Callback function
             10  # Queue size
         )
+
+        # Create a service client for the simulated camera data
+        self.sim_cam_client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
+        self.sim_cam_req = GetSimCameraData.Request()
 
         self.bridge = CvBridge()
         self.color_img = None
@@ -694,7 +698,32 @@ class LLMNode(Node):
         # Resize the image to 524x524
         # Change this to get the actual image from the camera
         #original_image = cv2.imread(image_path)
-        original_image = self.color_img
+        if self.use_sim:
+            for i in range(5):
+                request = GetSimCameraData.Request()
+                future = self.sim_cam_client.call_async(request)
+
+                # Wait for the result
+                response = self.wait_future(future, timeout=10)
+
+                if response is not None:
+                    response = future.result()
+
+                    color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
+                    self.color_img_sim = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
+                    original_image = self.color_img_sim
+                else:
+                    if i == 4:
+                        self.get_logger().error("Failed to retrieve image from simulated camera after multiple attempts")
+                        original_image = cv2.imread("resized_image.jpg")
+                    else:
+                        self.get_logger().info("Retrying to get simulated camera data...")
+                        rclpy.spin_once(self, timeout_sec=0.1)
+                        continue
+
+        else:
+            original_image = self.color_img
+
         resized_image = cv2.resize(original_image, (524, 524))
         
         resized_image_path = "resized_image.jpg"
