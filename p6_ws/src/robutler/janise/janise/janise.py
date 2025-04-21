@@ -495,7 +495,7 @@ class LLMNode(Node):
                 'width': 85,
             },
             'right_gripper': {
-                'width': 155, # 167 before but thats wrong
+                'width': 167, # 167 before but thats wrong
             },
             'services_unavailable': None,
         }
