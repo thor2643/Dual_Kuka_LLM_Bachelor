@@ -511,7 +511,7 @@ class LLMNode(Node):
                 'width': 85,
             },
             'right_gripper': {
-                'width': 155, # 167 before but thats wrong
+                'width': 167, # 167 before but thats wrong
             },
             'services_unavailable': None,
         }
@@ -903,14 +903,16 @@ class LLMNode(Node):
 
                 for j, grasp in enumerate(detected_obj.grasps):
                     
+                   
                     # rotate the grasp 90 degrees around the z-axis of the grasp
 
-                    # Define the rotation matrix for 90 degrees around the z-axis
-                    R_90z = Rotation.from_euler('z', 90, degrees=True).as_matrix()
+                    # Define the rotation matrix for -90 degrees around the z-axis
+                    R_90z = Rotation.from_euler('z', -90, degrees=True).as_matrix()
                     # Define grasp rotation matrix from World to Grasp coordinates
                     R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
                     R_new = R_W_G @ R_90z
                     roll, pitch, yaw = Rotation.from_matrix(R_new).as_euler('xyz', degrees=True)
+                    roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
                     self.objects_on_table[object_name]['grasps'][f'grasp {j}'] = {
                         'center': {
@@ -928,6 +930,17 @@ class LLMNode(Node):
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 
         return self.objects_on_table
+
+    def flip_if_near_180(self, angle_deg):
+        """
+        If angle is near ±180, flip it to the equivalent small negative or positive.
+        Assumes input is already in [-180, 180)
+        """
+        if angle_deg > 90:
+            return angle_deg - 180
+        elif angle_deg < -90:
+            return angle_deg + 180
+        return angle_deg
 
 
     #@tool

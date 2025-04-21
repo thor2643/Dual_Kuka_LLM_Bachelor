@@ -58,6 +58,15 @@
         <joint name="left_A6" value="1.216"/>
         <joint name="left_A7" value="0"/>
     </group_state>
+        <group_state name="take_image" group="left_arm">
+        <joint name="left_A1" value="1.8326"/>
+        <joint name="left_A2" value="-0.1222"/>
+        <joint name="left_A3" value="0.2618"/>
+        <joint name="left_A4" value="1.7802"/>
+        <joint name="left_A5" value="0.7505"/>
+        <joint name="left_A6" value="-1.5882"/>
+        <joint name="left_A7" value="-2.0595"/>
+    </group_state>
     <group_state name="open" group="2f_gripper">
         <joint name="left_2f_robotiq_85_left_knuckle_joint" value="0"/>
     </group_state>
