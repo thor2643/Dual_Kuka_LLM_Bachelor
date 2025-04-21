@@ -97,7 +97,7 @@ class LLMNode(Node):
 
         self.bridge = CvBridge()
         self.color_img = None
-        self.use_sim = True
+        self.use_sim = False
 
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
