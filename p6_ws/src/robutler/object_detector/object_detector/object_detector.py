@@ -201,12 +201,11 @@ class ObjectDetector(Node):
     #The callback function for the detector service for YOLO World
     def get_object_information(self, request, response, clustered = True):
         object = request.object_name
-        self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
+        self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4)) 
         self.get_logger().info(f'Requested to find {object} with Yolo World\n')
 
         self.retrieve_aligned_frames()
         image = self.get_color_image()
-        #image = cv2.rotate(image, cv2.ROTATE_180)
 
         #Apply Yolo World, data is stored in self.yolo_results
         self.apply_yolo_world(image, object, verbose=False)
@@ -229,6 +228,14 @@ class ObjectDetector(Node):
                 x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
                 # Convert pixel coordinates to 3D coordinates
                 cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+                # Sanity check: make sure it's 3D
+                if cart_point is None or len(cart_point) != 3:
+                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
+                    continue
+                # Convert to homogeneous (4D)
+                cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
+                cart_point = self.transformation_matrix @ cart_point_hom 
+                cart_point = cart_point[:3]  # Drop homogeneous coordinate
                 # Fill in the message
                 obj.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
                 obj.grasps = []  # No grasps since no object mask was found
@@ -298,6 +305,14 @@ class ObjectDetector(Node):
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
             # Convert pixel coordinates to 3D coordinates
             cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+            if cart_point is None or len(cart_point) != 3:
+                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
+                    continue
+            # Convert to homogeneous (4D)
+            cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
+            cart_point = self.transformation_matrix @ cart_point_hom 
+            cart_point = cart_point[:3]  # Drop homogeneous coordinate
+
             # Fill in the message
             detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
             detected_object.name = ( f"{object} {i}")
@@ -324,6 +339,7 @@ class ObjectDetector(Node):
             cx = self.camera_info[2]
             cy = self.camera_info[5]
 
+            T_C_W = self.invert_transformation_matrix(self.transformation_matrix)
             for grasp in all_grasps: 
                 x, y, z, roll, pitch, yaw, grasp_witdh = grasp
                 center = np.array([x, y, z])
@@ -342,6 +358,12 @@ class ObjectDetector(Node):
                 grasp_left = center - x_axis
                 grasp_right = center + x_axis
                 handle = center + z_axis
+
+                # Transform to camera frame
+                grasp_left = self.transform_point(grasp_left, T_C_W)
+                grasp_right = self.transform_point(grasp_right, T_C_W)
+                handle = self.transform_point(handle, T_C_W)
+                center = self.transform_point(center, T_C_W)
 
                 # Project points to image
                 pt_left = self.project(grasp_left, fx, fy, cx, cy)
@@ -385,6 +407,11 @@ class ObjectDetector(Node):
                 break
 
         return np.array(filtered_points)
+    
+    def transform_point(self, pt, T):
+        pt_hom = np.append(pt, 1)  # Make homogeneous
+        return (T @ pt_hom)[:3]    # Transform and drop homogeneous coord
+
 
     def filter_by_depth_jump(self, pcd, jump_threshold=0.04):
         points_np = np.asarray(pcd)
@@ -543,8 +570,6 @@ class ObjectDetector(Node):
             R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
             U, _, Vt = np.linalg.svd(R_matrix)
             R_ortho = U @ Vt
-
-            
 
             # Convert to roll-pitch-yaw
             rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
@@ -899,7 +924,7 @@ class ObjectDetector(Node):
             model.set_classes([object_name])  # Set the class list to only include the specified object
             
         # Execute inference with the YOLOv8l-world model on the specified image
-        self.yolo_results = model.predict(img, verbose=False) #, conf = 0.3
+        self.yolo_results = model.predict(img, verbose=False, conf=0.2) #, conf = 0.25 default TODO remove config
 
         #the following prints the results of the yolo model without the class contrains
         if name_objects:
