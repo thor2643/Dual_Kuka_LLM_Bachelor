@@ -14,6 +14,7 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation 
 import math
+import time
 
 # Langgraph / Langchain libraries
 from langchain_openai import ChatOpenAI
@@ -1072,6 +1073,8 @@ class LLMNode(Node):
         roll, pitch, yaw = Rotation.from_matrix(T_pose[:3, :3]).as_euler('xyz', degrees=True)
 
         pose_approach = [x, y, z, roll, pitch, yaw]
+        pose_depart = pose.copy()
+        pose_depart[2] += 0.1 # Move up 10 cm
 
         # print(f"New pose to pick up object: {pose}")
 
@@ -1085,31 +1088,31 @@ class LLMNode(Node):
             self.get_logger().error("Failed to open gripper")
             return False
         
-        # Now plan the movement to the pose
+        # Now plan the movement to the approach pose
         plan_response = self.plan_robot_trajectory(pose_approach, arm)
         if plan_response is None or not plan_response.success:
-            self.get_logger().error("Failed to plan trajectory")
+            self.get_logger().error("Failed to plan approach trajectory")
             return False
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
-            self.get_logger().error("Failed to execute trajectory")
+            self.get_logger().error("Failed to execute approach trajectory")
             return False
         
         # Now plan the movement to the pose
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
-            self.get_logger().error("Failed to plan trajectory")
+            self.get_logger().error("Failed to plan grasp trajectory")
             return False
         
-        # The execute the planned trajectory
+        # Execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
-            self.get_logger().error("Failed to execute trajectory")
+            self.get_logger().error("Failed to execute grasp trajectory")
             return False
         
-        # At last close the gripper
+        # Close the gripper
         if arm == 'left':
             gripper_response = self.manipulate_left_gripper(width=object_width)
         else:
@@ -1117,6 +1120,18 @@ class LLMNode(Node):
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to close gripper")
+            return False
+        
+        # At last lift the object to avoid collision when moving away
+        plan_response = self.plan_robot_trajectory(pose_depart, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan grasp trajectory")
+            return False
+        
+        # The execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute grasp trajectory")
             return False
         
         return True

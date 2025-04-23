@@ -8,7 +8,7 @@
 #include "project_interfaces/srv/execute_move_command.hpp"
 #include "project_interfaces/srv/get_current_pose.hpp"
 #include "project_interfaces/srv/gripper_moveit.hpp"
-//include <moveit_visual_tools/moveit_visual_tools.h>
+//#include <moveit_visual_tools/moveit_visual_tools.h>
 #include <string>
 #include <sstream>
 
@@ -185,7 +185,7 @@ private:
     // Create the box and set its dimensions
     shape_msgs::msg::SolidPrimitive box;
     box.type = shape_msgs::msg::SolidPrimitive::BOX;  
-    box.dimensions = { 1, 0.667, 1.2 };
+    box.dimensions = { 1.2, 1, 1.2 };
     box_constraint.constraint_region.primitives.emplace_back(box);
 
     // Set position of the box 
@@ -300,7 +300,7 @@ private:
 
       // Applying planner configurations and constraints
       //move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
-      move_group_interface->setPlanningTime(59);
+      move_group_interface->setPlanningTime(20);
       move_group_interface->setPlannerId("RRT"); // Other options in ompl_planning.yaml
       move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
       move_group_interface->setPathConstraints(constraints);
