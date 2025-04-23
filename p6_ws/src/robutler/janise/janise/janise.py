@@ -15,6 +15,9 @@ from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation 
 import math
 
+# Internal modules
+from utils.graph_states import ToolExecutionState
+
 # Langgraph / Langchain libraries
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
@@ -38,7 +41,6 @@ import tf2_ros
 
 # ROS 2 messages
 from project_interfaces.srv import GetObjectInfo
-from project_interfaces.srv import DefineObjectInfo
 from project_interfaces.srv import PlanMoveCommand
 from project_interfaces.srv import ExecuteMoveCommand
 from project_interfaces.srv import PromptJanice
@@ -72,9 +74,6 @@ class LLMNode(Node):
         self.detector_client = self.create_client(GetObjectInfo, 'get_object_info', callback_group=client_cb_group)
         self.detector_req = GetObjectInfo.Request()
         self.objects_on_table = {}
-
-        self.define_objects_client = self.create_client(DefineObjectInfo, 'define_object_info', callback_group=client_cb_group)
-        self.define_objects_req = DefineObjectInfo.Request()
 
         self.detector_client_yolo = self.create_client(GetObjectInfo, 'get_object_info_yolo', callback_group=client_cb_group)
         self.detector_req_yolo = GetObjectInfo.Request()
@@ -154,7 +153,6 @@ class LLMNode(Node):
                       StructuredTool.from_function(self.find_object), 
                       StructuredTool.from_function(self.get_available_objects), 
                       StructuredTool.from_function(self.find_object_yolo), 
-                      StructuredTool.from_function(self.define_object_thresholds), 
                       StructuredTool.from_function(self.plan_robot_trajectory), 
                       StructuredTool.from_function(self.execute_planned_trajectory), 
                       StructuredTool.from_function(self.manipulate_right_gripper), 
@@ -362,16 +360,20 @@ class LLMNode(Node):
         self.task_detector_model = self.model.bind_tools(self.task_detector_tools)
         self.correction_model = self.model.bind_tools(self.tools)
 
-        self.cell_workflow = StateGraph(MessagesState)
+        self.cell_workflow = StateGraph(ToolExecutionState)
         self.cell_config = {"configurable": {"thread_id": "cell_1"}}
         self.cell_memory = MemorySaver()
 
+        self.cell_workflow.add_node("init_cell", self.init_real_execution)
+        self.cell_workflow.add_node("execute_tool", self.execute_tool)
         self.cell_workflow.add_node("success_detector", self.call_success_detector)
         self.cell_workflow.add_node("error_corrector", self.call_error_corrector)
         self.cell_workflow.add_node("detector_action", self.task_detector_tool_node)
         self.cell_workflow.add_node("corrector_action", self.tool_node)
 
-        self.cell_workflow.add_edge(START, "success_detector")
+        self.cell_workflow.add_edge(START, "init_cell")
+        self.cell_workflow.add_edge("init_cell", "execute_tool")
+        self.cell_workflow.add_edge("execute_tool", "success_detector")
         self.cell_workflow.add_edge("success_detector", "detector_action")
 
         self.cell_workflow.add_conditional_edges(
@@ -381,7 +383,7 @@ class LLMNode(Node):
             # Next, we pass in the function that will determine which node is called next.
             self.successful_task,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["error_corrector", END],
+            ["error_corrector", "execute_tool"],
         )
 
         #TODO: Add a condition to check if the task was successful
@@ -793,7 +795,7 @@ class LLMNode(Node):
             return "error_corrector"
         elif tool.name == "detected_success":
             self.get_logger().info("Detected success")
-            return END
+            return "execute_tool"
  
         # If no relevant function call, finish
         return END
@@ -804,7 +806,7 @@ class LLMNode(Node):
         # This is very simple helper function which only ever uses the last message
         return messages[-1:]
     
-    def call_success_detector(self, state: MessagesState):
+    def call_success_detector(self, state: ToolExecutionState):
         # We append the initial prompt to Janise
         state_shortened = {"messages": [self.initial_prompt_success_detector]}
 
@@ -819,19 +821,27 @@ class LLMNode(Node):
             state_shortened["messages"].append(last_message)
 
         response = self.task_detector_model.invoke(state_shortened["messages"])
+
         # We return a list, because this will get added to the existing list
         response.name = "Success_Detector"
-        return {"messages": response}
+
+        state["messages"].append(response)
+
+        return state
     
-    def call_error_corrector(self, state: MessagesState):
-        # We append the initial prompt to Janise
+    def call_error_corrector(self, state: ToolExecutionState):
+        # We make the initial prompt to Janise
         state["messages"][0] = self.initial_prompt_corrector
 
         response = self.correction_model.invoke(state["messages"])
 
         # We return a list, because this will get added to the existing list
         response.name = "Error_Corrector"
-        return {"messages": response}
+
+        # Append the response to the message state
+        state["messages"].append(response)
+
+        return state
     
     # Define the function that calls the model
     # Takes in the cureent message history and returns the response
@@ -891,6 +901,55 @@ class LLMNode(Node):
 
         # We return a list, because this will get added to the existing list
         return {"messages": response_human}
+    
+    def init_real_execution(self, state: ToolExecutionState):
+        # Read the tool list from the tool_calls.json file
+        tool_calls_path = 'src/robutler/janise/tool_calls.json'
+
+        try:
+            with open(tool_calls_path, 'r') as file:
+                tool_calls = json.load(file)
+
+            state["tools_left"] = tool_calls
+            self.get_logger().info(f"Tool calls loaded from {tool_calls_path}")
+
+        except FileNotFoundError:
+            self.get_logger().error(f"File {tool_calls_path} not found.")
+            return state
+        except json.JSONDecodeError as e:
+            self.get_logger().error(f"Error decoding JSON from {tool_calls_path}: {e}")
+            return state
+
+        return state
+    
+    def execute_tool(self, state: ToolExecutionState):
+        # Get the tool call details from the state
+        print("state", state)
+        tool_call_key = list(state["tools_left"].keys())[0]
+        tool_call = state["tools_left"][tool_call_key]
+
+        tool_name = tool_call["function_name"]
+        self.get_logger().info(f"Executing tool: {tool_name}")
+
+        try:
+            # Call the function dynamically
+            func = getattr(self, tool_call["function_name"])
+
+            # Execute the function with the provided arguments
+            result = func(**tool_call["args"])
+
+            # Convert to langgraph message
+            message = HumanMessage(f"Called {tool_call['function_name']} which returned: {result}")
+
+            state["messages"].append(message)
+
+        except Exception as e:
+            self.get_logger().error(f"Error executing {tool_call['function_name']}: {e}")
+
+        # Remove the executed tool from the list
+        state["tools_left"].pop(tool_call_key)
+
+        return state
     
 
     ########################################################################################
@@ -1140,42 +1199,6 @@ class LLMNode(Node):
                 }
 
             return self.objects_on_table_yolo
-    
-    #@tool
-    def define_object_thresholds(self, object_name: str) -> DefineObjectInfo.Response:
-        """
-        Allows the user to define threshold values for object detection.
-
-        This function enables the user to interactively adjust the thresholds for 
-        the object detector service. An image will be displayed with trackbars 
-        that allow the user to modify the thresholds and observe the resulting 
-        changes in real-time. The object for which thresholds are being defined 
-        should be specified as an argument, using underscores (_) in place of spaces.
-
-        Once the thresholds are defined, they are saved and utilized by the object 
-        detector service. The updated object information is also stored in a 
-        dictionary for future use.
-
-        Args:
-            object_name (str): The name of the object for which thresholds are 
-                               being defined. Use underscores (_) instead of spaces.
-
-        Returns:
-            DefineObjectInfo.Response: The response from the object detector service 
-                                       after the thresholds have been defined.
-        """
-        self.define_objects_req.object_name = object_name
-
-        future = self.define_objects_client.call_async(self.define_objects_req)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=600)
-
-        # Save the updated object information in a dictionary
-        with open(self.object_file, 'r') as file:
-            self.lego_bricks = json.load(file)
-
-        return response
 
     #@tool
     def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
@@ -1461,44 +1484,11 @@ class LLMNode(Node):
         and to correct potential failures.
         
         """
-
-        # Is changed if all tool have been called
-        response.message = "Failed to run from tool list."
-
-        # Read the tool list from the tool_calls.json file
-        tool_calls_path = 'src/robutler/janise/tool_calls.json'
-        try:
-            with open(tool_calls_path, 'r') as file:
-                tool_calls = json.load(file)
-
-            self.get_logger().info(f"Tool calls loaded from {tool_calls_path}")
-        except FileNotFoundError:
-            self.get_logger().error(f"File {tool_calls_path} not found.")
-            return response
-        except json.JSONDecodeError as e:
-            self.get_logger().error(f"Error decoding JSON from {tool_calls_path}: {e}")
-            return response
-
-        # Iterate through the tool calls and execute them
-        for function_num, details in tool_calls.items():
-            self.get_logger().info(f"Executing {function_num}: {details['function_name']}")
-            try:
-                # Call function
-                func = getattr(self, details["function_name"])
-
-                #TODO: Pass actual arguments to the function e.g. poses retrieved from the physical cell
-                result = func(**details["args"])
-
-                # Convert to langgraph message
-                query = HumanMessage(f"Called {details['function_name']} which returned: {result}")
-
-                # Check if the function call was successful and correct if necessary
-                for event in self.cell_agent.stream({"messages": [query]}, self.cell_config, stream_mode="values"):
-                    event["messages"][-1].pretty_print()
-
-            except Exception as e:
-                self.get_logger().error(f"Error executing {details['function_name']}: {e}")
-
+        # Check if the function call was successful and correct if necessary
+        state = ToolExecutionState()
+        #state["messages"] = [self.initial_prompt]
+        for event in self.cell_agent.stream(state, self.cell_config, stream_mode="values"):
+            event["messages"][-1].pretty_print()
         
         self.get_logger().info("Finished running from tool list")
 
