@@ -141,13 +141,13 @@ class SimCamera(Node):
             self.get_logger().error("Failed to get simulated camera data")
 
 
-""" 
-In the grasp pipeline the following parameters are of importance: DO NOT CHANGE THEM UNLESS YOU KNOW WHAT YOU ARE DOING!!!! (Ask Signe, She doesent even know so dont touch them!!!!)
-    - conf: Yolo World confidence threshold (currently not used so default(0.25))
+"""     #### PARAMETERS FOR GRASP PREDICTION ####
+In the grasp pipeline the following parameters are of importance: DO NOT CHANGE THEM UNLESS YOU KNOW WHAT YOU ARE DOING!!!! (Ask Signe)
+    - confi: Yolo World confidence threshold 
     - num_candidates: The number of grasps candidates.
     - grasp_height: you chose how high you want the center point to be. for instance 0.25 places the center point 25% down from the highest point in the surface group.
-    - clustered: If True, the mask is clustered using morphological operations. This is important for the grasp pose estimation as it removes information.
-    - iterations: iterations for the morphological operations.
+    - clustered: If True, the mask is reduced using morphological operations. This is important if its clustered as it avoids noise in point cloud.
+    - iterations: iterations for the morphological operations. How many times the mask is eroded.
     - voxel_size: The size of the voxel grid for downsampling the point cloud. Smaller values retain more detail but increase computation time.
     - angle_threshold_deg: The maximum angle (in degrees) between normals to be considered similar.
     - distance_threshold: The maximum 3D distance to consider points as neighbors. This increases computation time.
@@ -195,7 +195,7 @@ class ObjectDetector(Node):
 
     def retrieve_aligned_frames(self):
         if self.sim_enabled:
-            self.get_logger().info(f'USing sim camera\n')
+            self.get_logger().info(f'Using sim camera\n')
             sim_camera = SimCamera()
         
             sim_camera.update_images()
@@ -206,7 +206,7 @@ class ObjectDetector(Node):
             self.color_frame = sim_camera.color_img
             self.camera_info = sim_camera.camera_info
         else:
-            self.get_logger().info(f'USing real camera\n')
+            self.get_logger().info(f'Using real camera\n')
             while self.realsense_camera.depth_img is None or self.realsense_camera.color_img is None or self.realsense_camera.camera_info is None:
                 rclpy.spin_once(self.realsense_camera)
 
@@ -247,241 +247,23 @@ class ObjectDetector(Node):
         # Stack into a (H, W, 3) point cloud
         self.point_cloud = np.stack((x, y, z), axis=-1) # organized point cloud (H, W, 3)
 
-    
-    #The callback function for the detector service for YOLO World
-    def get_object_information(self, request, response, clustered = True):
-        object = request.object_name
-        self.sim_enabled = request.use_sim
-        self.get_logger().info(f'Requested to find {object}\n')
-
-        self.found_objects.clear()
-        self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
-        self.get_logger().info(f'Requested to find {object} with Yolo World\n')
-
-        self.retrieve_aligned_frames()
-        image = self.get_color_image()
-
-        #Apply Yolo World, data is stored in self.yolo_results
-        self.apply_yolo_world(image, object, verbose=False)
-
-
-        # If no objects are found with the specified class, try to find any object and return the class
-        if len(self.yolo_results[0].boxes.data) == 0:
-            self.get_logger().info(f'No {object} found\n')
-            objects_found_list = self.apply_yolo_world(image, object, verbose=False, name_objects = True)
-            image = self.yolo_results[0].plot()
-
-            self.get_logger().info(f"Image size after plotting: {image.shape}")
-
-            self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
-
-            if False: 
-                cv2.imshow("Yolo detections", image)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
-
-            response.object_count = 0
-
-            for i, name in enumerate(objects_found_list):
-                obj = DetectedObject()
-                obj.name = name
-                x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
-
-                # Convert pixel coordinates to 3D coordinates
-                cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
-                # Sanity check: make sure it's 3D
-                if cart_point is None or len(cart_point) != 3:
-                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
-                    continue
-                # Convert to homogeneous (4D)
-                cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
-                cart_point = self.transformation_matrix @ cart_point_hom 
-                cart_point = cart_point[:3]  # Drop homogeneous coordinate
-                # Fill in the message
-                obj.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
-                obj.grasps = []  # No grasps since no object mask was found
-                response.detected_objects.append(obj)
-            return response
+    def apply_yolo_world(self, img, object_name, confi, name_objects = False, verbose = False):
+        model = YOLOWorld("yolov8l-world.pt")  # or select yolov8{s/m/l}-world.pt for different sizes
         
-        image_with_bbx = self.yolo_results[0].plot()
-
-        self.get_logger().info(f'Found {len(self.yolo_results[0].boxes.data)} {object}\n')
-
-        #self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_with_bbx))
-
-        if False:
-            # Show the image with bounding boxes
-            cv2.imshow("Image with Bounding Boxes", image_with_bbx)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-
-        self.create_point_cloud()
-        all_grasps = []
-
-
-        for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
-            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
-            self.get_logger().info(f'SAM segmenting bounding box.\n')
-            self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
-            torch.cuda.empty_cache() # Clear GPU memory TODO
-            # checks if the mask size matches the point cloud size
-            if self.sam_masks.shape[1] != self.point_cloud.shape[0]:
-                self.get_logger().warn("Mask size doesn't match point cloud...")
-                self.get_logger().warn(f"shapes: mask:{self.sam_masks.shape} vs pc: {self.point_cloud.shape}")
-                continue
+        if name_objects == False:
+            model.set_classes([object_name])  # Set the class list to only include the specified object
             
-            #convert the mask to binary
-            mask_binary = (self.sam_masks > 0).astype(np.uint8)
-            mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
+        # Execute inference with the YOLOv8l-world model on the specified image
+        self.yolo_results = model.predict(img, verbose=False, conf=confi)
 
-            # Apply morphological operations to the mask 
-            if clustered: #Performs morphological operations on the mask
-                # Create a kernel for the morphological operation
-                kernel = np.ones((5, 5), np.uint8)  # Adjust the size of the kernel to control how much the mask shrinks
-                # Perform closing (dilate then erode)
-                mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
-                # Step 2: Shrink the mask using erosion
-                mask_binary = cv2.erode(mask_closed, kernel, iterations = 4)  # You can adjust iterations for more shrinking
-            
-            # Visualize the mask
-            if False: # Set to True to show the masks and the overlay
-                # Remove the batch dimension
-                overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
-                cv2.imshow("Overlayed Mask", overlay)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+        #the following prints the results of the yolo model without the class contrains
+        if name_objects:
+            objects_found = []
+            for i in range(len(self.yolo_results[0].boxes.data)):
+                objects_found.append(model.names[int(self.yolo_results[0].boxes.data[i][5])])
 
-                
-            #Apply the mask to the point cloud
-            point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
-            grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
-            self.get_logger().info(f'Grasps found: {len(grasps)}\n')
-            all_grasps.extend(grasps)
-
-
-            detected_object = DetectedObject()
-            detected_object.grasps = []
-
-            # Find center of the object in 3D space
-            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
-            # Convert pixel coordinates to 3D coordinates
-            cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
-            if cart_point is None or len(cart_point) != 3:
-                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
-                    continue
-            # Convert to homogeneous (4D)
-            cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
-            cart_point = self.transformation_matrix @ cart_point_hom 
-            cart_point = cart_point[:3]  # Drop homogeneous coordinate
-
-            # Fill in the message
-            detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
-            detected_object.name = ( f"{object} {i}")
-            detected_object.center_of_object
-
-            for grasp in grasps:
-                grasp_msg = Grasp6D()
-                # Fill position
-                grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
-                # Fill orientation
-                grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
-                # Fill width
-                grasp_msg.grasp_width = grasp[6] #grasp width
-                detected_object.grasps.append(grasp_msg) 
-
-            response.detected_objects.append(detected_object)
-            response.object_count += 1
-
-        if True:  # Visualize grasp lines on image
-            image_copy = self.color_frame.copy()
-
-            fx = self.camera_info[0]
-            fy = self.camera_info[4]
-            cx = self.camera_info[2]
-            cy = self.camera_info[5]
-
-            T_C_W = self.invert_transformation_matrix(self.transformation_matrix)
-            for grasp in all_grasps: 
-                x, y, z, roll, pitch, yaw, grasp_witdh = grasp
-                center = np.array([x, y, z])
-
-                # Get rotation matrix from RPY
-                # Convert orientation from degrees to radians
-                roll, pitch, yaw = np.deg2rad([roll, pitch, yaw])
-                rot = ROT.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
-
-                # Grasp opening direction (gripper x-axis)
-                x_axis = rot[:, 0] * (grasp_witdh/2)  # 5 cm in opening direction
-                # Approach direction (gripper -z)
-                z_axis = -rot[:, 2] * 0.05  # 5 cm in approach direction
-
-                # Define endpoints of lines
-                grasp_left = center - x_axis
-                grasp_right = center + x_axis
-                handle = center + z_axis
-
-                # Transform to camera frame
-                grasp_left = self.transform_point(grasp_left, T_C_W)
-                grasp_right = self.transform_point(grasp_right, T_C_W)
-                handle = self.transform_point(handle, T_C_W)
-                center = self.transform_point(center, T_C_W)
-
-                # Project points to image
-                pt_left = self.project(grasp_left, fx, fy, cx, cy)
-                pt_right = self.project(grasp_right, fx, fy, cx, cy)
-                pt_handle = self.project(handle, fx, fy, cx, cy)
-                pt_center = self.project(center, fx, fy, cx, cy)
-                self.get_logger().info(f'Grasp left: {grasp_left}, Grasp right: {grasp_right}, Handle: {handle}, Center: {center}\n')
-                self.get_logger().info(f'Projected points: {pt_left}, {pt_right}, {pt_handle}, {pt_center}\n')
-
-
-                # Draw lines if all are valid
-                if pt_left and pt_right:
-                    cv2.line(image_copy, pt_left, pt_right, (0, 255, 0), 2)  # grasp line
-
-                if pt_center and pt_handle:
-                    cv2.line(image_copy, pt_center, pt_handle, (0, 0, 255), 2)  # approach dir
-                
-            self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_copy))
-
-
-        self.get_logger().info(f'Grasps found for {response.object_count} objects. Object detector Done.\n')
-        return response
-
-    def filter_by_depth_jump_np(self, pc_np, z_jump_threshold=0.04): #4 cm
-        # Sort by depth (z-axis)
-        sorted_indices = np.argsort(pc_np[:, 2])
-        sorted_points = pc_np[sorted_indices]
-
-        # Start with first point
-        filtered_points = [sorted_points[0]]
-
-        for i in range(1, len(sorted_points)):
-            prev_z = sorted_points[i - 1, 2]
-            curr_z = sorted_points[i, 2]
-
-            # If the depth jump is small, keep the point
-            if abs(curr_z - prev_z) <= z_jump_threshold:
-                filtered_points.append(sorted_points[i])
-            else:
-                # Discontinuity detected — stop here
-                break
-
-        return np.array(filtered_points)
-    
-    def transform_point(self, pt, T):
-        pt_hom = np.append(pt, 1)  # Make homogeneous
-        return (T @ pt_hom)[:3]    # Transform and drop homogeneous coord
-
-
-    def filter_by_depth_jump(self, pcd, jump_threshold=0.04):
-        points_np = np.asarray(pcd)
-        filtered_points = self.filter_by_depth_jump_np(points_np, jump_threshold)
-
-        filtered_pcd = o3d.geometry.PointCloud()
-        filtered_pcd.points = o3d.utility.Vector3dVector(filtered_points)
-        return filtered_pcd
-
+            self.get_logger().info(f'No {object_name} were found, but {objects_found} was located.\n')
+            return objects_found
 
     def SAM_predict(self, img, points = None, bboxes=None, labels = None, **kwargs):
         sam = SAM("sam_b.pt")
@@ -509,8 +291,297 @@ class ObjectDetector(Node):
         # Convert all masks to NumPy and scale binary mask
         self.sam_masks = (results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
 
+    
+    #The callback function for the detector service for YOLO World
+    def get_object_information(self, request, response, clustered = True):
+        object = request.object_name
+        self.sim_enabled = request.use_sim
 
-    def segment_surfaces_by_normal_and_connectivity(self, pcd, angle_threshold_deg=10, distance_threshold=0.01, num_candidates=4):
+        self.found_objects.clear()
+        self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
+        self.get_logger().info(f'Requested to find {object} with Yolo World\n')
+
+        self.retrieve_aligned_frames()
+        image = self.get_color_image()
+
+        #Apply Yolo World, data is stored in self.yolo_results
+        self.apply_yolo_world(image, object, confi = 0.15, verbose=False) #TODO afjust conf here
+
+
+        # If no objects are found with the specified class, try to find any object and return the class
+        if len(self.yolo_results[0].boxes.data) == 0:
+            self.get_logger().info(f'No {object} found\n')
+            objects_found_list = self.apply_yolo_world(image, object, confi = 0.4, verbose=False, name_objects = True) #Adjust confi
+            image = self.yolo_results[0].plot()
+
+            self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
+
+            response.object_count = 0
+
+            for i, name in enumerate(objects_found_list):
+                obj = DetectedObject()
+                obj.name = name
+                x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+
+                # Convert pixel coordinates to 3D coordinates
+                cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+                # Sanity check: make sure it's 3D
+                if cart_point is None or len(cart_point) != 3:
+                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
+                    continue
+                # Convert to homogeneous (4D)
+                cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
+                cart_point = self.transformation_matrix @ cart_point_hom 
+                cart_point = cart_point[:3]  # Drop homogeneous coordinate
+                # Fill in the message
+                obj.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
+                obj.grasps = []  # No grasps since no object mask was found
+                response.detected_objects.append(obj)
+            return response
+        
+        image_with_bbx = self.yolo_results[0].plot() 
+        self.get_logger().info(f'Found {len(self.yolo_results[0].boxes.data)} {object}\n')
+        self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_with_bbx))
+
+        self.create_point_cloud()
+        all_grasps = []
+
+        for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
+            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
+            self.get_logger().info(f'SAM segmenting bounding box for object {i+1}.\n')
+            self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
+            torch.cuda.empty_cache() # Clear GPU memory 
+            
+            #convert the mask to binary
+            mask_binary = (self.sam_masks > 0).astype(np.uint8)
+            mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
+
+            # Apply morphological operations to the mask 
+            if clustered: #Performs morphological operations on the mask
+                # Create a kernel for the morphological operation
+                kernel = np.ones((5, 5), np.uint8)  # Adjust the size of the kernel to control how much the mask shrinks
+                # Perform closing (dilate then erode)
+                mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
+                # Step 2: Shrink the mask using erosion
+                mask_binary = cv2.erode(mask_closed, kernel, iterations = 4)  # You can adjust iterations for more shrinking
+            
+            # Visualize the mask
+            overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
+            self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(overlay))
+
+                
+            #Apply the mask to the point cloud
+            point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
+            grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
+            all_grasps.extend(grasps)
+
+
+            detected_object = DetectedObject()
+            detected_object.grasps = []
+
+            # Find center of the object in 3D space
+            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+            # Convert pixel coordinates to 3D coordinates
+            cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+            if cart_point is None or len(cart_point) != 3:
+                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
+                    continue
+            # Convert to homogeneous (4D)
+            cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
+            cart_point = self.transformation_matrix @ cart_point_hom 
+            cart_point = cart_point[:3]  # Drop homogeneous coordinate
+
+            # Fill in the message
+            detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
+            detected_object.name = ( f"{object} {i+1}")
+            detected_object.center_of_object
+
+            for grasp in grasps:
+                grasp_msg = Grasp6D()
+                # Fill position
+                grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
+                # Fill orientation
+                grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
+                # Fill width
+                grasp_msg.grasp_width = grasp[6] #grasp width
+                detected_object.grasps.append(grasp_msg) 
+
+            response.detected_objects.append(detected_object)
+            response.object_count += 1
+
+        # Visualize grasp lines on image
+        image_copy = self.color_frame.copy()
+        T_C_W = self.invert_transformation_matrix(self.transformation_matrix)
+
+        for grasp in all_grasps:
+            x, y, z, roll, pitch, yaw, grasp_width = grasp
+            
+            T_W_G = np.eye(4)
+            T_W_G[:3, :3] = ROT.from_euler('xyz', [roll, pitch, yaw], degrees=True).as_matrix()
+            T_W_G[:3, 3] = [x, y, z]
+
+            # Now apply full transformation into camera frame
+            T_C_G = T_C_W @ T_W_G
+            center_cam = T_C_G[:3, 3]
+            R_C_G = T_C_G[:3, :3]
+
+            # Axes in camera frame
+            x_axis_cam = R_C_G[:, 0] * (grasp_width / 2)
+            z_axis_cam = -R_C_G[:, 2] * 0.05  # Approach direction
+
+            to_camera_vec = -center_cam
+            dot = np.dot(z_axis_cam, to_camera_vec)
+
+            if dot < 0:
+                z_axis_cam *= -1
+
+
+            # Endpoints in camera frame
+            grasp_left = center_cam - x_axis_cam
+            grasp_right = center_cam + x_axis_cam
+            handle = center_cam + z_axis_cam
+
+            # Project to 2D
+            pt_left = self.project(grasp_left)
+            pt_right = self.project(grasp_right)
+            pt_center = self.project(center_cam)
+            pt_handle = self.project(handle)
+
+            # Draw lines
+            if pt_left and pt_center:
+                cv2.line(image_copy, pt_left, pt_center, (0, 255, 0), 2)  # -X (green)
+            if pt_right and pt_center:
+                cv2.line(image_copy, pt_right, pt_center, (0, 0, 255), 2)  # +X (red)
+            if pt_handle and pt_center:
+                cv2.line(image_copy, pt_center, pt_handle, (255, 0, 0), 2)  # -Z (blue, approach)
+            
+        self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_copy))
+        self.get_logger().info(f'Grasps found for {response.object_count} objects. Object detector Done.\n')
+        return response
+    
+    def grasp_prediction(self, point_cloud_masked, num_candidates):
+        ################################################################
+                # Filter the point cloud
+        ################################################################
+
+        #reformatting (H, W, 3) to (N, 3)
+        pc_np = point_cloud_masked.reshape(-1, 3)
+        # Filter out points with NaNs or zero depth (z <= 0)
+        valid = ~np.isnan(pc_np).any(axis=1) & (pc_np[:, 2] > 0)
+        pc_np_filtered = pc_np[valid]
+        # Filter out points with large depth jumps to remove noise
+        pc_np_filtered = self.filter_by_depth_jump_np(pc_np_filtered) 
+        
+        # Sanity check
+        if len(pc_np_filtered) == 0:
+            self.get_logger().info("No valid points in masked point cloud.")
+            return
+    
+        ################################################################
+                # Create Open3D point cloud, downsample, tranform, and estimate normals
+        ################################################################
+
+        # Create Open3D point cloud
+        pcd = o3d.geometry.PointCloud() #point cloud object
+        pcd.points = o3d.utility.Vector3dVector(pc_np_filtered)
+
+        if len(pcd.points) > 20000:
+            # Downsample the point cloud into 1 mm cubes
+            pcd = pcd.voxel_down_sample(voxel_size=0.001) # 1 mm cubes
+
+        # filter out points with large depth jumps as voxel downsampling can create noise
+        pcd = self.filter_by_depth_jump(pcd.points, jump_threshold=0.02) 
+
+        # transform the point cloud from local to global frame
+        pcd = self.transform_pointcloud_to_global(pcd, self.transformation_matrix)
+
+        #apply mean filter to smothe the point cloud - this improves surface estimation
+        pcd = self.knn_mean_filter(pcd, k=30) # tuning of k is important and does greatly affect the result
+
+        # Estimate normals
+        pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.2, max_nn=30))
+
+        #orient normals consistently. Important for surface estimation !!!
+        try:
+            pcd.orient_normals_consistent_tangent_plane(k=30) # k is the number of neighbors to consider
+        except RuntimeError:
+            camera_location_global = (self.transformation_matrix @ np.array([0, 0, 0, 1]))[:3] 
+            pcd.orient_normals_towards_camera_location(camera_location_global)
+            self.get_logger().info("Points to flat for orienting normals using tangent plane. Instead using camera location to orient normals.")
+
+
+        ################################################################
+        # Estimate surfaces and grasps 
+        ################################################################
+
+        # Estimate surfaces based on normal similarity and spatial connectivity
+        groups = self.segment_surfaces_by_normal_and_connectivity(pcd, angle_threshold_deg=20, distance_threshold=0.01)
+        # Generate grasp candidates from the segmented surfaces. Outputs a list of grasps
+        grasps = self.generate_grasp_candidates_from_groups(pcd, groups, num_candidates)
+
+
+        if False: # Set to True to visualize the point cloud and grasp poses
+            # Visualize the camera frame
+            camera_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01)
+
+            # Creating the grasp frames       
+            grasp_frames = []
+            for grasp in grasps:
+                x, y, z, roll, pitch, yaw = grasp
+
+                # Convert RPY to rotation matrix
+                rot = ROT.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
+
+                # Create coordinate frame and apply transform
+                frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.025)
+                frame.rotate(rot, center=(0, 0, 0))
+                frame.translate([x, y, z])
+
+                grasp_frames.append(frame)
+
+            # Make point cloud blue
+            pcd.paint_uniform_color([0, 0, 1]) # blue
+
+            # you can visualise: camera_frame, pcd, grasp_frames, normals
+            o3d.visualization.draw_geometries([pcd,*grasp_frames], point_show_normal=False, window_name="Grasp Poses", width=800, height=600)
+        
+        return grasps
+
+    def filter_by_depth_jump_np(self, pc_np, z_jump_threshold=0.04): #4 cm
+        # Sort by depth (z-axis)
+        sorted_indices = np.argsort(pc_np[:, 2])
+        sorted_points = pc_np[sorted_indices]
+
+        # Start with first point
+        filtered_points = [sorted_points[0]]
+
+        for i in range(1, len(sorted_points)):
+            prev_z = sorted_points[i - 1, 2]
+            curr_z = sorted_points[i, 2]
+
+            # If the depth jump is small, keep the point
+            if abs(curr_z - prev_z) <= z_jump_threshold:
+                filtered_points.append(sorted_points[i])
+            else:
+                # Discontinuity detected — stop here
+                break
+
+        return np.array(filtered_points)
+    
+    def filter_by_depth_jump(self, pcd, jump_threshold=0.04):
+        points_np = np.asarray(pcd)
+        filtered_points = self.filter_by_depth_jump_np(points_np, jump_threshold)
+
+        filtered_pcd = o3d.geometry.PointCloud()
+        filtered_pcd.points = o3d.utility.Vector3dVector(filtered_points)
+        return filtered_pcd
+    
+    def transform_point(self, pt, T):
+        pt_hom = np.append(pt, 1)  # Make homogeneous
+        return (T @ pt_hom)[:3]    # Transform and drop homogeneous coord
+
+
+    def segment_surfaces_by_normal_and_connectivity(self, pcd, angle_threshold_deg=10, distance_threshold=0.01):
         """
         Segments a point cloud into planar surface groups based on normal similarity and spatial connectivity.
 
@@ -518,7 +589,6 @@ class ObjectDetector(Node):
             pcd (o3d.geometry.PointCloud): Input point cloud with normals estimated.
             angle_threshold_deg (float): Max angle (in degrees) between normals to be considered similar.
             distance_threshold (float): Max 3D distance to consider points as neighbors. This increase computation time Points_total*r³=computations.
-            num_candidates (int): Number of top surfaces to generate grasps for. 
 
         Returns:
             List[List[int]]: List of point index groups (each a list of indices).
@@ -566,21 +636,18 @@ class ObjectDetector(Node):
             groups_all.append(group)
         
         #Take only the largest groups, sort groups by size (descending)
-        sorted_groups = sorted(groups_all, key=lambda g: len(g), reverse=True)
-        groups = sorted_groups[:num_candidates]
-
-        if len(sorted_groups) < num_candidates:
-            self.get_logger().info(f"Only found {len(sorted_groups)} groups, fewer than requested {num_candidates}")
-
+        groups = sorted(groups_all, key=lambda g: len(g), reverse=True)
+        
         return groups
 
-    def generate_grasp_candidates_from_groups(self, pcd, groups):
+    def generate_grasp_candidates_from_groups(self, pcd, groups, num_candidates):
         """
         Generate grasp poses (6D) from the segmented surfaces.
 
         Args:
             pcd (o3d.geometry.PointCloud): Original point cloud (with normals).
             groups (List[List[int]]): List of index groups from segmentation.
+            num_candidates (int): Number of grasp candidates to generate.
 
         Returns:
             List[List[float]]: shape (len[groups], len[grasps]) grasp = [x, y, z, roll, pitch, yaw]
@@ -591,6 +658,7 @@ class ObjectDetector(Node):
         original_points = np.asarray(pcd.points)
 
         grasps = []
+        count = 0 # valid grasp counter
 
         # Generate a top-down grasp (approaching from above)
         if False: # Set to True to generate a top-down grasp
@@ -598,6 +666,9 @@ class ObjectDetector(Node):
             grasps.append(top_grasp) # dummy grasp
 
         for group in groups:
+            if count >= num_candidates:
+                break
+
             surface_points = points[group]
             surface_normals = normals[group]
 
@@ -611,26 +682,30 @@ class ObjectDetector(Node):
 
             # Grasp position
             center = surface_points.mean(axis=0)
-
             
-            if True: 
-                # shift grasp center z value to grasp height
-                if max(surface_points[:, 2]) - min(surface_points[:, 2]) > 0.02: # if the object is not flat
-                    grasp_height = 0.25 # Controls how far up to grasp
-                    z_min = np.min(surface_points[:, 2])
-                    z_max = np.max(surface_points[:, 2])
-                    center[2] = z_max - grasp_height * (z_max - z_min)
+            # shift grasp center z value to grasp height
+            if max(surface_points[:, 2]) - min(surface_points[:, 2]) > 0.02: # if the object is not flat
+                grasp_height = 0.25 # Controls how far up to grasp
+                z_min = np.min(surface_points[:, 2])
+                z_max = np.max(surface_points[:, 2])
+                center[2] = z_max - grasp_height * (z_max - z_min)
 
             # Opening direction = PCA component 1 (shorter in-plane axis)
             x_axis = pca.components_[1]
-
-
             y_axis = np.cross(approach, x_axis)
 
-            # Re-orthonormalize (ensures that no numerical errors occur in the calculated rotation matrix and that they are orthognormal) 
+            # Re-orthonormalize
             R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
             U, _, Vt = np.linalg.svd(R_matrix)
             R_ortho = U @ Vt
+
+            # added untwist: takes dot product between x-axis of frame and world x-axis. x-axis must always point in positive world y direction
+            x_world = np.array([1, 0, 0])
+            x_grasp = R_ortho[:, 0]  # X-axis of the grasp frame
+
+            if np.dot(x_world, x_grasp) < 0: #dot=-1 oppisite direction, dot=1 same direction, dot=0 orthogonal
+                R_ortho[:, 0] *= -1  # Flip X
+                R_ortho[:, 1] *= -1  # Flip Y, Z stays the same
 
             # Convert to roll-pitch-yaw
             rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
@@ -642,7 +717,6 @@ class ObjectDetector(Node):
             #  Filter points near the x-y plane (with threshold)
             distances_to_plane = np.abs((original_points - plane_point) @ plane_normal)
             on_plane_mask = distances_to_plane < 0.005  # 0.5 cm
-
             plane_points = original_points[on_plane_mask]
 
             if len(plane_points) < 2:
@@ -652,11 +726,20 @@ class ObjectDetector(Node):
                 projections = (plane_points - center) @ x_axis
                 min_proj = np.min(projections)
                 max_proj = np.max(projections)
+                grasp_width = np.abs(max_proj - min_proj) 
 
-                grasp_width = np.abs(max_proj - min_proj)
+            # Collision check: does grasp collide with table?
+            grasp_half = (grasp_width / 2.0 + 0.05) # add 3 cm margin
+            pt_left = center - R_ortho[:, 0] * grasp_half
+            pt_right = center + R_ortho[:, 0] * grasp_half
+
+            if pt_left[2] < 0 or pt_right[2] < 0: # Must be above the table
+                # Grasp would penetrate the table → skip this one
+                continue
 
             # Add grasp to list [x, y, z, roll, pitch, yaw]
             grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
+            count += 1
 
         return grasps
 
@@ -673,109 +756,15 @@ class ObjectDetector(Node):
             T_inv[:3, 3] = t_inv
             return T_inv
 
-
-    def grasp_prediction(self, point_cloud_masked, num_candidates):
-        ################################################################
-                # Filter the point cloud
-        ################################################################
-
-        #reformatting (H, W, 3) to (N, 3)
-        pc_np = point_cloud_masked.reshape(-1, 3)
-        # Filter out points with NaNs or zero depth (z <= 0)
-        valid = ~np.isnan(pc_np).any(axis=1) & (pc_np[:, 2] > 0)
-        pc_np_filtered = pc_np[valid]
-        # Filter out points with large depth jumps to remove noise
-        pc_np_filtered = self.filter_by_depth_jump_np(pc_np_filtered) 
-        
-        # Sanity check
-        if len(pc_np_filtered) == 0:
-            self.get_logger().info("No valid points in masked point cloud.")
-            return
-    
-        ################################################################
-                # Create Open3D point cloud, downsample, tranform, and estimate normals
-        ################################################################
-
-        # Create Open3D point cloud
-        pcd = o3d.geometry.PointCloud() #point cloud object
-        pcd.points = o3d.utility.Vector3dVector(pc_np_filtered)
-
-        if len(pcd.points) > 20000:
-            # Downsample the point cloud into 1 mm cubes
-            pcd = pcd.voxel_down_sample(voxel_size=0.001) # 1 mm cubes
-
-        # filter out points with large depth jumps as voxel downsampling can create noise
-        pcd = self.filter_by_depth_jump(pcd.points, jump_threshold=0.02) 
-
-        if True: #True: transform the point cloud to the global frame TODO
-            # transform the point cloud from local to global frame
-            pcd = self.transform_pointcloud_to_global(pcd, self.transformation_matrix)
-
-        if True: #True: apply mean filter to smothe the point cloud - this improves surface estimation
-            pcd = self.knn_mean_filter(pcd, k=30) # tuning of k is important and does greatly affect the result
-
-        # Estimate normals
-        pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.2, max_nn=30))
-
-        #orient normals consistently. Important for surface estimation !!!
-        try:
-            pcd.orient_normals_consistent_tangent_plane(k=30) # k is the number of neighbors to consider
-        except RuntimeError:
-            camera_location_global = (self.transformation_matrix @ np.array([0, 0, 0, 1]))[:3] 
-            pcd.orient_normals_towards_camera_location(camera_location_global)
-            self.get_logger().info("Points to flat for orienting normals using tangent plane. Instead using camera location to orient normals.")
-
-
-        ################################################################
-        # Estimate surfaces and grasps 
-        ################################################################
-
-        # Estimate surfaces based on normal similarity and spatial connectivity
-        groups = self.segment_surfaces_by_normal_and_connectivity(pcd, angle_threshold_deg=20, distance_threshold=0.01, num_candidates=num_candidates)
-        # Generate grasp candidates from the segmented surfaces. Outputs a list of grasps
-        grasps = self.generate_grasp_candidates_from_groups(pcd, groups)
-
-        ################################################################
-        # Visualize result
-        ################################################################
-
-        if False: # Set to True to visualize the point cloud and grasp poses
-            # Visualize the camera frame
-            camera_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01)
-
-            # Creating the grasp frames       
-            grasp_frames = []
-            for grasp in grasps:
-                x, y, z, roll, pitch, yaw = grasp
-
-                # Convert RPY to rotation matrix
-                rot = ROT.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
-
-                # Create coordinate frame and apply transform
-                frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.025)
-                frame.rotate(rot, center=(0, 0, 0))
-                frame.translate([x, y, z])
-
-                grasp_frames.append(frame)
-
-            # Make point cloud blue
-            pcd.paint_uniform_color([0, 0, 1]) # blue
-
-            # you can visualise: camera_frame, pcd, grasp_frames, normals
-            o3d.visualization.draw_geometries([pcd,*grasp_frames], point_show_normal=False, window_name="Grasp Poses", width=800, height=600)
-        
-        ################################################################
-        # :Return the grasp pose
-        ################################################################
-        return grasps
-
-    def project(self, pt3d, fx, fy, cx, cy):
-                x, y, z = pt3d
-                if z <= 0:
-                    return None
-                u = int((x * fx / z) + cx)
-                v = int((y * fy / z) + cy)
-                return (u, v)
+    def project(self, pt3d):
+        fx = self.camera_info[0]
+        fy = self.camera_info[4]
+        cx = self.camera_info[2]
+        cy = self.camera_info[5]
+        x, y, z = pt3d
+        u = int((x * fx / z) + cx)
+        v = int((y * fy / z) + cy)
+        return (u, v)
     
 
     def generate_top_down_grasp(self, global_pointcloud, top_band_height=0.005):
@@ -977,27 +966,7 @@ class ObjectDetector(Node):
         cv2.imshow("Image", image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
-
-    def apply_yolo_world(self, img, object_name, name_objects = False, verbose = False):
-        model = YOLOWorld("yolov8l-world.pt")  # or select yolov8{s/m/l}-world.pt for different sizes
-        
-        if name_objects == False:
-            model.set_classes([object_name])  # Set the class list to only include the specified object
-            
-        # Execute inference with the YOLOv8l-world model on the specified image
-        self.yolo_results = model.predict(img, verbose=False, conf=0.2) #, conf = 0.25 default TODO remove config
-
-        #the following prints the results of the yolo model without the class contrains
-        if name_objects:
-            objects_found = []
-            for i in range(len(self.yolo_results[0].boxes.data)):
-                objects_found.append(model.names[int(self.yolo_results[0].boxes.data[i][5])])
-
-            self.get_logger().info(f'No {object_name} were found, but {objects_found} was located.\n')
-            return objects_found
-
-    
-
+   
     def get_cartesian_coordinates(self, pixel_x, pixel_y):
         # The camera info message .K contains the camera intrinsics
         #[ fx   0  cx ]
@@ -1009,8 +978,6 @@ class ObjectDetector(Node):
         fy = self.camera_info[4]
         cx = self.camera_info[2]
         cy = self.camera_info[5]
-
-        self.get_logger().info(f"Depth frame size: {self.depth_frame.shape}")
 
         if pixel_x < 0 or pixel_x >= self.depth_frame.shape[1] or pixel_y < 0 or pixel_y >= self.depth_frame.shape[0]:
             self.get_logger().info(f"Pixel coordinates out of bounds: ({pixel_x}, {pixel_y})")
