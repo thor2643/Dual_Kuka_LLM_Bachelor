@@ -17,6 +17,7 @@ class ToolExecutionState(TypedDict):
             process, typically provided by an LLM. Defaults to an empty string.
     """
     messages: Annotated[list[AnyMessage], add_messages]
+    tool_list: Dict[str, Any]  # or a more structured type if your tools follow a strict schema
     tools_left: Dict[str, Any]  # or a more structured type if your tools follow a strict schema
     last_tool_result: Any = None  # optionally store latest tool output
     evaluation: str = ""  # optionally store LLM's evaluation of success

@@ -354,7 +354,7 @@ class LLMNode(Node):
         self.agent.update_state(self.isaac_config, {"messages": self.initial_prompt})
 
         
-        # ------------------------- Cell Workflow ------------------------- #
+        # ------------------------- Real Cell Workflow ------------------------- #
 
         # Define model nodes
         self.task_detector_model = self.model.bind_tools(self.task_detector_tools)
@@ -395,7 +395,7 @@ class LLMNode(Node):
         self.cell_agent = self.cell_workflow.compile(checkpointer=self.cell_memory)
 
         # Comment in to save a png of the graph and show it
-        """
+        #"""
         graph = self.cell_agent.get_graph()
 
         # Display the workflow graph using OpenCV
@@ -416,8 +416,9 @@ class LLMNode(Node):
                 self.get_logger().error("Failed to load the workflow graph image.")
         except ImportError:
             self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
+        #"""
 
-        """
+        
 
         self.initial_prompt_success_detector = SystemMessage(content = """ 
                                                                         You are a part of a robotic cell consisting of two collaborative KUKA iiwa 7 robots, each with 7 degrees of freedom (DoF).
@@ -910,6 +911,7 @@ class LLMNode(Node):
             with open(tool_calls_path, 'r') as file:
                 tool_calls = json.load(file)
 
+            state["tool_list"] = tool_calls
             state["tools_left"] = tool_calls
             self.get_logger().info(f"Tool calls loaded from {tool_calls_path}")
 

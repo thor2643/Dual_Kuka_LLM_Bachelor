@@ -1,54 +1,85 @@
 { 
     "function_call_1": {
         "function_name": "get_available_objects",
-        "args": {}
+        "args": {},
+        "return_values": {
+            "object_name": "red_brick"
+        }
     },
     "function_call_2": {
         "function_name": "find_object",
         "args": {
             "object_name": "red_brick"
+        },
+        "return_values": {
+            "bottle 1": {"center_object": {"x": 0.262, "y": 0.154, "z": 0.140}, "grasps": {"grasp 0": {"center": {"x": 0.271, "y": 0.161, "z": 0.183}, "orientation": {"roll": -84.973, "pitch": -67.787, "yaw": -56.009}, "width": 0.061}}}, 
+            "bottle 2": {"center_object": {"x": 0.677, "y": 0.121, "z": 0.162}, "grasps": {"grasp 0": {"center": {"x": 0.681, "y": 0.143, "z": 0.175}, "orientation": {"roll": -1.396, "pitch": -83.390, "yaw": 78.603}, "width": 0.0502}}}, 
+            "bottle 3": {"center_object": {"x": 0.831, "y": 0.130, "z": 0.210}, "grasps": {"grasp 0": {"center": {"x": 0.810, "y": 0.149, "z": 0.164}, "orientation": {"roll": -74.247, "pitch": -85.623, "yaw": 14.354}, "width": 0.043}}}, 
+            "bottle 4": {"center_object": {"x": 0.751, "y": 0.104, "z": 0.158}, "grasps": {"grasp 0": {"center": {"x": 0.787, "y": 0.114, "z": 0.173}, "orientation": {"roll": -16.228, "pitch": -80.340, "yaw": 52.542}, "width": 0.032}}}
         }
     },
     "function_call_3": {
         "function_name": "plan_robot_trajectory",
         "args": {
-            "pose": [0.4, 0.3, 0.01, 180, 0, 0],
+            "pose": [0.681, 0.143, 0.175, -1.396, -83.390, 78.603],
             "arm": "right"
+        },
+        "return_values": {
+            "success": true
         }
     },
     "function_call_4": {
         "function_name": "execute_planned_trajectory",
         "args": {
             "arm": "right"
+        },
+        "return_values": {
+            "success": true
         }
     },
     "function_call_5": {
         "function_name": "manipulate_right_gripper",
         "args": {
             "width": 0
+        },
+        "return_values": {
+            "success": true
         }
     },
     "function_call_6": {
         "function_name": "get_predefined_locations_and_poses",
-        "args": {}
+        "args": {},
+        "return_values": {
+            "HOME_RIGHT_ARM": {"x": "0.1", "y": "0.3", "z": "0.3", "roll": "0", "pitch": "0", "yaw": "0"},
+            "HOME_LEFT_ARM": {"x": "0.9", "y": "0.3", "z": "0.3", "roll": "0", "pitch": "0", "yaw": "0"}
+        }
     },
     "function_call_7": {
         "function_name": "plan_robot_trajectory",
         "args": {
-            "pose": [0.1, 0.1, 0.2, 0, 0, 0],
+            "pose": [0.1, 0.3, 0.3, 0, 0, 0],
             "arm": "right"
+        },
+        "return_values": {
+            "success": true
         }
     },
     "function_call_8": {
         "function_name": "execute_planned_trajectory",
         "args": {
             "arm": "right"
+        },
+        "return_values": {
+            "success": true
         }
     },
     "function_call_9": {
         "function_name": "manipulate_right_gripper",
         "args": {
             "width": 155
+        },
+        "return_values": {
+            "success": true
         }
     }
 }
