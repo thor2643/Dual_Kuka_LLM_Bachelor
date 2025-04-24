@@ -14,6 +14,7 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation 
 import math
+from utils.mode_switch import load_use_sim, set_use_sim
 
 # Langgraph / Langchain libraries
 from langchain_openai import ChatOpenAI
@@ -97,7 +98,7 @@ class LLMNode(Node):
 
         self.bridge = CvBridge()
         self.color_img = None
-        self.use_sim = True
+        self.use_sim = load_use_sim()
 
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
@@ -424,7 +425,8 @@ class LLMNode(Node):
 
         if not event_occured:
             self.get_logger().info('Service call failed: timeout')
-            return None
+            return future.result()
+            #return None
         else:
             return future.result()
     
@@ -657,6 +659,21 @@ class LLMNode(Node):
             self.get_logger().error("Failed to retrieve image from RViz")
             return None
 
+
+    def switch_robot_mode(self, use_sim: bool) -> str:
+        """
+        Switch between simulation and physical robot mode.
+
+        Args:
+            use_sim (bool): If True, switch to simulation mode. If False, switch to real robot.
+
+        Returns:
+            str: A confirmation message indicating the mode change.
+        """
+        new_mode = set_use_sim(use_sim)
+        self.use_sim = use_sim
+        return f"Robot mode has been set to: {'simulation' if new_mode == 'True' else 'real robot'}."
+
     #######################################################################################
     # ------------------------------ LANGGRAPH FUNCTIONS -------------------------------- #
     #######################################################################################
@@ -698,13 +715,15 @@ class LLMNode(Node):
         # Resize the image to 524x524
         # Change this to get the actual image from the camera
         #original_image = cv2.imread(image_path)
-        if self.use_sim:
+        if load_use_sim():
             for i in range(5):
                 request = GetSimCameraData.Request()
                 future = self.sim_cam_client.call_async(request)
 
                 # Wait for the result
                 response = self.wait_future(future, timeout=10)
+
+                self.get_logger().info(f"Response from sim cam service: s{response}")
 
                 if response is not None:
                     response = future.result()
@@ -851,8 +870,6 @@ class LLMNode(Node):
         # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
 
-        # Set the use_sim flag based on the current mode
-        self.detector_req.use_sim = self.use_sim
         T = self.get_cam2world_transform()
         transform_msg = TransformMatrix()
         transform_msg.matrix = T.flatten().tolist()
@@ -1215,7 +1232,6 @@ class LLMNode(Node):
             self.get_logger().error(f"Failed to get current pose for {arm} arm: {response.log}") 
 
         return response
-    
 
     ################################################################################################
     # -------------------------- INTERACTION WITH LARGE LANGUAGE MODELS -------------------------- #

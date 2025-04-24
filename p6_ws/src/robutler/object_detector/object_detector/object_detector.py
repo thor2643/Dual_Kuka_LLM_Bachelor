@@ -19,8 +19,8 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 import os
 
-
-
+# Simulation
+from utils.mode_switch import load_use_sim
 
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
@@ -159,7 +159,6 @@ In the grasp pipeline the following parameters are of importance: DO NOT CHANGE 
 class ObjectDetector(Node):
     def __init__(self):
         super().__init__('object_detector')
-        self.sim_enabled = False
 
         self.camera_source = RealSenseCamera()
 
@@ -194,8 +193,9 @@ class ObjectDetector(Node):
 
 
     def retrieve_aligned_frames(self):
-        if self.sim_enabled:
-            self.get_logger().info(f'USing sim camera\n')
+        self.get_logger().error(f'{load_use_sim()}\n')
+        if load_use_sim():
+            self.get_logger().info(f'Using sim camera\n')
             sim_camera = SimCamera()
         
             sim_camera.update_images()
@@ -206,7 +206,7 @@ class ObjectDetector(Node):
             self.color_frame = sim_camera.color_img
             self.camera_info = sim_camera.camera_info
         else:
-            self.get_logger().info(f'USing real camera\n')
+            self.get_logger().info(f'Using real camera\n')
             while self.realsense_camera.depth_img is None or self.realsense_camera.color_img is None or self.realsense_camera.camera_info is None:
                 rclpy.spin_once(self.realsense_camera)
 
@@ -251,7 +251,6 @@ class ObjectDetector(Node):
     #The callback function for the detector service for YOLO World
     def get_object_information(self, request, response, clustered = True):
         object = request.object_name
-        self.sim_enabled = request.use_sim
         self.get_logger().info(f'Requested to find {object}\n')
 
         self.found_objects.clear()
@@ -997,7 +996,7 @@ class ObjectDetector(Node):
             return None
 
         # Calculate the x, y, z coordinates
-        if self.sim_enabled:
+        if load_use_sim():
             z = self.depth_frame[pixel_y, pixel_x] 
         else:
             z = self.depth_frame[pixel_y, pixel_x] / 1000  # Convert to meters

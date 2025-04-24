@@ -1,6 +1,5 @@
 # Request
 string object_name  # Name of the object to search for
-bool use_sim        # True if using Isaac Sim 
 project_interfaces/TransformMatrix transform #trasformation matrix for non-stationary camera 
 
 ---
