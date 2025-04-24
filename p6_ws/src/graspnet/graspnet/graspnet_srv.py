@@ -5,10 +5,11 @@ import numpy as np
 import open3d as o3d
 import argparse
 from scipy.spatial.transform import Rotation as R
+import cv2
 
 # GraspNet / AnyGrasp
 import torch
-from graspnetAPI import GraspGroup
+from graspnetAPI import GraspGroup, RectGraspGroup
 from graspnet import GraspNet, pred_decode
 from graspnet_dataset import GraspNetDataset
 from collision_detector import ModelFreeCollisionDetector
@@ -31,7 +32,7 @@ from ultralytics import SAM
 
 # Arguments parsed to AnyGrasp.
 parser = argparse.ArgumentParser()
-parser.add_argument('--num_point', type=int, default=20000, help='Point Number [default: 20000]')
+parser.add_argument('--num_point', type=int, default=40000, help='Point Number [default: 20000]')
 parser.add_argument('--num_view', type=int, default=300, help='View Number [default: 300]')
 parser.add_argument('--collision_thresh', type=float, default=0.01, help='Collision Threshold in collision detection [default: 0.01]')
 parser.add_argument('--voxel_size', type=float, default=0.01, help='Voxel Size to process point clouds before collision detection [default: 0.01]')
@@ -83,6 +84,7 @@ class AnyGraspPipeline(Node):
         self.depth_frame = None   
         self.color_frame = None
         self.color = None
+        self.cv2img = None
         self.mask_binary = None
         self.width = None
         self.transformation_matrix = None
@@ -96,6 +98,8 @@ class AnyGraspPipeline(Node):
         self.factor_depth = np.array([1000.0])
 
         self.grasp_srv = self.create_service(GetObjectInfo, 'get_any_object_info', self.get_grasps)
+
+        self.image_publisher = self.create_publisher(Image, 'video_frames', 10)
 
 
     def get_grasps(self, request, response):
@@ -134,7 +138,7 @@ class AnyGraspPipeline(Node):
                 gg = self.collision_detection(gg, np.array(cloud.points))
             
             # -- Debug feature
-            #self.vis_grasps(gg, cloud)
+            self.vis_grasps(gg)
 
             # Post-process and pick best grasp
             gg.nms()
@@ -159,8 +163,63 @@ class AnyGraspPipeline(Node):
                 # Create Grasp6D message for the top grasp
                 grasp_msg = Grasp6D()
 
-                # Extract position
+                # Make a cv2 image that showcases the grasp!
+                grasp_cam_xyz = np.array(top_grasp.translation)
+                x, y, z = grasp_cam_xyz
+
+                fx, fy = self.intrinsic[0, 0], self.intrinsic[1, 1]
+                cx, cy = self.intrinsic[0, 2], self.intrinsic[1, 2]
+
+                u = int((x * fx / z) + cx)
+                v = int((y * fy / z) + cy)
+
+                # Draw grasp as a circle on the color image
+                cv2.circle(self.cv2img, (u, v), radius=4, color=(0, 255, 0), thickness=2)
+
+                # Extract position & orientation
                 grasp_position_homogeneous = np.array([top_grasp.translation[0], top_grasp.translation[1], top_grasp.translation[2], 1.0])
+                grasp_rotation_matrix = np.array(top_grasp.rotation_matrix).reshape(3, 3)
+                
+                # Draw the grasps on the image:
+                line_offset = self.width / 2
+
+                gripper_y_axis = grasp_rotation_matrix[:, 1]  # Y-axis of the gripper
+
+                line_start_y = grasp_cam_xyz - line_offset * gripper_y_axis
+                line_end_y = grasp_cam_xyz + line_offset * gripper_y_axis
+
+                # Project the start and end points of the grasp width lines to 2D for Y-axis lines
+                line_start_y_u = int((line_start_y[0] * fx / line_start_y[2]) + cx)
+                line_start_y_v = int((line_start_y[1] * fy / line_start_y[2]) + cy)
+                line_end_y_u = int((line_end_y[0] * fx / line_end_y[2]) + cx)
+                line_end_y_v = int((line_end_y[1] * fy / line_end_y[2]) + cy)
+
+                # Draw the Y-axis lines on the image (representing part of the grasp width)
+                cv2.line(self.cv2img, (line_start_y_u, line_start_y_v), (line_end_y_u, line_end_y_v), (255, 0, 0), 3)
+
+                # Convert the image to a ROS message and publish
+                image_msg = self.realsense_camera.bridge.cv2_to_imgmsg(self.cv2img.astype(np.uint8), encoding="rgb8")
+                self.image_publisher.publish(image_msg)
+
+                # Crop image and save it to PC, for test section!
+                # Define crop boundaries
+                crop_size = 100  # Half of 200
+                h, w, _ = self.cv2img.shape
+
+                # Ensure crop boundaries stay within image bounds
+                x_min = max(u - crop_size, 0)
+                y_min = max(v - crop_size, 0)
+                x_max = min(u + crop_size, w)
+                y_max = min(v + crop_size, h)
+
+                # Crop the image
+                cropped_img = self.cv2img[y_min:y_max, x_min:x_max]
+
+                # Save to disk
+                save_path = os.path.expanduser("~/Desktop/cropped_grasp_image.png")
+                cv2.imwrite(save_path, cropped_img)
+
+                # Change to world frame
                 grasp_position_world_homogeneous = np.dot(self.transformation_matrix, grasp_position_homogeneous)
 
                 grasp_msg.position = Point(
@@ -169,18 +228,16 @@ class AnyGraspPipeline(Node):
                     z=grasp_position_world_homogeneous[2]
                 )
 
-                # Extract orientation
-                grasp_rotation_matrix = np.array(top_grasp.rotation_matrix).reshape(3, 3)
-
                 combined_rotation_matrix = np.dot(rotation_matrix, grasp_rotation_matrix)
 
                 r = R.from_matrix(combined_rotation_matrix)
                 roll, pitch, yaw = r.as_euler('xyz', degrees=True)
 
+                # Wrap angles within +-180 degs, so 181 is -179, -190 is 170 <- This must be wrong
                 grasp_msg.orientation = Vector3(
-                    x=roll,
-                    y=pitch,
-                    z=yaw
+                    x=(roll + 180) % 360 - 180,
+                    y=(pitch + 180) % 360 - 180,
+                    z=(yaw + 180) % 360 - 180
                 )
 
                 # Set grasp width
@@ -210,6 +267,7 @@ class AnyGraspPipeline(Node):
         
         self.depth_frame = self.realsense_camera.depth_img
         self.color_frame = self.realsense_camera.color_img
+        self.cv2img = cv2.cvtColor(self.color_frame, cv2.COLOR_RGB2BGR)
         self.color = self.color_frame / 255.0
 
 
@@ -259,7 +317,54 @@ class AnyGraspPipeline(Node):
                 #convert the mask to binary
                 mask_binary = (sam_masks > 0).astype(np.uint8)
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
-                self.mask_binaries.append([class_name, i, mask_binary.astype(np.bool_), cart_point])
+
+                # Erode with a 20x20 kernel / Removing outliners from depth data.
+                kernel = np.ones((10, 10), np.uint8)
+                mask_binary = cv2.erode(mask_binary, kernel, iterations=1)
+                
+                # Surface Normal Approximation to find highest graspable area:
+                points_3d = []
+                uvs = []
+                for v in range(mask_binary.shape[0]):
+                    for u in range(mask_binary.shape[1]):
+                        if mask_binary[v, u]:
+                            z = self.depth_frame[v, u] / 1000.0
+                            if z == 0:
+                                continue
+                            x = (u - cx) * z / fx
+                            y = (v - cy) * z / fy
+                            points_3d.append([x, y, z])
+                            uvs.append((u, v))
+
+                if len(points_3d) < 3:
+                    continue  # not enough points to define a plane
+
+                points_3d = np.array(points_3d)
+                pixel_coords = np.array(uvs)
+
+                # Open3D point cloud & normal estimation
+                pcd = o3d.geometry.PointCloud()
+                pcd.points = o3d.utility.Vector3dVector(points_3d)
+                pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30))
+
+                # RANSAC Plane Segmentation (find dominant plane in region)
+                plane_model, inliers = pcd.segment_plane(distance_threshold=0.005,
+                                                        ransac_n=3,
+                                                        num_iterations=1000)
+
+                # Get inlier pixels (i.e., mask pixels belonging to the selected plane)
+                inlier_pixels = pixel_coords[inliers]
+
+                # Create filtered binary mask
+                filtered_mask = np.zeros_like(mask_binary, dtype=np.uint8)
+                for u, v in inlier_pixels:
+                    if 0 <= v < filtered_mask.shape[0] and 0 <= u < filtered_mask.shape[1]:
+                        filtered_mask[v, u] = 1
+
+                # Optional: smooth output
+                filtered_mask = cv2.dilate(filtered_mask, np.ones((5, 5), np.uint8), iterations=1)
+
+                self.mask_binaries.append([class_name, i, filtered_mask.astype(np.bool_), cart_point])
             return True
         else:
             self.objects_found = []
@@ -294,11 +399,11 @@ class AnyGraspPipeline(Node):
     def get_and_process_data(self):
         # generate cloud
         camera = CameraInfo(1280.0, 720.0, self.intrinsic[0][0], self.intrinsic[1][1], self.intrinsic[0][2], self.intrinsic[1][2], self.factor_depth)
-        cloud = create_point_cloud_from_depth_image(self.depth_frame, camera, organized=True)
+        cloud_np = create_point_cloud_from_depth_image(self.depth_frame, camera, organized=True)
 
         # get valid points
         mask = (self.mask_binary & (self.depth_frame > 0))
-        cloud_masked = cloud[mask]
+        cloud_masked = cloud_np[mask]
         color_masked = self.color[mask]
 
         # sample points
@@ -313,8 +418,17 @@ class AnyGraspPipeline(Node):
 
         # convert data
         cloud = o3d.geometry.PointCloud()
-        cloud.points = o3d.utility.Vector3dVector(cloud_masked.astype(np.float32))
+        #cloud.points = o3d.utility.Vector3dVector(cloud_masked.astype(np.float32))
         cloud.colors = o3d.utility.Vector3dVector(color_masked.astype(np.float32))
+        cloud_np = cloud_np.reshape(-1, 3)  # Flatten the cloud to shape (N, 3)
+
+        cloud.points = o3d.utility.Vector3dVector(cloud_np.astype(np.float32)) # Changed to cloud
+        #cloud.colors = o3d.utility.Vector3dVector(color.astype(np.float32)) # Changed to full img
+        
+        self.storage = o3d.geometry.PointCloud()
+        self.storage.points = o3d.utility.Vector3dVector(cloud_masked.astype(np.float32))
+        self.storage.colors = o3d.utility.Vector3dVector(color_masked.astype(np.float32))
+
         end_points = dict()
         cloud_sampled = torch.from_numpy(cloud_sampled[np.newaxis].astype(np.float32))
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -334,18 +448,18 @@ class AnyGraspPipeline(Node):
         return gg
 
     def collision_detection(self, gg, cloud):
-        mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size)
-        collision_mask = mfcdetector.detect(gg, approach_dist=0.05, collision_thresh=cfgs.collision_thresh)
+        mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size, finger_width=0.03, finger_length=0.125)
+        collision_mask = mfcdetector.detect(gg, approach_dist=0, collision_thresh=cfgs.collision_thresh)
         gg = gg[~collision_mask]
         return gg
 
     # No longer used, but debug feature for visualising grasp!
-    def vis_grasps(self, gg, cloud):
+    def vis_grasps(self, gg):
         gg.nms()
         gg.sort_by_score()
-        gg = gg[:1]
+        gg = gg[:50]
         grippers = gg.to_open3d_geometry_list()
-        o3d.visualization.draw_geometries([cloud, *grippers])
+        o3d.visualization.draw_geometries([self.storage, *grippers])
 
 
 def main(args=None):

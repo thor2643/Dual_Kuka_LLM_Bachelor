@@ -519,14 +519,14 @@ class GraspGroup():
         scores = self.scores
         widths = self.widths
         object_ids = self.object_ids
-
-        mask = (rotations[:, 2, 0] > 0.99)
-        tranlations = tranlations[mask]
-        depths = depths[mask]
-        widths = widths[mask]
-        scores = scores[mask]
-        rotations = rotations[mask]
-        object_ids = object_ids[mask]
+        
+        #mask = (rotations[:, 2, 0] > 0.99)
+        #tranlations = tranlations[mask]
+        #depths = depths[mask]
+        #widths = widths[mask]
+        #scores = scores[mask]
+        #rotations = rotations[mask]
+        #object_ids = object_ids[mask]
         
         if tranlations.shape[0] == 0:
             return None

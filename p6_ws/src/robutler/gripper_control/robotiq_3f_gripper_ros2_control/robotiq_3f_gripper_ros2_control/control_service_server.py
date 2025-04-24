@@ -129,7 +129,7 @@ class GripperServiceServer(Node):
         numRegs = int(math.ceil(numBytes/2))
 
         with self.lock:
-            response = self.client.read_input_registers(0,numBytes)
+            response = self.client.read_input_registers(numBytes)
         
         response_byte_array = []
 

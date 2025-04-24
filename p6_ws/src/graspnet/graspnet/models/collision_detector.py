@@ -25,9 +25,9 @@ class ModelFreeCollisionDetector():
             collision_mask, empty_mask, iou_list = mfcdetector.detect(grasp_group, approach_dist=0.03, collision_thresh=0.05,
                                             return_empty_grasp=True, empty_thresh=0.01, return_ious=True)
     """
-    def __init__(self, scene_points, voxel_size=0.005):
-        self.finger_width = 0.01
-        self.finger_length = 0.06
+    def __init__(self, scene_points, voxel_size=0.005, finger_width=0.01, finger_length=0.06):
+        self.finger_width = finger_width
+        self.finger_length = finger_length
         self.voxel_size = voxel_size
         scene_cloud = o3d.geometry.PointCloud()
         scene_cloud.points = o3d.utility.Vector3dVector(scene_points)

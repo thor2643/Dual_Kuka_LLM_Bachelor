@@ -890,6 +890,17 @@ class LLMNode(Node):
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 
         return self.objects_on_table
+        
+    def flip_if_near_180(self, angle_deg):
+        """
+        If angle is near ±180, flip it to the equivalent small negative or positive.
+        Assumes input is already in [-180, 180)
+        """
+        if angle_deg > 90:
+            return angle_deg - 180
+        elif angle_deg < -90:
+            return angle_deg + 180
+        return angle_deg
 
 
     #@tool   
@@ -1002,6 +1013,7 @@ class LLMNode(Node):
                     R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
                     R_new = R_W_G @ R_90z
                     roll, pitch, yaw = Rotation.from_matrix(R_new).as_euler('xyz', degrees=True)
+                    #roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
                     self.objects_on_table_any[object_name]['grasps'][f'grasp {j}'] = {
                         'center': {

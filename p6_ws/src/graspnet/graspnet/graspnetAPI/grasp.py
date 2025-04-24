@@ -519,6 +519,13 @@ class GraspGroup():
         scores = self.scores
         widths = self.widths
         object_ids = self.object_ids
+        
+        print("[DEBUG] Translations shape:", tranlations.shape)
+        print("[DEBUG] Rotation shape:", self.rotation_matrices.shape)
+        print("[DEBUG] Depth shape:", self.depths.shape)
+        print("[DEBUG] Widths shape:", self.widths.shape)
+        print("[DEBUG] Scores shape:", self.scores.shape)
+        print("[DEBUG] Object IDs shape:", self.object_ids.shape)
 
         mask = (rotations[:, 2, 0] > 0.99)
         tranlations = tranlations[mask]
