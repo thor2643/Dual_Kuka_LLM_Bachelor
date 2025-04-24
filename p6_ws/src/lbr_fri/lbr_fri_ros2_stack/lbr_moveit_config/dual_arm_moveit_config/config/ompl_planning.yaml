@@ -57,6 +57,7 @@ right_arm:
   
   planner_configs:
     - RRT 
+    - TRRT
     #- RRTstar  
     
     #- RRTConnect     
@@ -68,6 +69,7 @@ left_arm:
   
   planner_configs:
     - RRT 
+    - TRRT
   
 
 #3f_gripper:

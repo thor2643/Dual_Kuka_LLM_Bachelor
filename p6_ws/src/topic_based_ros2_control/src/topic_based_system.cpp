@@ -338,10 +338,18 @@ hardware_interface::return_type TopicBasedSystem::write(const rclcpp::Time& /*ti
 
 rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
 topic_based_ros2_control::TopicBasedSystem::on_deactivate(const rclcpp_lifecycle::State &) {
-    RCLCPP_INFO(node_->get_logger(), "IT WORKED !!!!!!!!!! _-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_");
+    RCLCPP_INFO(node_->get_logger(), "DEACTIVATING TOPIC BASED CONTROL (ISAAC SIM)");
+    active = false;
+
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
 }
 
+rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
+topic_based_ros2_control::TopicBasedSystem::on_activate(const rclcpp_lifecycle::State &) {
+  RCLCPP_INFO(node_->get_logger(), "ACTIVATING TOPIC BASED CONTROL (ISAAC SIM)");
+  active = true;
+  return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::SUCCESS;
+}
 
 #include "pluginlib/class_list_macros.hpp"
 PLUGINLIB_EXPORT_CLASS(topic_based_ros2_control::TopicBasedSystem, hardware_interface::SystemInterface)
