@@ -93,7 +93,7 @@ class LLMNode(Node):
         )
 
         # Create a service client for the simulated camera data
-        self.sim_cam_client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
+        self.sim_cam_client = self.create_client(GetSimCameraData, 'get_simulated_camera_data', callback_group=client_cb_group)
         self.sim_cam_req = GetSimCameraData.Request()
 
         self.bridge = CvBridge()
@@ -425,8 +425,8 @@ class LLMNode(Node):
 
         if not event_occured:
             self.get_logger().info('Service call failed: timeout')
-            return future.result()
-            #return None
+
+            return None
         else:
             return future.result()
     
@@ -721,9 +721,7 @@ class LLMNode(Node):
                 future = self.sim_cam_client.call_async(request)
 
                 # Wait for the result
-                response = self.wait_future(future, timeout=10)
-
-                self.get_logger().info(f"Response from sim cam service: s{response}")
+                response = self.wait_future(future, timeout=5)
 
                 if response is not None:
                     response = future.result()
