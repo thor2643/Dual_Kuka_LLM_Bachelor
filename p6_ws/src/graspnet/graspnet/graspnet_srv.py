@@ -32,7 +32,7 @@ from ultralytics import SAM
 
 # Arguments parsed to AnyGrasp.
 parser = argparse.ArgumentParser()
-parser.add_argument('--num_point', type=int, default=40000, help='Point Number [default: 20000]')
+parser.add_argument('--num_point', type=int, default=80000, help='Point Number [default: 20000]')
 parser.add_argument('--num_view', type=int, default=300, help='View Number [default: 300]')
 parser.add_argument('--collision_thresh', type=float, default=0.01, help='Collision Threshold in collision detection [default: 0.01]')
 parser.add_argument('--voxel_size', type=float, default=0.01, help='Voxel Size to process point clouds before collision detection [default: 0.01]')
@@ -138,7 +138,7 @@ class AnyGraspPipeline(Node):
                 gg = self.collision_detection(gg, np.array(cloud.points))
             
             # -- Debug feature
-            self.vis_grasps(gg)
+            # self.vis_grasps(gg)
 
             # Post-process and pick best grasp
             gg.nms()
