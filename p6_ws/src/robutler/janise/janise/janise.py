@@ -1004,22 +1004,31 @@ class LLMNode(Node):
                 }
 
                 for j, grasp in enumerate(detected_obj.grasps):
-                    
-                    # rotate the grasp 90 degrees around the z-axis of the grasp
+                    T_90z = np.eye(4)
+                    # Define the rotation matrix for -90 degrees around the z-axis
+                    R_90z = Rotation.from_euler('y', -90, degrees=True).as_matrix()
+                    T_90z[:3, :3] = R_90z
 
-                    # Define the rotation matrix for 90 degrees around the z-axis
-                    R_90z = Rotation.from_euler('z', 90, degrees=True).as_matrix()
-                    # Define grasp rotation matrix from World to Grasp coordinates
                     R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
-                    R_new = R_W_G @ R_90z
-                    roll, pitch, yaw = Rotation.from_matrix(R_new).as_euler('xyz', degrees=True)
-                    #roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
+                    pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
+                    T_W_G = np.eye(4)
+                    T_W_G[:3, :3] = R_W_G
+                    T_W_G[:3, 3] = pose
+                    if pose[2]>0.03: # if center point is more than 3 cm above the table 
+                        T_90z[2,3] = 0.02 # move the grasp point 2 cm into the object
+                    
+                    T_new = T_W_G @ T_90z
+                    pose_new = T_new[:3, 3]
+
+                    roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
+                    roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
+                    roll, pitch, yaw = round(roll, 3), round(pitch, 3), round(yaw, 3)
 
                     self.objects_on_table_any[object_name]['grasps'][f'grasp {j}'] = {
                         'center': {
-                            'x': grasp.position.x,
-                            'y': grasp.position.y,
-                            'z': grasp.position.z
+                            'x': round(pose_new[0], 3),
+                            'y': round(pose_new[1], 3),
+                            'z': round(pose_new[2], 3),
                         },
                         'orientation': {
                             'roll': roll,

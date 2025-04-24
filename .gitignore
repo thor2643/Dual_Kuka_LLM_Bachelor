@@ -437,4 +437,6 @@ FodyWeavers.xsd
 *.vsix
 
 API_KEY.json
+yolov8l-world.pt
+sam_b.pt
 

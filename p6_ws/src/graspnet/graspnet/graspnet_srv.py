@@ -36,7 +36,7 @@ parser.add_argument('--num_point', type=int, default=40000, help='Point Number [
 parser.add_argument('--num_view', type=int, default=300, help='View Number [default: 300]')
 parser.add_argument('--collision_thresh', type=float, default=0.01, help='Collision Threshold in collision detection [default: 0.01]')
 parser.add_argument('--voxel_size', type=float, default=0.01, help='Voxel Size to process point clouds before collision detection [default: 0.01]')
-cfgs = parser.parse_args()
+cfgs, _ = parser.parse_known_args()
 
 # Determine the location of "graspnet" folder using ROS2 inferstructure
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -103,6 +103,8 @@ class AnyGraspPipeline(Node):
 
 
     def get_grasps(self, request, response):
+        print("GraspNet-Baseline Service Called")
+        self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
         # Get image
         self.retrieve_aligned_frames()
 
@@ -118,11 +120,9 @@ class AnyGraspPipeline(Node):
         
 
         # Use YOLOWorld and SAM for segmenetation
-        flag = self.get_object_information(request)
+        flag = self.get_object_information(request, response)
         if flag == False:
-            print("Error during YOLO & SAM Intergration")
             return response
-        print(self.mask_binaries)
 
         # Run the neural network AnyGrasp
         net = self.get_net()
@@ -147,12 +147,12 @@ class AnyGraspPipeline(Node):
             detected_object = DetectedObject()
             detected_object.name = f"{class_name} {index}"
 
-            self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
-
             position_homogeneous = np.array([cart[0], cart[1], cart[2], 1.0])
             position_world_homogeneous = np.dot(self.transformation_matrix, position_homogeneous)
 
-            detected_object.center_of_object = Point(x=position_world_homogeneous[0], y=position_world_homogeneous[1], z=position_world_homogeneous[2])
+            detected_object.center_of_object = Point(x=np.round(position_world_homogeneous[0], 3), 
+                                                     y=np.round(position_world_homogeneous[1], 3), 
+                                                     z=np.round(position_world_homogeneous[2], 3))
             detected_object.grasps = []
 
             rotation_matrix = self.transformation_matrix[:3, :3]
@@ -174,7 +174,7 @@ class AnyGraspPipeline(Node):
                 v = int((y * fy / z) + cy)
 
                 # Draw grasp as a circle on the color image
-                cv2.circle(self.cv2img, (u, v), radius=4, color=(0, 255, 0), thickness=2)
+                cv2.circle(self.cv2img, (u, v), radius=2, color=(0, 255, 0), thickness=2)
 
                 # Extract position & orientation
                 grasp_position_homogeneous = np.array([top_grasp.translation[0], top_grasp.translation[1], top_grasp.translation[2], 1.0])
@@ -196,6 +196,20 @@ class AnyGraspPipeline(Node):
 
                 # Draw the Y-axis lines on the image (representing part of the grasp width)
                 cv2.line(self.cv2img, (line_start_y_u, line_start_y_v), (line_end_y_u, line_end_y_v), (255, 0, 0), 3)
+
+                # --- Approach direction line (Z-axis of gripper) ---
+                approach_length = 0.05  # You can tune this value (in meters)
+                gripper_z_axis = grasp_rotation_matrix[:, 2]
+
+                approach_start = grasp_cam_xyz
+                approach_end = grasp_cam_xyz + approach_length * gripper_z_axis
+
+                approach_start_u = int((approach_start[0] * fx / approach_start[2]) + cx)
+                approach_start_v = int((approach_start[1] * fy / approach_start[2]) + cy)
+                approach_end_u = int((approach_end[0] * fx / approach_end[2]) + cx)
+                approach_end_v = int((approach_end[1] * fy / approach_end[2]) + cy)
+
+                cv2.line(self.cv2img, (approach_start_u, approach_start_v), (approach_end_u, approach_end_v), (0, 0, 255), 2)
 
                 # Convert the image to a ROS message and publish
                 image_msg = self.realsense_camera.bridge.cv2_to_imgmsg(self.cv2img.astype(np.uint8), encoding="rgb8")
@@ -223,9 +237,9 @@ class AnyGraspPipeline(Node):
                 grasp_position_world_homogeneous = np.dot(self.transformation_matrix, grasp_position_homogeneous)
 
                 grasp_msg.position = Point(
-                    x=grasp_position_world_homogeneous[0],
-                    y=grasp_position_world_homogeneous[1],
-                    z=grasp_position_world_homogeneous[2]
+                    x=np.round(grasp_position_world_homogeneous[0], 3),
+                    y=np.round(grasp_position_world_homogeneous[1], 3),
+                    z=np.round(grasp_position_world_homogeneous[2], 3)
                 )
 
                 combined_rotation_matrix = np.dot(rotation_matrix, grasp_rotation_matrix)
@@ -233,7 +247,7 @@ class AnyGraspPipeline(Node):
                 r = R.from_matrix(combined_rotation_matrix)
                 roll, pitch, yaw = r.as_euler('xyz', degrees=True)
 
-                # Wrap angles within +-180 degs, so 181 is -179, -190 is 170 <- This must be wrong
+                # Wrap angles within +-180 degs, so 181 is -179, -190 is 170
                 grasp_msg.orientation = Vector3(
                     x=(roll + 180) % 360 - 180,
                     y=(pitch + 180) % 360 - 180,
@@ -241,7 +255,7 @@ class AnyGraspPipeline(Node):
                 )
 
                 # Set grasp width
-                grasp_msg.grasp_width = float(top_grasp.width)
+                grasp_msg.grasp_width = round(float(top_grasp.width), 3)
 
                 # Append the grasp to the list of grasps
                 detected_object.grasps.append(grasp_msg)
@@ -271,7 +285,7 @@ class AnyGraspPipeline(Node):
         self.color = self.color_frame / 255.0
 
 
-    def get_object_information(self, request):
+    def get_object_information(self, request, response):
         det_object = request.object_name
         
         #Compute workspace_mask using YOLO & SAM
@@ -281,7 +295,7 @@ class AnyGraspPipeline(Node):
         model.set_classes([det_object])  # Set the class list to only include the specified object
             
         # Execute inference with the YOLOv8l-world model on the specified image
-        yolo_results = model.predict(self.color_frame, verbose=False) #, conf = 0.3
+        yolo_results = model.predict(self.cv2img, verbose=False, conf=0.4, device='cuda:0') #, conf = 0.3
 
         # Sanity check - Was object detected?
         if len(yolo_results[0].boxes.data) > 0:
@@ -311,16 +325,12 @@ class AnyGraspPipeline(Node):
                 cart_point = np.array([x, y, z])
 
                 # Use SAM on image using YOLO bounding boxes.
-                sam_results = sam.predict(self.color_frame, stream=False, bboxes=[x_min, y_min, x_max, y_max], points=None, labels=None)
+                sam_results = sam.predict(self.cv2img, stream=False, bboxes=[x_min, y_min, x_max, y_max], points=None, labels=None)
                 sam_masks = (sam_results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
                 
                 #convert the mask to binary
                 mask_binary = (sam_masks > 0).astype(np.uint8)
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
-
-                # Erode with a 20x20 kernel / Removing outliners from depth data.
-                kernel = np.ones((10, 10), np.uint8)
-                mask_binary = cv2.erode(mask_binary, kernel, iterations=1)
                 
                 # Surface Normal Approximation to find highest graspable area:
                 points_3d = []
@@ -336,9 +346,6 @@ class AnyGraspPipeline(Node):
                             points_3d.append([x, y, z])
                             uvs.append((u, v))
 
-                if len(points_3d) < 3:
-                    continue  # not enough points to define a plane
-
                 points_3d = np.array(points_3d)
                 pixel_coords = np.array(uvs)
 
@@ -348,7 +355,7 @@ class AnyGraspPipeline(Node):
                 pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30))
 
                 # RANSAC Plane Segmentation (find dominant plane in region)
-                plane_model, inliers = pcd.segment_plane(distance_threshold=0.005,
+                plane_model, inliers = pcd.segment_plane(distance_threshold=0.10,
                                                         ransac_n=3,
                                                         num_iterations=1000)
 
@@ -361,17 +368,56 @@ class AnyGraspPipeline(Node):
                     if 0 <= v < filtered_mask.shape[0] and 0 <= u < filtered_mask.shape[1]:
                         filtered_mask[v, u] = 1
 
-                # Optional: smooth output
-                filtered_mask = cv2.dilate(filtered_mask, np.ones((5, 5), np.uint8), iterations=1)
-
                 self.mask_binaries.append([class_name, i, filtered_mask.astype(np.bool_), cart_point])
             return True
-        else:
+        else: # This is used to return a fail statement and a list of all objects in the workspace.
+            model = YOLOWorld("yolov8l-world.pt")
+            yolo_results = model.predict(self.cv2img, verbose=False, conf=0.4, device='cuda:0')
             self.objects_found = []
             for i in range(len(yolo_results[0].boxes.data)):
                 self.objects_found.append(model.names[int(yolo_results[0].boxes.data[i][5])])
+
+                # Publish image of the found objects
+                image = yolo_results[0].plot()
+                self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
             
             self.get_logger().info(f'YOLOWorld failed to detect {det_object}, but found {self.objects_found}')
+            for i, name in enumerate(self.objects_found):
+                obj = DetectedObject()
+                obj.name = name
+                
+                box = yolo_results[0].boxes.data[i]
+                x_min, y_min, x_max, y_max = box[:4]
+                class_id = int(box[5])
+                class_name = model.names[class_id]  # get class name
+
+                # Getting the center coordinate to follow the format:
+                pixel_x = int((x_min + x_max) / 2)
+                pixel_y = int((y_min + y_max) / 2)
+
+                # Extract camera intrinsic parameters
+                fx = self.intrinsic[0, 0]
+                fy = self.intrinsic[1, 1]
+                cx = self.intrinsic[0, 2]
+                cy = self.intrinsic[1, 2]
+
+                depth_value = self.depth_frame[pixel_y, pixel_x]
+
+                z = depth_value / 1000.0
+                x = (pixel_x - cx) * z / fx  # X coordinate
+                y = (pixel_y - cy) * z / fy  # Y coordinate
+
+                cart_point = np.array([x, y, z])
+
+                # Convert to homogeneous and use transformation matrix
+                cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
+                cart_point = self.transformation_matrix @ cart_point_hom 
+                cart_point = cart_point[:3]  # Drop homogeneous coordinate
+
+                # Fill in the message
+                obj.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
+                obj.grasps = []  # No grasps since no object mask was found
+                response.detected_objects.append(obj)
             return False
 
 
@@ -448,7 +494,7 @@ class AnyGraspPipeline(Node):
         return gg
 
     def collision_detection(self, gg, cloud):
-        mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size, finger_width=0.03, finger_length=0.125)
+        mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size, finger_width=0.03, finger_length=0.11)
         collision_mask = mfcdetector.detect(gg, approach_dist=0, collision_thresh=cfgs.collision_thresh)
         gg = gg[~collision_mask]
         return gg
@@ -457,7 +503,7 @@ class AnyGraspPipeline(Node):
     def vis_grasps(self, gg):
         gg.nms()
         gg.sort_by_score()
-        gg = gg[:50]
+        gg = gg[:1]
         grippers = gg.to_open3d_geometry_list()
         o3d.visualization.draw_geometries([self.storage, *grippers])
 

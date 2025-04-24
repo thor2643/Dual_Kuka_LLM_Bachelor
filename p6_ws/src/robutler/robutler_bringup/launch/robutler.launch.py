@@ -13,6 +13,12 @@ def generate_launch_description():
             executable='detector_service',
             #prefix=['gnome-terminal -- bash -c "ros2 run object_detector detector_service; exec bash"']
         ),
+
+        # GraspNet-Baseline service
+        Node(
+            package='graspnet',
+            executable='graspnet_service'
+        ),
         
         # 3F Gripper - Service
         Node(
