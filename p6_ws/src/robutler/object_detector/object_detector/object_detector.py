@@ -737,6 +737,10 @@ class ObjectDetector(Node):
                 # Grasp would penetrate the table → skip this one
                 continue
 
+            if  grasp_height > 0.15: # Grasp width too high
+                # Grasp width too big for grippers. Skip this one
+                continue
+
             # Add grasp to list [x, y, z, roll, pitch, yaw]
             grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
             count += 1
