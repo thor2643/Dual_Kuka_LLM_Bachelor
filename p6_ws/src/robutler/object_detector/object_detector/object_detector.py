@@ -737,7 +737,7 @@ class ObjectDetector(Node):
                 # Grasp would penetrate the table → skip this one
                 continue
 
-            if  grasp_height > 0.15: # Grasp width too high
+            if  grasp_width > 0.15: # Grasp width too high
                 # Grasp width too big for grippers. Skip this one
                 continue
 
