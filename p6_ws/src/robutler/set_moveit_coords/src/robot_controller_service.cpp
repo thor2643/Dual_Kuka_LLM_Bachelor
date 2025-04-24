@@ -185,7 +185,7 @@ private:
     // Create the box and set its dimensions
     shape_msgs::msg::SolidPrimitive box;
     box.type = shape_msgs::msg::SolidPrimitive::BOX;  
-    box.dimensions = { 1, 0.667, 1.2 };
+    box.dimensions = { 1.5, 1.2, 1.2 };
     box_constraint.constraint_region.primitives.emplace_back(box);
 
     // Set position of the box 

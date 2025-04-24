@@ -616,7 +616,6 @@ class LLMNode(Node):
 
                 R_gripper_moveit = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
                 T_gripper_moveit = self.convert_to_transformation_matrix(R_gripper_moveit, t_gripper_moveit)
-                self.get_logger().info("Succefully got gripper pose")
 
                 break
 
@@ -894,38 +893,47 @@ class LLMNode(Node):
 
                 self.objects_on_table[object_name] = {
                     'center_object': {
-                        'x': detected_obj.center_of_object.x,
-                        'y': detected_obj.center_of_object.y,
-                        'z': detected_obj.center_of_object.z
+                        'x': round(detected_obj.center_of_object.x,3),
+                        'y': round(detected_obj.center_of_object.y,3),
+                        'z': round(detected_obj.center_of_object.z,3)
                     },
                     'grasps': {}
                 }
 
                 for j, grasp in enumerate(detected_obj.grasps):
                     
-                   
-                    # rotate the grasp 90 degrees around the z-axis of the grasp
-
+                    ##### rotate the grasp 90 degrees around the z-axis of the grasp
+                    T_90z = np.eye(4)
                     # Define the rotation matrix for -90 degrees around the z-axis
                     R_90z = Rotation.from_euler('z', -90, degrees=True).as_matrix()
-                    # Define grasp rotation matrix from World to Grasp coordinates
+                    T_90z[:3, :3] = R_90z
+
                     R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
-                    R_new = R_W_G @ R_90z
-                    roll, pitch, yaw = Rotation.from_matrix(R_new).as_euler('xyz', degrees=True)
+                    pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
+                    T_W_G = np.eye(4)
+                    T_W_G[:3, :3] = R_W_G
+                    T_W_G[:3, 3] = pose
+                    if pose[2]>0.03: # if center point is more than 3 cm above the table 
+                        T_90z[2,3] = 0.02 # move the grasp point 2 cm into the object
+                    
+                    T_new = T_W_G @ T_90z
+                    pose_new = T_new[:3, 3]
+
+                    roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
                     roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
                     self.objects_on_table[object_name]['grasps'][f'grasp {j}'] = {
                         'center': {
-                            'x': grasp.position.x,
-                            'y': grasp.position.y,
-                            'z': grasp.position.z
+                            'x': round(pose_new[0],3),
+                            'y': round(pose_new[1],3),
+                            'z': round(pose_new[2],3)
                         },
                         'orientation': {
-                            'roll': roll,
-                            'pitch': pitch,
-                            'yaw': yaw
+                            'roll': round(roll,3),
+                            'pitch': round(pitch,3),
+                            'yaw': round(yaw,3)
                         },
-                        'width': grasp.grasp_width
+                        'width': round(grasp.grasp_width,3)
                     }
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 
