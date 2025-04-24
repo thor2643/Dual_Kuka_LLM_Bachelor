@@ -22,6 +22,7 @@ from utils.graph_states import ToolExecutionState
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain.tools.base import StructuredTool
+from langsmith import traceable
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
@@ -30,6 +31,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, Tool
 
 from IPython.display import Image, display
 from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeStyles
+
 
 # ROS 2 libraries and Node structure
 import rclpy
@@ -238,7 +240,7 @@ class LLMNode(Node):
         # Display the workflow graph using OpenCV
         graph_image_path = f"{self.conversation_log_folder}/workflow_graph_{self.current_time}.png"
         graph.draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API,
+            draw_method=MermaidDrawMethod.PYPPETEER,
             output_file_path=graph_image_path,
         )
 
@@ -374,6 +376,7 @@ class LLMNode(Node):
         self.cell_workflow.add_edge(START, "init_cell")
         self.cell_workflow.add_edge("init_cell", "execute_tool")
         self.cell_workflow.add_edge("execute_tool", "success_detector")
+
         self.cell_workflow.add_edge("success_detector", "detector_action")
 
         self.cell_workflow.add_conditional_edges(
@@ -381,9 +384,9 @@ class LLMNode(Node):
             # This means these are the edges taken after the `agent` node is called.
             "detector_action",
             # Next, we pass in the function that will determine which node is called next.
-            self.successful_task,
+            self.check_successful_task,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["error_corrector", "execute_tool"],
+            ["error_corrector", "execute_tool", END],
         )
 
         #TODO: Add a condition to check if the task was successful
@@ -395,13 +398,13 @@ class LLMNode(Node):
         self.cell_agent = self.cell_workflow.compile(checkpointer=self.cell_memory)
 
         # Comment in to save a png of the graph and show it
-        #"""
+        """
         graph = self.cell_agent.get_graph()
 
         # Display the workflow graph using OpenCV
         graph_image_path = f"{self.conversation_log_folder}/workflow_graph_{self.current_time}.png"
         graph.draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API,
+            draw_method=MermaidDrawMethod.PYPPETEER,
             output_file_path=graph_image_path,
         )
 
@@ -416,7 +419,7 @@ class LLMNode(Node):
                 self.get_logger().error("Failed to load the workflow graph image.")
         except ImportError:
             self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
-        #"""
+        """
 
         
 
@@ -784,11 +787,12 @@ class LLMNode(Node):
         return "action"
     
     # If a tool is to be called, the action node is called otherwise the agent node is called
-    def successful_task(self, state: MessagesState):
+    def check_successful_task(self, state: ToolExecutionState):
         """Determines whether the error corrector should be called or not."""
         self.get_logger().info("Checking if task was successful")
 
         tool = state["messages"][-1]
+        tools_available = state["tools_left"] # Check if there are any tools left
 
         # Check if the model has called the "detected_failure" or "detected_success" function
         if tool.name == "detected_failure":
@@ -796,7 +800,11 @@ class LLMNode(Node):
             return "error_corrector"
         elif tool.name == "detected_success":
             self.get_logger().info("Detected success")
-            return "execute_tool"
+
+            if tools_available:
+                return "execute_tool"
+            else: 
+                return END
  
         # If no relevant function call, finish
         return END
@@ -924,9 +932,9 @@ class LLMNode(Node):
 
         return state
     
+    @traceable
     def execute_tool(self, state: ToolExecutionState):
         # Get the tool call details from the state
-        print("state", state)
         tool_call_key = list(state["tools_left"].keys())[0]
         tool_call = state["tools_left"][tool_call_key]
 
