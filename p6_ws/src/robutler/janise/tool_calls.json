@@ -1,0 +1,59 @@
+{ 
+    "function_call_1": {
+        "function_name": "get_available_objects",
+        "args": {}
+    },
+    
+    "function_call_2": {
+        "function_name": "find_object",
+        "args": {
+            "object_name": "red_brick"
+        },
+        "return_values": {
+            "object_found": true,
+            "object_pose": [0.4, 0.3, 0.01, 180, 0, 0]
+        }
+    },
+    "function_call_3": {
+        "function_name": "plan_robot_trajectory",
+        "args": {
+            "pose": [0.4, 0.3, 0.01, 180, 0, 0],
+            "arm": "right"
+        }
+    },
+    "function_call_4": {
+        "function_name": "execute_planned_trajectory",
+        "args": {
+            "arm": "right"
+        }
+    },
+    "function_call_5": {
+        "function_name": "manipulate_right_gripper",
+        "args": {
+            "width": 0
+        }
+    },
+    "function_call_6": {
+        "function_name": "get_predefined_locations_and_poses",
+        "args": {}
+    },
+    "function_call_7": {
+        "function_name": "plan_robot_trajectory",
+        "args": {
+            "pose": [0.1, 0.1, 0.2, 0, 0, 0],
+            "arm": "right"
+        }
+    },
+    "function_call_8": {
+        "function_name": "execute_planned_trajectory",
+        "args": {
+            "arm": "right"
+        }
+    },
+    "function_call_9": {
+        "function_name": "manipulate_right_gripper",
+        "args": {
+            "width": 155
+        }
+    }
+}
