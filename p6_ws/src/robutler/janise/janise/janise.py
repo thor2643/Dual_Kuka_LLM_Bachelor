@@ -203,10 +203,13 @@ class LLMNode(Node):
         self.sim_workflow.add_node("Janise", self.model_Janise)
         self.sim_workflow.add_node("action", self.tool_node)
         self.sim_workflow.add_node("Socrates", self.model_Socrates)
+        self.sim_workflow.add_node("sim_Success_Detector", self.model_sim_Success_Detector)
 
         # Set the entrypoint as `Janise`
         # This means that this node is the first one called
-        # self.sim_workflow.add_edge(START, "Janise")
+        #self.sim_workflow.add_edge(START, "Janise")
+        #self.sim_workflow.add_edge("Janise",END)
+
         self.sim_workflow.add_edge(START, "Socrates")
         self.sim_workflow.add_edge("Socrates", "Janise")
 
@@ -217,12 +220,21 @@ class LLMNode(Node):
             # This means these are the edges taken after the `Janise` node is called.
             "Janise",
             # Next, we pass in the function that will determine which node is called next.
-            self.should_continue,
+            self.sim_should_continue,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["action", END],
+            ["action", "sim_Success_Detector"],
         )
+
+        self.sim_workflow.add_conditional_edges(        
+            "sim_Success_Detector",
+            # The function that will determine which node is called next.
+            self.sim_task_success,
+            # Path map - all the possible nodes this edge could go to
+            ["Socrates", END],
+        )
+
         #TODO: Replace END with Task success detector 
-        #Then task success determine 
+        #Then task success determine Socrates
         # Error explainer
         
         # We now add a normal edge from `tools` to `Socrates`.
@@ -351,6 +363,8 @@ class LLMNode(Node):
 
                                                                 Also apply your guidance in the context of the user request. You are to ensure that the overarching goal is not forgotten.
                                                                 """)
+        
+        self.initial_prompt_sim_Success_Detector = SystemMessage(content = """You are a task success judge. You will be provided an image and you are to determine if the given task is completed or not.""")
         
         # Append the initial prompt to the message state
         self.sim_workflow_manager.update_state(self.sim_config, {"messages": self.initial_prompt})
@@ -771,14 +785,27 @@ class LLMNode(Node):
     #######################################################################################
 
     # If a tool is to be called, the action node is called otherwise the Janise node is called
-    def should_continue(self, state: MessagesState):
+    def sim_should_continue(self, state: MessagesState):
         """Return the next node to execute."""
         last_message = state["messages"][-1]
         # If there is no function call, then we finish
         if not last_message.tool_calls:
+            return "sim_Success_Detector"
+        # Otherwise if there is, we continue
+        return "action"
+    
+    def sim_task_success(self, state: MessagesState):
+        """Switch to real system if the success detector says so, otherwise reset."""
+        last_message = state["messages"][-1]
+        # If there is no function call, then we finish
+        if not last_message.tool_calls:
+
+            #TODO: Switch from sim to real
+
             return END
         # Otherwise if there is, we continue
         return "action"
+    
     
     # If a tool is to be called, the action node is called otherwise the Janise node is called
     def successful_task(self, state: MessagesState):
@@ -848,6 +875,7 @@ class LLMNode(Node):
         return {"messages": response}
     
     def model_Socrates(self, state: MessagesState):
+
         # We append an image to the CoT message
         #image_path = "image.jpg"
 
@@ -891,6 +919,39 @@ class LLMNode(Node):
 
         # We return a list, because this will get added to the existing list
         return {"messages": response_human}
+    
+    def model_sim_Success_Detector(self, state_shortened: MessagesState):
+    
+        original_image = cv2.imread("/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/sample_image.jpg")
+
+        #original_image = self.color_img
+        resized_image = cv2.resize(original_image, (524, 524))  
+       
+        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
+        cv2.imwrite(resized_image_path, resized_image)
+    
+        # Encode the resized image
+        image = self.encode_image(resized_image_path)
+
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": """Here is an image of the workspace.
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        state_shortened = {"messages": [self.initial_prompt_sim_Success_Detector]}
+        state_shortened["messages"].append(message)
+        
+        response = self.bound_model.invoke(state_shortened["messages"])
+       
+        response.name = "sim_Success_Detector"
+
+        return {"messages": response}
     
 
     ########################################################################################
@@ -1475,13 +1536,13 @@ class LLMNode(Node):
     def sim_system(self,request, response):
         """ Generates the tool list uisng Isaac Sim """
 
-        content = request.message  # prompt is a string
+        # If the user wants to clear the history, do so
+        #content = request.message  
+
         content="End the loop immediately"
 
         for event in self.sim_workflow_manager.stream({"messages": [HumanMessage(content)]}, self.sim_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
-
-    
 
         # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #
 
