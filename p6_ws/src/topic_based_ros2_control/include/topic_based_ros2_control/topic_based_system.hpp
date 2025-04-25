@@ -62,6 +62,7 @@ public:
   std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
 
   CallbackReturn on_deactivate(const rclcpp_lifecycle::State &previous_state) override;
+  CallbackReturn on_activate(const rclcpp_lifecycle::State &previous_state) override;
 
   hardware_interface::return_type read(const rclcpp::Time& time, const rclcpp::Duration& period) override;
 
@@ -73,6 +74,8 @@ private:
   rclcpp::Node::SharedPtr node_;
   sensor_msgs::msg::JointState latest_joint_state_;
   bool sum_wrapped_joint_states_{ false };
+
+  bool active = true;
 
   /// Use standard interfaces for joints because they are relevant for dynamic behavior
   std::array<std::string, 4> standard_interfaces_ = { hardware_interface::HW_IF_POSITION,

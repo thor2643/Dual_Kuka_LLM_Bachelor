@@ -218,6 +218,17 @@ def invert_transformation_matrix(T):
 
 t_matrices = []
 
+pose = [0.4035, 0.696, 1.2294, 1]
+orientation = [-0.28212, -0.29803, -0.60919, 0.67859]
+
+# Convert from quaternions to roll pitch yaw
+roll, pitch, yaw = quaternion_to_euler_angle(*orientation)
+new_pose = np.dot(invert_transformation_matrix(T_world_moveit), np.array(pose).T).T
+
+print(f"Roll: {roll}, Pitch: {pitch}, Yaw: {yaw}")
+print(f"New pose: {new_pose}")
+
+
 # Convert and print transformation matrices for DANIILIDIS and PARK
 for key, value in trasnform.items():
     for depth_key, depth_value in value.items():
