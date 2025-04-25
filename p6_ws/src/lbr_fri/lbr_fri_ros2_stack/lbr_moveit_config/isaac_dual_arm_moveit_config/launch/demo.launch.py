@@ -22,7 +22,8 @@ def generate_launch_description():
     package_path_cont = get_package_share_directory('isaac_dual_arm_moveit_config')
     
     xacro_file = os.path.join(package_path_xacro, 'urdf', 'isaac_dual_arm', 'isaac_dual_arm.xacro')
-    controllers_yaml = os.path.join(package_path_cont, 'config', 'ros2_controllers.yaml')
+    
+    #controllers_yaml = os.path.join(package_path_cont, 'config', 'ros2_controllers.yaml')
     
     # Process the xacro file
     doc = xacro.parse(open(xacro_file))
@@ -38,42 +39,8 @@ def generate_launch_description():
         parameters=[robot_description]
     )
     
-    load_joint_state_broadcaster = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'joint_state_broadcaster'],
-        output='screen'
-    )
-    
-    load_joint_trajectory_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'right_arm_controller'],
-        output='screen'
-    )
-    
-    load_joint_trajectory_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'left_arm_controller'],
-        output='screen'
-    )
-    
-    load_joint_position_controller = ExecuteProcess(
-        cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-             'forward_position_controller'],
-        output='screen'
-    )
-    
-    controller_manager_node = Node(
-        package='controller_manager',
-        executable='ros2_control_node',
-        output='screen',
-        parameters=[robot_description, controllers_yaml, {'use_sim_time': True}],
-        remappings=[('/tf', 'tf'), ('/tf_static', 'tf_static')]
-    )
-    
     moveit_config = MoveItConfigsBuilder("isaac_dual_arm", package_name="isaac_dual_arm_moveit_config").to_moveit_configs()
-    
-    node_robot_state_publisher
-    
+        
     return generate_demo_launch(moveit_config)
     
     

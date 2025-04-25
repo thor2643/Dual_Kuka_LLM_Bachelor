@@ -6,6 +6,8 @@ moveit_simple_controller_manager:
   controller_names:
     - right_arm_controller
     - left_arm_controller
+    - threef_gripper_controller
+    - twof_gripper_controller
 
   right_arm_controller:
     type: FollowJointTrajectory
@@ -33,5 +35,31 @@ moveit_simple_controller_manager:
       - left_A5
       - left_A6
       - left_A7
+    action_ns: follow_joint_trajectory
+    default: true
+  threef_gripper_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - a_3f_finger_1_joint_1
+      - a_3f_finger_1_joint_2
+      - a_3f_finger_1_joint_3
+      - a_3f_finger_2_joint_1
+      - a_3f_finger_2_joint_2
+      - a_3f_finger_2_joint_3
+      - a_3f_finger_middle_joint_1
+      - a_3f_finger_middle_joint_2
+      - a_3f_finger_middle_joint_3
+      - a_3f_palm_finger_1_joint
+      - a_3f_palm_finger_2_joint
+    action_ns: follow_joint_trajectory
+    default: true
+  twof_gripper_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - left_2f_robotiq_85_left_knuckle_joint
     action_ns: follow_joint_trajectory
     default: true

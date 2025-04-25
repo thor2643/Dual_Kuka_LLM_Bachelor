@@ -19,7 +19,7 @@ def generate_launch_description():
             package='robotiq_3f_gripper_ros2_control',
             executable='gripper_control_service_server'
         ),
-        
+         
         # 2F Gripper - Service
         Node(
             package='robotiq_2f_85_control',

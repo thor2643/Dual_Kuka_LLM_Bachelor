@@ -14,6 +14,7 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation 
 import math
+import time
 
 # Internal modules
 from utils.graph_states import ToolExecutionState
@@ -47,9 +48,13 @@ from project_interfaces.srv import PlanMoveCommand
 from project_interfaces.srv import ExecuteMoveCommand
 from project_interfaces.srv import PromptJanice
 from project_interfaces.srv import GetCurrentPose
+from project_interfaces.srv import GripperMoveit
+from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
+from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
+from project_interfaces.srv import GetSimCameraData
 from geometry_msgs.msg import TransformStamped
 from sensor_msgs.msg import Image
 
@@ -72,14 +77,14 @@ class LLMNode(Node):
         self._2f_client = self.create_client(Robotiq2F85GripperCommand, 'gripper_2f_service', callback_group=client_cb_group)
         self._2f_req = Robotiq2F85GripperCommand.Request()
 
+        # Moveit gripper client
+        self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
+        self._gripper_req = GripperMoveit.Request()
+
         #Object detector service client
         self.detector_client = self.create_client(GetObjectInfo, 'get_object_info', callback_group=client_cb_group)
         self.detector_req = GetObjectInfo.Request()
         self.objects_on_table = {}
-
-        self.detector_client_yolo = self.create_client(GetObjectInfo, 'get_object_info_yolo', callback_group=client_cb_group)
-        self.detector_req_yolo = GetObjectInfo.Request()
-        self.objects_on_table_yolo = {}
 
         self.get_image_client = self.create_client(GetImage, 'get_image_from_rviz')
         self.get_image_req = GetImage.Request()
@@ -92,9 +97,14 @@ class LLMNode(Node):
             10  # Queue size
         )
 
+        # Create a service client for the simulated camera data
+        self.sim_cam_client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
+        self.sim_cam_req = GetSimCameraData.Request()
+
         self.bridge = CvBridge()
         self.color_img = None
-        
+        self.use_sim = False
+
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
         self.robot_plan_req = PlanMoveCommand.Request()
@@ -124,7 +134,6 @@ class LLMNode(Node):
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
         self.get_logger().info(f"Current time and date: {self.current_time}")
 
-        self.object_file = 'src/robutler/object_detector/object_detector/lego_bricks_config.json'
         self.conversation_log_folder = 'src/robutler/janise/resource/conversation_logs'
         self.conversation_log_file = self.conversation_log_folder + f'/{self.current_time}.json'
 
@@ -139,28 +148,21 @@ class LLMNode(Node):
                 pass
         """
 
-        self.lego_bricks = {}
-
-        with open(self.object_file, 'r') as file:
-            self.lego_bricks = json.load(file)
-
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'}
+            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
+            'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'},
         }
 
         # Define the tools available to the LLM
         self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
-                      StructuredTool.from_function(self.find_object), 
-                      StructuredTool.from_function(self.get_available_objects), 
-                      StructuredTool.from_function(self.find_object_yolo), 
-                      StructuredTool.from_function(self.plan_robot_trajectory), 
-                      StructuredTool.from_function(self.execute_planned_trajectory), 
+                      StructuredTool.from_function(self.find_object),
                       StructuredTool.from_function(self.manipulate_right_gripper), 
                       StructuredTool.from_function(self.manipulate_left_gripper), 
-                      StructuredTool.from_function(self.get_current_pose), 
-                      StructuredTool.from_function(self.stop_message_looping)]
+                      #StructuredTool.from_function(self.get_current_pose), TODO: fix function in robot controller service
+                      StructuredTool.from_function(self.move_to_pose),
+                      StructuredTool.from_function(self.pick_up_object)]
         
         self.task_detector_tools = [StructuredTool.from_function(self.detected_failure), 
                                    StructuredTool.from_function(self.detected_success)]
@@ -287,12 +289,14 @@ class LLMNode(Node):
             - Before you are to make decisions, another agent named Socrates will provide you with insights and guidance to ensure that the correct actions are taken. You should always consider the suggestions made by Socrates before making a decision.
             - If not specified by the user, use the left arm for operations on the left side and use the right arm for operations on the right side.
             - Perform steps in an appropriate order e.g. move arm to object before closing gripper and plan trajectory before executing it.
+            - Never manipulate the grippers before the arms are moved to the desired position!! 
+            - Close the gripper to 0 and not grasp_width for the object you must grasp.
             - Safety is of utmost importance, so when in doubt always consult the user first. Especially for actions that move the robot.
                   
         """)
 
         self.initial_prompt = [
-            self.initial_prompt_Janise,
+            self.initial_prompt_Janise, #TODO get_available_objects does not ecxist anymore
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                       name = "Socrates"),
@@ -626,7 +630,7 @@ class LLMNode(Node):
                 'width': 85,
             },
             'right_gripper': {
-                'width': 167,
+                'width': 167, # 167 before but thats wrong
             },
             'services_unavailable': None,
         }
@@ -700,9 +704,9 @@ class LLMNode(Node):
     def get_cam2world_transform(self):
         """Get the transformation matrix from camera to gripper coordinates."""
         T_cam_gripper = np.array([
-            [-0.0917179, -0.99558678, 0.01986943, 0.09246569],
-            [-0.99558723, 0.09128373, -0.02175657, 0.02742328],
-            [0.0198468, -0.02177722, -0.99956583, 0.1631206],
+            [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
+            [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
+            [0.0196773, 0.00130301, -0.99980553, 0.15210002],
             [0.0, 0.0, 0.0, 1.0]
         ])
 
@@ -731,7 +735,6 @@ class LLMNode(Node):
 
                 R_gripper_moveit = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
                 T_gripper_moveit = self.convert_to_transformation_matrix(R_gripper_moveit, t_gripper_moveit)
-                self.get_logger().info("Succefully got gripper pose")
 
                 break
 
@@ -771,6 +774,107 @@ class LLMNode(Node):
         else:
             self.get_logger().error("Failed to retrieve image from RViz")
             return None
+        
+    def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
+        """
+        Plans a robot trajectory to a specified pose for a given arm. The planned trajectory is simulated 
+        and visualized for the user. The trajectory can later be executed using the execute_planned_trajectory method.
+
+        Args:
+            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
+                         The first three numbers correspond to the x, y, z position in meters, and the last 
+                         three numbers represent the roll, pitch, and yaw angles in degrees.
+            arm (str): Specifies which arm to plan the trajectory for. Must be either 'left' or 'right'.
+
+        Returns:
+            PlanMoveCommand.Response: The response from the robot planning service, containing the result 
+                                      of the trajectory planning process.
+        Raises:
+            ValueError: If the provided arm argument is not 'left' or 'right'.
+            TimeoutError: If the planning service does not respond within the specified timeout period.
+
+        Notes:
+            - The function uses pre-calibrated transformation matrices to convert the pose from world 
+              coordinates to MoveIt coordinates, depending on the selected arm.
+            - The pose's orientation in roll, pitch, and yaw is converted to a quaternion format before 
+              being sent to the planning service.
+            - The function waits asynchronously for the planning service to respond, with a timeout of 75 seconds.
+        """
+
+        if arm == 'right':
+            # Calibrated transformation matrix from world to moveit coordinates based on right arm
+            T_world_moveit = np.array([ [ 0.99998383, -0.00168775,  0.00543034, -0.03063849],
+                                        [ 0.00168078,  0.99999776,  0.00128864, -0.02827154],
+                                        [-0.00543251, -0.00127949,  0.99998443,  0.8001058 ],
+                                        [ 0.0,         0.0,         0.0,         1.0,      ] ])
+            
+        if arm == 'left':
+            # Calibrated transformation matrix from world to moveit coordinates based on left arm
+            T_world_moveit = np.array([ [ 0.99993911, -0.01089373,  0.00176324, -0.02348162],
+                                        [ 0.01089142,  0.99993982,  0.00131455, -0.03821792],
+                                        [-0.00177746, -0.00129526,  0.99999758,  0.80140745],
+                                        [ 0.0,         0.0,         0.0,         1.0       ] ])
+            
+        
+        # Extract the position from the pose and append 1 to make it a 4D vector
+        pos_world = pose[:3]
+        pos_world.append(1)
+
+        # Transform the position from camera to world coordinates
+        #pos_world = np.dot(T_world_cam, pos_cam)
+        pos_moveit = np.dot(T_world_moveit, pos_world)
+
+        rpy_world = pose[3:]
+        quat_moveit = self.euler_to_quat(rpy_world)
+
+        self.robot_plan_req.arm = arm
+        self.robot_plan_req.position.x = float(pos_moveit[0])
+        self.robot_plan_req.position.y = float(pos_moveit[1])
+        self.robot_plan_req.position.z = float(pos_moveit[2])
+        self.robot_plan_req.orientation.x = float(quat_moveit[1])
+        self.robot_plan_req.orientation.y = float(quat_moveit[2])
+        self.robot_plan_req.orientation.z = float(quat_moveit[3])
+        self.robot_plan_req.orientation.w = float(quat_moveit[0])
+
+        # Call the service asynchronously
+        future = self.robot_plan_client.call_async(self.robot_plan_req)
+
+        # Wait for the result
+        response = self.wait_future(future, timeout=75)
+        return response
+
+    def execute_planned_trajectory(self, arm: str) -> ExecuteMoveCommand.Response:
+        """
+        Executes a planned trajectory on the specified arm of the physical robot.
+
+        This function sends a request to execute a trajectory that has been planned 
+        using the `plan_robot_trajectory` function. It is important to ensure that 
+        the `plan_robot_trajectory` function has been called prior to invoking this 
+        function, as it relies on the trajectory data generated by the planning step.
+
+        Args:
+            arm (str): The identifier of the robot arm on which the trajectory 
+                       should be executed (e.g., "left_arm" or "right_arm").
+
+        Returns:
+            ExecuteMoveCommand.Response: The response object containing the result 
+                                         of the execution request, including success 
+                                         status and any relevant feedback.
+
+        Raises:
+            TimeoutError: If the execution request does not complete within the 
+                          specified timeout period (90 seconds).
+        """
+
+        self.robot_execute_req.arm = arm
+
+        future = self.robot_execute_client.call_async(self.robot_execute_req)
+
+        # Wait for the result
+        response = self.wait_future(future, timeout=90)
+
+        return response
+
 
     #######################################################################################
     # ------------------------------ LANGGRAPH FUNCTIONS -------------------------------- #
@@ -873,7 +977,32 @@ class LLMNode(Node):
         # Resize the image to 524x524
         # Change this to get the actual image from the camera
         #original_image = cv2.imread(image_path)
-        original_image = self.color_img
+        if self.use_sim:
+            for i in range(5):
+                request = GetSimCameraData.Request()
+                future = self.sim_cam_client.call_async(request)
+
+                # Wait for the result
+                response = self.wait_future(future, timeout=10)
+
+                if response is not None:
+                    response = future.result()
+
+                    color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
+                    self.color_img_sim = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
+                    original_image = self.color_img_sim
+                else:
+                    if i == 4:
+                        self.get_logger().error("Failed to retrieve image from simulated camera after multiple attempts")
+                        original_image = cv2.imread("resized_image.jpg")
+                    else:
+                        self.get_logger().info("Retrying to get simulated camera data...")
+                        rclpy.spin_once(self, timeout_sec=0.1)
+                        continue
+
+        else:
+            original_image = self.color_img
+
         resized_image = cv2.resize(original_image, (524, 524))
         
         #resized_image_path = "resized_image.jpg"
@@ -1011,21 +1140,6 @@ class LLMNode(Node):
         print("\nMessage looping has been disabled.")
 
         return "Message looping has been disabled."  
-    
-    #@tool
-    def get_available_objects(self) -> list:
-        """
-        Retrieves a list of predefined objects with associated thresholds.
-
-        This function returns a list of object names that have predefined thresholds 
-        and can be identified by the `find_object` function. It does not indicate 
-        the presence of these objects in the workspace but serves as a reference 
-        for valid object names that can be passed as parameters to `find_object`.
-
-        Returns:
-            list: A list of object names with predefined thresholds.
-        """
-        return list(self.lego_bricks.keys())
 
     #@tool
     def get_predefined_locations_and_poses(self) -> dict:
@@ -1043,274 +1157,269 @@ class LLMNode(Node):
 
         return self.coordinates
 
-    #@tool
+    #@tool   
     def find_object(self, object_name: str) -> GetObjectInfo.Response:
         """
-        Finds an object in the environment using the object detector service.
-        This function communicates with an object detection service to locate a specified object 
-        in the environment. It retrieves information about the object's position, orientation, 
-        and grasping width, and transforms the detected coordinates from the camera frame to 
-        the world frame using a calibrated transformation matrix. The detected objects are stored 
-        in a dictionary with unique names.
+        Uses the object detection service to locate and retrieve grasp poses for a specified object, 
+        or if none of the specified object is found returns possible objects and thier center points.
+
+        This method sends a service request to the object detector, providing the object name and a 4x4 transformation
+        matrix (flattened) to convert camera coordinates to world coordinates.
+         
+        It receives a structured response containing detected objects with their 3D center points and possible grasp poses 
+        (grasps only if the object was found). These are stored in a structured dictionary for easy access.
 
         Args:
-            object_name (str): The name of the object to be located.
+            object_name (str): The name of the object to search for (e.g., "bottle", "book").
 
-        Returns:
-            GetObjectInfo.Response: A response object containing information about the detected 
-            objects. If no objects are found or the service call fails, an empty response is returned.
+        Service returns:
+            GetObjectInfo.Response: A response object that includes the number of detected objects and their grasp details.
+            (objects found, center of object, 6D pose, grasp with). If no object is found, it returns the possible objects and their center points. 
+
+        Function returns:
+            -`self.objects_on_table` with structured grasp information in the following format:
+            {
+                'object_name i': {
+                    'center_object': {x, y, z},
+                    'grasps': {
+                        'grasp j': {
+                            'center': {x, y, z},
+                            'orientation': {roll, pitch, yaw},
+                            'width': float
+                        },
+                        ...
+                    }
+                },
+                ...
+            }
 
         Notes:
-            - The function clears the `objects_on_table` dictionary before adding new objects.
-            - The transformation matrix `T_world_cam` is hardcoded and should be calibrated for 
-              the specific setup.
-            - If multiple objects with the same name are detected, unique names are generated 
-              by appending an index to the original name.
-            - The function waits for the service call to complete with a timeout of 15 seconds.
+            - Grasp orientation is stored in degrees (roll, pitch, yaw).
+            - Each object is given a unique name (e.g., "bottle 0", "bottle 1") to avoid conflicts.
+            - Requires the object detection service to be available and responsive.
         """
+        
+        self.get_logger().info(f"\Requesting the Object detector service to find grasps for: {object_name}\n")
 
-        print(f"\nRequesting the detector service to find {object_name}")  # Debugging
-        self.get_logger().info(f"\nLooking for object: {object_name}\n")
+        # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
+
+        # Set the use_sim flag based on the current mode
+        self.detector_req.use_sim = self.use_sim
+        T = self.get_cam2world_transform()
+        transform_msg = TransformMatrix()
+        transform_msg.matrix = T.flatten().tolist()
+        self.detector_req.transform = transform_msg
 
         future = self.detector_client.call_async(self.detector_req)
 
-        self.objects_on_table.clear() # Clear the dictionary before adding new objects (temporary solution)
-
         # Wait for the result
-        response = self.wait_future(future, timeout=15)
+        response = self.wait_future(future, timeout=125)
 
-        print("The service call has been completed.")  # Debugging
-
+        # Check if the response is valid or if it timeouted
         if response is None:
-            self.get_logger().error('Service call failed')
-            return GetObjectInfo.Response()
+            self.get_logger().error("Failed to retrieve object detection response")
+            return None
 
-        if response.object_count != 0:
-            self.get_logger().info(f"\nObjects found: {response.object_count}")
-            self.get_logger().info(f"Center points: {response.centers}")
-            self.get_logger().info(f"Object orientations: {response.orientations}")
-            self.get_logger().info(f"Grasping widths: {response.grasp_widths}\n")
+        self.get_logger().info(f"\nObjects found: {response.object_count}\n")
 
-            # Calibrated transformation matrix from coordinates to camera world
-            #T_cam_world = np.array([[ 0.9998524,  -0.00382788,  0.01674907,  0.48649258],
-            #                        [ 0.00545733, -0.85361904, -0.52086923,  0.78510204],
-            #                        [ 0.01629115,  0.52088376, -0.85347215,  0.70742285],
-            #                        [ 0.0,          0.0,          0.0,          1.0, ]])
-            
-            T_cam_world = self.get_cam2world_transform()
-            
-            # Extract the position from the pose and append 1 to make it a 4D vector
-            center_pts = []
-            for point in response.centers:
-                center_pts.append([point.x, point.y, point.z, 1])
+        # For case where no object is found
+        if response.object_count == 0:
+            self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
+            for i, detected_obj in enumerate(response.detected_objects):
+                object_name = detected_obj.name
 
-            # Transform the position from camera to world coordinates
-            center_pts_world = np.dot(T_cam_world, np.array(center_pts).T).T
-
-            # Save the object information in a dictionary
-            for i, center in enumerate(center_pts_world):
-                # Make sure the object name is unique
-                object_name_temp = object_name
-                count = 1
-                while object_name_temp in self.objects_on_table:
-                    object_name_temp = f"{object_name}_{count}"
-                    count += 1
-
-                self.objects_on_table[object_name_temp] = {
-                    'center': center.tolist()[0:3],
-                    'orientation': response.orientations[i],
-                    'grasp_width': response.grasp_widths[i]
+                self.objects_on_table[object_name] = {
+                    'center_object': {
+                        'x': detected_obj.center_of_object.x,
+                        'y': detected_obj.center_of_object.y,
+                        'z': detected_obj.center_of_object.z
+                    }
                 }
-
-            return self.objects_on_table
+        # For case where object is found
         else:
-            self.get_logger().error('No objects found')
-            return GetObjectInfo.Response()
+            self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
 
-    #@tool   
-    def find_object_yolo(self, object_name: str) -> GetObjectInfo.Response:
-        """
-        Uses the YoloWorld object detection service to locate a specified object in the environment.
-        This function interacts with the YoloWorld detector service to identify the specified object 
-        and retrieve its details, including its Cartesian center point, orientation, and grasping width. 
-        If the object is found, its position is transformed from camera coordinates to world coordinates 
-        using a calibrated transformation matrix. The detected objects are stored in a dictionary with 
-        unique names to avoid conflicts.
+            self.objects_on_table = {}  # Reset table
 
-        Args:
-            object_name (str): The name of the object to locate.
+            for i, detected_obj in enumerate(response.detected_objects):
+                object_name = detected_obj.name
 
-        Returns:
-            GetObjectInfo.Response: A response object containing the details of the detected objects. 
-            If no objects are found or the service call fails, an empty response is returned.
-
-        Raises:
-            None
-
-        Notes:
-            - The function waits for the YoloWorld service call to complete with a timeout of 40 seconds.
-            - If multiple objects with the same name are detected, unique names are generated by appending 
-              an incrementing number to the object name.
-            - The transformation matrix `T_world_cam` is hardcoded and used to convert coordinates from 
-              the camera frame to the world frame.
-            - Detected objects are stored in the `self.objects_on_table_yolo` dictionary with their 
-              transformed center points, orientations, and grasp widths.
-        """
-        
-        print(f"\nRequesting the YoloWorld detector service to find {object_name}")
-        self.get_logger().info(f"\nLooking for object: {object_name}\n")
-        self.detector_req_yolo.object_name = object_name
-
-        future = self.detector_client_yolo.call_async(self.detector_req_yolo)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=40)
-
-        print("The service call has been completed.")  # Debugging
-
-        if response is None:
-            self.get_logger().error('Service call failed')
-            return GetObjectInfo.Response()
-        
-        if response.object_count != 0:
-            self.get_logger().info(f"\nObjects found: {response.object_count}")
-            self.get_logger().info(f"Center points: {response.centers}")
-            self.get_logger().info(f"Object orientations: {response.orientations}")
-            self.get_logger().info(f"Grasping widths: {response.grasp_widths}\n")
-
-            # Calibrated transformation matrix from coordinates to camera world
-            T_world_cam = np.array([[ 0.9998524,  -0.00382788,  0.01674907,  0.48649258],
-                                    [ 0.00545733, -0.85361904, -0.52086923,  0.78510204],
-                                    [ 0.01629115,  0.52088376, -0.85347215,  0.70742285],
-                                    [ 0.0,          0.0,          0.0,          1.0, ]])
-            
-            # Extract the position from the pose and append 1 to make it a 4D vector
-            center_pts = []
-            for point in response.centers:
-                center_pts.append([point.x, point.y, point.z, 1])
-
-            # Transform the position from camera to world coordinates
-            center_pts_world = np.dot(T_world_cam, np.array(center_pts).T).T
-
-            # Save the object information in a dictionary
-            for i, center in enumerate(center_pts_world):
-                # Make sure the object name is unique
-                object_name_temp = object_name
-                count = 1
-                while object_name_temp in self.objects_on_table_yolo:
-                    object_name_temp = f"{object_name}_{count}"
-                    count += 1
-
-                self.objects_on_table_yolo[object_name_temp] = {
-                    'center': center.tolist()[0:3],
-                    'orientation': response.orientations[i],
-                    'grasp_width': response.grasp_widths[i]
+                self.objects_on_table[object_name] = {
+                    'center_object': {
+                        'x': round(detected_obj.center_of_object.x,3),
+                        'y': round(detected_obj.center_of_object.y,3),
+                        'z': round(detected_obj.center_of_object.z,3)
+                    },
+                    'grasps': {}
                 }
 
-            return self.objects_on_table_yolo
+                for j, grasp in enumerate(detected_obj.grasps):
+                    
+                    ##### rotate the grasp 90 degrees around the z-axis of the grasp
+                    T_90z = np.eye(4)
+                    # Define the rotation matrix for -90 degrees around the z-axis
+                    R_90z = Rotation.from_euler('z', -90, degrees=True).as_matrix()
+                    T_90z[:3, :3] = R_90z
+
+                    R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
+                    pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
+                    T_W_G = np.eye(4)
+                    T_W_G[:3, :3] = R_W_G
+                    T_W_G[:3, 3] = pose
+                    if pose[2]>0.03: # if center point is more than 3 cm above the table 
+                        T_90z[2,3] = 0.02 # move the grasp point 2 cm into the object
+                    
+                    T_new = T_W_G @ T_90z
+                    pose_new = T_new[:3, 3]
+
+                    roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
+                    roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
+
+                    self.objects_on_table[object_name]['grasps'][f'grasp {j}'] = {
+                        'center': {
+                            'x': round(pose_new[0],3),
+                            'y': round(pose_new[1],3),
+                            'z': round(pose_new[2],3)
+                        },
+                        'orientation': {
+                            'roll': round(roll,3),
+                            'pitch': round(pitch,3),
+                            'yaw': round(yaw,3)
+                        },
+                        'width': round(grasp.grasp_width,3)
+                    }
+        print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
+
+        return self.objects_on_table
+
+    def flip_if_near_180(self, angle_deg):
+        """
+        If angle is near ±180, flip it to the equivalent small negative or positive.
+        Assumes input is already in [-180, 180)
+        """
+        if angle_deg > 90:
+            return angle_deg - 180
+        elif angle_deg < -90:
+            return angle_deg + 180
+        return angle_deg
 
     #@tool
-    def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
+    def pick_up_object(self, pose: list, arm: str, object_width: int=0) -> bool:
         """
-        Plans a robot trajectory to a specified pose for a given arm. The planned trajectory is simulated 
-        and visualized for the user. The trajectory can later be executed using the execute_planned_trajectory method.
-
+        Picks up an object by planning and executing a trajectory and closing the gripper.
         Args:
-            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
-                         The first three numbers correspond to the x, y, z position in meters, and the last 
-                         three numbers represent the roll, pitch, and yaw angles in degrees.
-            arm (str): Specifies which arm to plan the trajectory for. Must be either 'left' or 'right'.
-
+            pose (list): Target pose for the robot arm.
+            arm (str): Specifies which arm to use ('left' or 'right').
+            object_width (int, optional): Width of the object to grip in millimeters. Defaults to 0 mm.
         Returns:
-            PlanMoveCommand.Response: The response from the robot planning service, containing the result 
-                                      of the trajectory planning process.
-        Raises:
-            ValueError: If the provided arm argument is not 'left' or 'right'.
-            TimeoutError: If the planning service does not respond within the specified timeout period.
-
-        Notes:
-            - The function uses pre-calibrated transformation matrices to convert the pose from world 
-              coordinates to MoveIt coordinates, depending on the selected arm.
-            - The pose's orientation in roll, pitch, and yaw is converted to a quaternion format before 
-              being sent to the planning service.
-            - The function waits asynchronously for the planning service to respond, with a timeout of 75 seconds.
+            bool: True if the object was successfully picked up, False otherwise.
         """
+        # First we calculate the approach pose
+        T_approach = np.eye(4)
+        T_approach[2, 3] = 0.05 # Place approach 5 cm along grasp z-axis
 
-        if arm == 'right':
-            # Calibrated transformation matrix from world to moveit coordinates based on right arm
-            T_world_moveit = np.array([ [ 0.99998383, -0.00168775,  0.00543034, -0.03063849],
-                                        [ 0.00168078,  0.99999776,  0.00128864, -0.02827154],
-                                        [-0.00543251, -0.00127949,  0.99998443,  0.8001058 ],
-                                        [ 0.0,         0.0,         0.0,         1.0,      ] ])
-            
+        R_pose = Rotation.from_euler('xyz', [pose[3], pose[4], pose[5]], degrees=True).as_matrix()
+        T_pose = np.eye(4)
+        T_pose[:3, :3] = R_pose
+        T_pose[:3, 3] = pose[:3]
+
+        # Convert the pose to the correct coordinate system
+        T_pose = np.dot(T_pose, T_approach)
+
+        # print(f"Old pose to pick up object: {pose}")
+
+        # Now convert back to x, y, z, roll, pitch, yaw
+        x, y, z = T_pose[:3, 3]
+        roll, pitch, yaw = Rotation.from_matrix(T_pose[:3, :3]).as_euler('xyz', degrees=True)
+
+        pose_approach = [x, y, z, roll, pitch, yaw]
+        pose_depart = pose.copy()
+        pose_depart[2] += 0.1 # Move up 10 cm
+
+        # print(f"New pose to pick up object: {pose}")
+
+        # First make sure the gripper is open
         if arm == 'left':
-            # Calibrated transformation matrix from world to moveit coordinates based on left arm
-            T_world_moveit = np.array([ [ 0.99993911, -0.01089373,  0.00176324, -0.02348162],
-                                        [ 0.01089142,  0.99993982,  0.00131455, -0.03821792],
-                                        [-0.00177746, -0.00129526,  0.99999758,  0.80140745],
-                                        [ 0.0,         0.0,         0.0,         1.0       ] ])
-            
+            gripper_response = self.manipulate_left_gripper(width=85)
+        else:
+            gripper_response = self.manipulate_right_gripper(width=167)
+
+        if gripper_response is None or not gripper_response.success:
+            self.get_logger().error("Failed to open gripper")
+            return False
         
-        # Extract the position from the pose and append 1 to make it a 4D vector
-        pos_world = pose[:3]
-        pos_world.append(1)
+        # Now plan the movement to the approach pose
+        plan_response = self.plan_robot_trajectory(pose_approach, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan approach trajectory")
+            return False
+        
+        # The execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute approach trajectory")
+            return False
+        
+        # Now plan the movement to the pose
+        plan_response = self.plan_robot_trajectory(pose, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan grasp trajectory")
+            return False
+        
+        # Execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute grasp trajectory")
+            return False
+        
+        # Close the gripper
+        if arm == 'left':
+            gripper_response = self.manipulate_left_gripper(width=object_width)
+        else:
+            gripper_response = self.manipulate_right_gripper(width=object_width)
 
-        # Transform the position from camera to world coordinates
-        #pos_world = np.dot(T_world_cam, pos_cam)
-        pos_moveit = np.dot(T_world_moveit, pos_world)
+        if gripper_response is None or not gripper_response.success:
+            self.get_logger().error("Failed to close gripper")
+            return False
+        
+        # At last lift the object to avoid collision when moving away
+        plan_response = self.plan_robot_trajectory(pose_depart, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan grasp trajectory")
+            return False
+        
+        # The execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute grasp trajectory")
+            return False
+        
+        return True
 
-        rpy_world = pose[3:]
-        quat_moveit = self.euler_to_quat(rpy_world)
-
-        self.robot_plan_req.arm = arm
-        self.robot_plan_req.position.x = float(pos_moveit[0])
-        self.robot_plan_req.position.y = float(pos_moveit[1])
-        self.robot_plan_req.position.z = float(pos_moveit[2])
-        self.robot_plan_req.orientation.x = float(quat_moveit[1])
-        self.robot_plan_req.orientation.y = float(quat_moveit[2])
-        self.robot_plan_req.orientation.z = float(quat_moveit[3])
-        self.robot_plan_req.orientation.w = float(quat_moveit[0])
-
-        # Call the service asynchronously
-        future = self.robot_plan_client.call_async(self.robot_plan_req)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=75)
-        return response
-
-    #@tool  
-    def execute_planned_trajectory(self, arm: str) -> ExecuteMoveCommand.Response:
+    def move_to_pose(self, pose: list, arm: str) -> bool:
         """
-        Executes a planned trajectory on the specified arm of the physical robot.
-
-        This function sends a request to execute a trajectory that has been planned 
-        using the `plan_robot_trajectory` function. It is important to ensure that 
-        the `plan_robot_trajectory` function has been called prior to invoking this 
-        function, as it relies on the trajectory data generated by the planning step.
-
+        Moves the specified robotic arm to the given pose.
         Args:
-            arm (str): The identifier of the robot arm on which the trajectory 
-                       should be executed (e.g., "left_arm" or "right_arm").
-
+            pose (list): Target pose for the robotic arm.
+            arm (str): Identifier for the arm to be moved.
         Returns:
-            ExecuteMoveCommand.Response: The response object containing the result 
-                                         of the execution request, including success 
-                                         status and any relevant feedback.
-
-        Raises:
-            TimeoutError: If the execution request does not complete within the 
-                          specified timeout period (90 seconds).
+            bool: True if the movement was successful, False otherwise.
         """
 
-        self.robot_execute_req.arm = arm
-
-        future = self.robot_execute_client.call_async(self.robot_execute_req)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=90)
-
-        return response
+        # First plan the movement to the pose
+        plan_response = self.plan_robot_trajectory(pose, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan trajectory")
+            return False
+        
+        # The execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute trajectory")
+            return False
+        
+        return True
 
     #@tool
     def manipulate_right_gripper(self, width: int=167, speed: int=110, force: int=15) -> Robotiq3FGripperOutputService.Response:  # Defaults to open gripper with max speed and minimum force
@@ -1368,13 +1477,18 @@ class LLMNode(Node):
         self._3f_controller.output_registers.r_fra = round((force - 15) / (60 - 15) * 255)     # Force limitations [15 - 60N]
 
         # Call the service asynchronously
-        future = self._3f_controller_cli.call_async(self._3f_controller)
+        future1 = self._3f_controller_cli.call_async(self._3f_controller)
 
+        # Rviz gripper 
+        self._gripper_req.width = float(width)   
+        self._gripper_req.gripper_name = "3f"
+        future2 = self._gripper_client.call_async(self._gripper_req)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=15)
+        response1 = self.wait_future(future1, timeout=15)
+        response2 = self.wait_future(future2, timeout=15)
 
-        return response
+        return response1
 
     #@tool
     def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=20) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
@@ -1403,6 +1517,8 @@ class LLMNode(Node):
               `plan_robot_trajectory` expecting it to execute as part of a trajectory plan.
             - Ensure the input parameters are within the specified ranges to avoid errors.
         """
+
+        # The real gripper 
         if width < 0 or width > 85:
             self.get_logger().error('Requested right gripper width exceeds gripper capabilities')
             return 'Requested gripper width exceeds gripper capabilities'
@@ -1418,12 +1534,18 @@ class LLMNode(Node):
         self._2f_req.force = float(force)   # Force in N. Must be between 20 and 235 N.
 
         # Publish command to left gripper
-        future = self._2f_client.call_async(self._2f_req)
+        future1 = self._2f_client.call_async(self._2f_req)
+
+        # Rviz gripper
+        self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
+        self._gripper_req.gripper_name = "2f"
+        future2 = self._gripper_client.call_async(self._gripper_req)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=15)
+        response1 = self.wait_future(future1, timeout=15)
+        response2 = self.wait_future(future2, timeout=15)
 
-        return response
+        return response1
     
     #@tool
     def get_current_pose(self, arm: str) -> GetCurrentPose.Response:

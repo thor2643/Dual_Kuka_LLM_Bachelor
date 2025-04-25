@@ -29,13 +29,18 @@ find_package(rosidl_default_generators REQUIRED)
 
 
 rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/GripperMoveit.srv"
+  "msg/Grasp6D.msg"
+  "msg/DetectedObject.msg"
+  "msg/TransformMatrix.msg"
   "srv/GetObjectInfo.srv"
   "srv/PlanMoveCommand.srv"
-  "srv/DefineObjectInfo.srv"
   "srv/ExecuteMoveCommand.srv"
   "srv/PromptJanice.srv"
   "srv/GetCurrentPose.srv"
   "srv/GetImage.srv"
+  "srv/SpawnCube.srv"
+  "srv/GetSimCameraData.srv"
   DEPENDENCIES geometry_msgs
   DEPENDENCIES sensor_msgs
 )

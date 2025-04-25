@@ -5,6 +5,9 @@
   <!-- Setup of Hardware & Joints for kuka interface -->
   <xacro:include filename="$(find dual_arm_moveit_config)/config/dual_arm.ros2_control.xacro"/>
 
+  <!-- Intel realsense -->
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435i.urdf.xacro"/>
+
   <!-- MATERIAL LIST -->
   <material name="aluminum">
     <color rgba="0.5 0.5 0.5 1"/>
@@ -24,6 +27,11 @@
   <material name="gray">
 	<color rgba="1 0 0 1"/>
   </material>
+
+  <!-- CAMERA MOUNT-->
+  <xacro:sensor_d435i parent="base_link" use_nominal_extrinsics="$(arg use_nominal_extrinsics)">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:sensor_d435i>
 
 
   <!-- Links & Joints for the Right Arm -->

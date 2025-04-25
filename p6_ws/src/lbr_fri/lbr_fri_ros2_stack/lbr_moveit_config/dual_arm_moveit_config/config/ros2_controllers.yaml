@@ -6,16 +6,21 @@ controller_manager:
     right_arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
-
     left_arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
-
+      
+    threef_gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+      
+    twof_gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
 right_arm_controller:
   ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
     joints:
       - right_A1
       - right_A2
@@ -31,6 +36,7 @@ right_arm_controller:
       - velocity
 left_arm_controller:
   ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
     joints:
       - left_A1
       - left_A2
@@ -39,6 +45,36 @@ left_arm_controller:
       - left_A5
       - left_A6
       - left_A7
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+threef_gripper_controller:
+  ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
+    joints:
+      - a_3f_finger_1_joint_1
+      - a_3f_finger_1_joint_2
+      - a_3f_finger_1_joint_3
+      - a_3f_finger_2_joint_1
+      - a_3f_finger_2_joint_2
+      - a_3f_finger_2_joint_3
+      - a_3f_finger_middle_joint_1
+      - a_3f_finger_middle_joint_2
+      - a_3f_finger_middle_joint_3
+      - a_3f_palm_finger_1_joint
+      - a_3f_palm_finger_2_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+twof_gripper_controller:
+  ros__parameters:
+    allow_nonzero_velocity_at_trajectory_end: false
+    joints:
+      - left_2f_robotiq_85_left_knuckle_joint
     command_interfaces:
       - position
     state_interfaces:
