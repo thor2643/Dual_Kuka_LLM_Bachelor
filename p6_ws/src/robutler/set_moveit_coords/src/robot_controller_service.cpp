@@ -199,7 +199,7 @@ private:
 
     // We make a generic constraint, and add box_constraint to the position_constraints.
     moveit_msgs::msg::Constraints constraints;
-    constraints.position_constraints.emplace_back(box_constraint);
+    //constraints.position_constraints.emplace_back(box_constraint);
 
     // Visualize the box constraint
     /*

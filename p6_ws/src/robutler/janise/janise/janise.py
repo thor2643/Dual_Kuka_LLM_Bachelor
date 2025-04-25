@@ -1235,27 +1235,32 @@ class LLMNode(Node):
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
 
-        self._3f_controller.output_registers.r_act = 1  # Active Gripper
-        self._3f_controller.output_registers.r_mod = 1  # Basic Gripper Mode
-        self._3f_controller.output_registers.r_gto = 1  # Go To Position
-        self._3f_controller.output_registers.r_atr = 0  # Stop Automatic Release
-        self._3f_controller.output_registers.r_pra = round((167 - width) / 167 * 112)          # Gripper limitations [0 - 167mm]
-        self._3f_controller.output_registers.r_spa = round((speed - 22) / (110 - 22) * 255)    # Speed limitations [22 - 110mm/sec]
-        self._3f_controller.output_registers.r_fra = round((force - 15) / (60 - 15) * 255)     # Force limitations [15 - 60N]
-
-        # Call the service asynchronously
-        future1 = self._3f_controller_cli.call_async(self._3f_controller)
-
         # Rviz gripper 
         self._gripper_req.width = float(width)   
         self._gripper_req.gripper_name = "3f"
         future2 = self._gripper_client.call_async(self._gripper_req)
 
         # Wait for the result
-        response1 = self.wait_future(future1, timeout=15)
         response2 = self.wait_future(future2, timeout=15)
 
-        return response1
+        if load_use_sim():
+            return response2
+        else:
+            self._3f_controller.output_registers.r_act = 1  # Active Gripper
+            self._3f_controller.output_registers.r_mod = 1  # Basic Gripper Mode
+            self._3f_controller.output_registers.r_gto = 1  # Go To Position
+            self._3f_controller.output_registers.r_atr = 0  # Stop Automatic Release
+            self._3f_controller.output_registers.r_pra = round((167 - width) / 167 * 112)          # Gripper limitations [0 - 167mm]
+            self._3f_controller.output_registers.r_spa = round((speed - 22) / (110 - 22) * 255)    # Speed limitations [22 - 110mm/sec]
+            self._3f_controller.output_registers.r_fra = round((force - 15) / (60 - 15) * 255)     # Force limitations [15 - 60N]
+
+            # Call the service asynchronously
+            future1 = self._3f_controller_cli.call_async(self._3f_controller)
+
+            response1 = self.wait_future(future1, timeout=15)
+
+            return response1
+
 
     #@tool
     def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=20) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
@@ -1296,23 +1301,30 @@ class LLMNode(Node):
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
 
-        self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
-        self._2f_req.speed = float(speed)   # Speed in mm/s. Must be between 20 and 150 mm/s.
-        self._2f_req.force = float(force)   # Force in N. Must be between 20 and 235 N.
-
-        # Publish command to left gripper
-        future1 = self._2f_client.call_async(self._2f_req)
-
         # Rviz gripper
         self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
         self._gripper_req.gripper_name = "2f"
-        future2 = self._gripper_client.call_async(self._gripper_req)
 
-        # Wait for the result
-        response1 = self.wait_future(future1, timeout=15)
+        self.get_logger().info("Simulated gripper command sent")
+        future2 = self._gripper_client.call_async(self._gripper_req)
         response2 = self.wait_future(future2, timeout=15)
 
-        return response1
+        # Wait for the result
+        if load_use_sim():
+            return response2
+        else:
+            self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
+            self._2f_req.speed = float(speed)   # Speed in mm/s. Must be between 20 and 150 mm/s.
+            self._2f_req.force = float(force)   # Force in N. Must be between 20 and 235 N.
+
+            # Publish command to left gripper
+            future1 = self._2f_client.call_async(self._2f_req)
+
+            self.get_logger().info("Real gripper command sent")
+
+            response1 = self.wait_future(future1, timeout=15)
+
+            return response1
     
     #@tool
     def get_current_pose(self, arm: str) -> GetCurrentPose.Response:
