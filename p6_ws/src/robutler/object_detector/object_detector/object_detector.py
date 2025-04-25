@@ -126,17 +126,24 @@ class SimCamera(Node):
         request = GetSimCameraData.Request()
         future = self.client.call_async(request)
         rclpy.spin_until_future_complete(self, future)
+        self.get_logger().info("[SimCamera] Finished waiting for future")
 
         if future.result() is not None:
             response = future.result()
 
             # Convert image messages to OpenCV
-            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
+            #self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
+            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="32FC1")
 
             color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
             self.color_img = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
 
             self.camera_info = response.camera_info.k
+
+            self.get_logger().info(f"[SimCamera] Depth image shape: {self.depth_img.shape}")
+            self.get_logger().info(f"[SimCamera] Depth image min: {np.min(self.depth_img)}, max: {np.max(self.depth_img)}")
+            self.get_logger().info(f"[SimCamera] Camera intrinsics: {self.camera_info}")
+
         else:
             self.get_logger().error("Failed to get simulated camera data")
 
@@ -235,7 +242,10 @@ class ObjectDetector(Node):
         u, v = np.meshgrid(np.arange(width), np.arange(height))
 
         # Get the depth in meters
-        z = self.depth_frame.astype(np.float32) / 1000.0  # Convert to meters
+        if not load_use_sim:
+            z = self.depth_frame.astype(np.float32) / 1000.0  # Convert to meters
+        else:
+            z = self.depth_frame.astype(np.float32)
 
         # Replace 0.0 with np.nan to mark invalid pixels
         z[z == 0.0] = np.nan
@@ -359,6 +369,10 @@ class ObjectDetector(Node):
 
             # Find center of the object in 3D space
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+
+            self.get_logger().info(f'Object bounding box: {x_min}, {y_min}, {x_max}, {y_max}\n')
+            595.510986328125, 296.0084228515625, 725.259521484375, 412.3570556640625
+
             # Convert pixel coordinates to 3D coordinates
             cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
             # Fill in the message

@@ -716,12 +716,14 @@ class LLMNode(Node):
         # Change this to get the actual image from the camera
         #original_image = cv2.imread(image_path)
         if load_use_sim():
+            original_image = cv2.imread("resized_image.jpg")
+            """
             for i in range(5):
                 request = GetSimCameraData.Request()
                 future = self.sim_cam_client.call_async(request)
 
                 # Wait for the result
-                response = self.wait_future(future, timeout=5)
+                response = self.wait_future(future, timeout=15)
 
                 if response is not None:
                     response = future.result()
@@ -737,6 +739,7 @@ class LLMNode(Node):
                         self.get_logger().info("Retrying to get simulated camera data...")
                         rclpy.spin_once(self, timeout_sec=0.1)
                         continue
+            """           
 
         else:
             original_image = self.color_img
