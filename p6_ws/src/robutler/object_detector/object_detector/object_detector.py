@@ -679,16 +679,21 @@ class ObjectDetector(Node):
             # PCA on surface points
             pca = PCA(n_components=3)
             pca.fit(surface_points)
-
-            # Grasp position
-            center = surface_points.mean(axis=0)
             
-            # shift grasp center z value to grasp height
-            if max(surface_points[:, 2]) - min(surface_points[:, 2]) > 0.02: # if the object is not flat
-                grasp_height = 0.25 # Controls how far up to grasp
-                z_min = np.min(surface_points[:, 2])
-                z_max = np.max(surface_points[:, 2])
-                center[2] = z_max - grasp_height * (z_max - z_min)
+            # shift grasp center to grasp higher on the object to avoid colliding with the table
+            if max(surface_points[:, 2]) - min(surface_points[:, 2]) > 0.03: # if the object is not flat eg. z variation > 3 cm
+                pc1 = pca.components_[0] # PCA component 1 (longer in-plane axis)
+                if np.dot(pc1,[0,0,1]) < 0: # If the PCA component is pointing downwards
+                    pc1 = -pc1
+                grasp_height = 0.25 # Controls how far from top to grasp [%]
+                projections = surface_points @ pc1
+                proj_min = np.min(projections)
+                proj_max = np.max(projections)
+                target_proj = proj_max - grasp_height * (proj_max - proj_min)
+                mean_point = surface_points.mean(axis=0)
+                center = mean_point + pc1 * (target_proj - np.dot(mean_point, pc1))
+            else:
+                center = surface_points.mean(axis=0) # Center of the surface
 
             # Opening direction = PCA component 1 (shorter in-plane axis)
             x_axis = pca.components_[1]
