@@ -663,7 +663,7 @@ class ObjectDetector(Node):
         # Generate a top-down grasp (approaching from above)
         if False: # Set to True to generate a top-down grasp
             top_grasp = self.generate_top_down_grasp(pcd)
-            grasps.append(top_grasp) # dummy grasp
+            grasps.append(top_grasp) 
 
         for group in groups:
             if count >= num_candidates:
@@ -742,7 +742,7 @@ class ObjectDetector(Node):
                 # Grasp would penetrate the table → skip this one
                 continue
 
-            if  grasp_width > 0.15: # Grasp width too high
+            if  grasp_width >= 0.15: # Grasp width too high
                 # Grasp width too big for grippers. Skip this one
                 continue
 
@@ -827,7 +827,6 @@ class ObjectDetector(Node):
         R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
         U, _, Vt = np.linalg.svd(R_matrix)
         R_ortho = U @ Vt
-
 
         # Convert to roll-pitch-yaw
         rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
