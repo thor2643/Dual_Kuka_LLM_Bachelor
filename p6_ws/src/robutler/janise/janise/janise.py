@@ -1020,8 +1020,13 @@ class LLMNode(Node):
                     T_W_G = np.eye(4)
                     T_W_G[:3, :3] = R_W_G
                     T_W_G[:3, 3] = pose
-                    if pose[2]>0.03: # if center point is more than 3 cm above the table 
-                        T_90z[2,3] = 0.02 # move the grasp point 2 cm into the object
+                    
+                    if pose[2] > 0.04: # if center point is more than 3 cm above the table
+                        T_90z[2,3] = 0.03 # move the grasp point 3 cm into the object
+                    elif pose[2]>0.03: 
+                        T_90z[2,3] = 0.02 
+                    else:
+                        T_90z[2,3] = 0.005
                     
                     T_new = T_W_G @ T_90z
                     pose_new = T_new[:3, 3]
