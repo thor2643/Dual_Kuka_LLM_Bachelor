@@ -951,6 +951,11 @@ class LLMNode(Node):
                 'object_name i': {
                     'center_object': {x, y, z},
                     'grasps': {
+                        'Top grasp': {
+                            'center': {x, y, z},
+                            'orientation': {roll, pitch, yaw},
+                            'width': float
+                        },
                         'grasp j': {
                             'center': {x, y, z},
                             'orientation': {roll, pitch, yaw},
@@ -1043,7 +1048,12 @@ class LLMNode(Node):
                     roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
                     roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
-                    self.objects_on_table[object_name]['grasps'][f'grasp {j}'] = {
+                    if j == 0:
+                        grasp_name = 'Top down grasp'
+                    else:
+                        grasp_name = f'grasp {j}'
+
+                    self.objects_on_table[object_name]['grasps'][grasp_name] = {
                         'center': {
                             'x': round(pose_new[0],3),
                             'y': round(pose_new[1],3),
