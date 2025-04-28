@@ -1032,7 +1032,7 @@ class LLMNode(Node):
                     if j == 0:
                         grasp_name = 'Top down grasp'
                     else:
-                        grasp_name = f'grasp {j}'
+                        grasp_name = f'General grasp {j}'
 
                     self.objects_on_table[object_name]['grasps'][grasp_name] = {
                         'center': {

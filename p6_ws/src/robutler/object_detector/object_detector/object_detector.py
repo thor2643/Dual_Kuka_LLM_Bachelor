@@ -363,7 +363,7 @@ class ObjectDetector(Node):
                 # Perform closing (dilate then erode)
                 mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
                 # Step 2: Shrink the mask using erosion
-                mask_binary = cv2.erode(mask_closed, kernel, iterations = 4)  # You can adjust iterations for more shrinking
+                mask_binary = cv2.erode(mask_closed, kernel, iterations = 2)  # TODO was 4 before You can adjust iterations for more shrinking
             
             # Visualize the mask
             overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
@@ -781,7 +781,7 @@ class ObjectDetector(Node):
         return (u, v)
     
 
-    def generate_top_down_grasp(self, global_pointcloud, top_band_height=0.005):
+    def generate_top_down_grasp(self,global_pointcloud, top_band_height=0.003):
         """
         Generate a grasp that approaches from the top (negative Z).
         
@@ -802,7 +802,7 @@ class ObjectDetector(Node):
 
         if pc.shape[0] == 0:
             print("No valid points in point cloud.")
-            return None
+            return []
 
         # Sort by Z (height)
         pc_sorted = pc[np.argsort(pc[:, 2])] 
@@ -820,8 +820,7 @@ class ObjectDetector(Node):
         # Approach from top → -Z axis
         # X and Y are found using PCA 
         # PCA on surface points
-        approach = np.array([0, 0, -1])  # approach direction (down)
-
+        approach = np.array([0, 0, -1])  # approach direction (down) 
         pca = PCA(n_components=3)
         pca.fit(top_points)
 
@@ -844,14 +843,10 @@ class ObjectDetector(Node):
         # Convert to roll-pitch-yaw
         rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
 
-        # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
-        plane_normal = approach
-        plane_point = center
-
-        #  Filter points near the x-y plane (with threshold)
-        distances_to_plane = np.abs((original_points - plane_point) @ plane_normal)
-        on_plane_mask = distances_to_plane < 0.005  # 0.5 cm
-        plane_points = original_points[on_plane_mask]
+        #  Filter points near the x-Z plane (with threshold)
+        z_threshold = 0.02  # 2 cm
+        top_mask = (original_points[:, 2] > (z_max - z_threshold))
+        plane_points = original_points[top_mask]
 
         if len(plane_points) < 2:
             grasp_width = 0.15  # Not enough data so max width
@@ -860,7 +855,10 @@ class ObjectDetector(Node):
             projections = (plane_points - center) @ x_axis
             min_proj = np.min(projections)
             max_proj = np.max(projections)
-            grasp_width = np.abs(max_proj - min_proj) 
+            grasp_width = np.abs(max_proj - min_proj)
+
+        if grasp_width < 0.025: # Grasp width too high 
+            grasp_width = 0.025
 
         # Return 6D pose with width
         return [*center, *rpy, float(grasp_width)]
