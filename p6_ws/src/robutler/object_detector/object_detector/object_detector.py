@@ -375,7 +375,6 @@ class ObjectDetector(Node):
             grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
             all_grasps.extend(grasps)
 
-
             detected_object = DetectedObject()
             detected_object.grasps = []
 
@@ -637,6 +636,10 @@ class ObjectDetector(Node):
         
         #Take only the largest groups, sort groups by size (descending)
         groups = sorted(groups_all, key=lambda g: len(g), reverse=True)
+
+        # Filter out small groups (keep only groups with at least 10 points)
+        min_group_size = 10
+        groups = [g for g in groups if len(g) >= min_group_size]
         
         return groups
 
@@ -740,10 +743,12 @@ class ObjectDetector(Node):
 
             if pt_left[2] < 0 or pt_right[2] < 0: # Must be above the table
                 # Grasp would penetrate the table → skip this one
+                self.get_logger().info(f"The found grasp would penetrate the table: {pt_left[2]}, {pt_right[2]}, trying to find grasp again")
                 continue
 
             if  grasp_width >= 0.15: # Grasp width too high
                 # Grasp width too big for grippers. Skip this one
+                self.get_logger().info(f"The found grasp's width too big: {grasp_width}, trying to find grasp again")
                 continue
 
             # Add grasp to list [x, y, z, roll, pitch, yaw]
@@ -793,6 +798,7 @@ class ObjectDetector(Node):
         # Filter out invalid points
         valid = ~np.isnan(global_pointcloud).any(axis=1)
         pc = global_pointcloud[valid]
+        original_points = np.asarray(global_pointcloud)
 
         if pc.shape[0] == 0:
             print("No valid points in point cloud.")
@@ -821,12 +827,21 @@ class ObjectDetector(Node):
 
         # Opening direction = PCA component 1 (shorter in-plane axis)
         x_axis = pca.components_[1]
+        x_axis = (x_axis - np.dot(x_axis, approach) * approach)  / np.linalg.norm(x_axis)
         y_axis = np.cross(approach, x_axis)
 
         # Re-orthonormalize (ensures that no numerical errors occur in the calculated rotation matrix and that they are orthognormal) 
         R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
         U, _, Vt = np.linalg.svd(R_matrix)
         R_ortho = U @ Vt
+
+        # added untwist: takes dot product between x-axis of frame and world x-axis. x-axis must always point in positive world y direction
+        x_world = np.array([1, 0, 0])
+        x_grasp = R_ortho[:, 0]  # X-axis of the grasp frame
+
+        if np.dot(x_world, x_grasp) < 0: #dot=-1 oppisite direction, dot=1 same direction, dot=0 orthogonal
+            R_ortho[:, 0] *= -1  # Flip X
+            R_ortho[:, 1] *= -1  # Flip Y, Z stays the same
 
         # Convert to roll-pitch-yaw
         rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
@@ -836,10 +851,9 @@ class ObjectDetector(Node):
         plane_point = center
 
         #  Filter points near the x-y plane (with threshold)
-        distances_to_plane = np.abs((global_pointcloud - plane_point) @ plane_normal)
-        on_plane_mask = distances_to_plane < top_band_height  # 0.5 cm
-
-        plane_points = global_pointcloud[on_plane_mask]
+        distances_to_plane = np.abs((original_points - plane_point) @ plane_normal)
+        on_plane_mask = distances_to_plane < 0.005  # 0.5 cm
+        plane_points = original_points[on_plane_mask]
 
         if len(plane_points) < 2:
             grasp_width = 0.15  # Not enough data so max width
@@ -848,8 +862,7 @@ class ObjectDetector(Node):
             projections = (plane_points - center) @ x_axis
             min_proj = np.min(projections)
             max_proj = np.max(projections)
-
-            grasp_width = np.abs(max_proj - min_proj)
+            grasp_width = np.abs(max_proj - min_proj) 
 
         # Return 6D pose with width
         return [*center, *rpy, float(grasp_width)]
