@@ -664,7 +664,7 @@ class ObjectDetector(Node):
         count = 0 # valid grasp counter
 
         # Generate a top-down grasp (approaching from above)
-        if False: # Set to True to generate a top-down grasp
+        if True: # Set to True to generate a top-down grasp
             top_grasp = self.generate_top_down_grasp(pcd)
             grasps.append(top_grasp) 
 
@@ -831,9 +831,7 @@ class ObjectDetector(Node):
         y_axis = np.cross(approach, x_axis)
 
         # Re-orthonormalize (ensures that no numerical errors occur in the calculated rotation matrix and that they are orthognormal) 
-        R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
-        U, _, Vt = np.linalg.svd(R_matrix)
-        R_ortho = U @ Vt
+        R_ortho = np.stack([x_axis, y_axis, approach], axis=1)
 
         # added untwist: takes dot product between x-axis of frame and world x-axis. x-axis must always point in positive world y direction
         x_world = np.array([1, 0, 0])
