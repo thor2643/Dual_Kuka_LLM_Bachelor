@@ -1030,7 +1030,7 @@ class LLMNode(Node):
                     roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
                     if j == 0:
-                        grasp_name = 'Top grasp'
+                        grasp_name = 'Top down grasp'
                     else:
                         grasp_name = f'grasp {j}'
 
