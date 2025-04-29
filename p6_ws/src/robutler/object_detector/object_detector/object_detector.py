@@ -308,13 +308,13 @@ class ObjectDetector(Node):
         image = self.get_color_image()
 
         #Apply Yolo World, data is stored in self.yolo_results
-        self.apply_yolo_world(image, object, confi = 0.15, verbose=False) #TODO afjust conf here
+        self.apply_yolo_world(image, object, confi = 0.10, verbose=False) #TODO afjust conf here
 
 
         # If no objects are found with the specified class, try to find any object and return the class
         if len(self.yolo_results[0].boxes.data) == 0:
             self.get_logger().info(f'No {object} found\n')
-            objects_found_list = self.apply_yolo_world(image, object, confi = 0.4, verbose=False, name_objects = True) #Adjust confi
+            objects_found_list = self.apply_yolo_world(image, object, confi = 0.10, verbose=False, name_objects = True) #Adjust confi
             image = self.yolo_results[0].plot()
 
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
@@ -671,12 +671,77 @@ class ObjectDetector(Node):
         grasps = []
         count = 0 # valid grasp counter
 
-        # Generate a top-down grasp (approaching from above)
-        if True: # Set to True to generate a top-down grasp
-            top_grasp = self.generate_top_down_grasp(pcd)
-            grasps.append(top_grasp) 
+        # create top_down grasp
+        for idx, group in enumerate(groups):
+            surface_normals = normals[group]
+            
+            # Estimate approach vector (mean normal)
+            mean_normal = np.mean(surface_normals, axis=0)
+            mean_normal /= np.linalg.norm(mean_normal)  # Normalize
 
-        if self.close_to_table == False:
+            # Check if mean normal is close to (0,0,1)
+            if np.dot(mean_normal, np.array([0, 0, 1])) > 0.95: # ca 18 degrees 
+                surface_points = points[group]
+                # Estimate approach vector (mean normal)
+                approach = np.array([0, 0, -1])  # approach direction (down) 
+
+                # PCA on surface points
+                pca = PCA(n_components=3)
+                pca.fit(surface_points)
+
+                center = surface_points.mean(axis=0) # Center of the surface                
+
+                # Opening direction = PCA component 1 (shorter in-plane axis)
+                x_axis = pca.components_[1]
+                x_axis = (x_axis - np.dot(x_axis, approach) * approach)  / np.linalg.norm(x_axis)
+                y_axis = np.cross(approach, x_axis)
+                R_ortho = np.stack([x_axis, y_axis, approach], axis=1)
+
+                # added untwist: takes dot product between x-axis of frame and world x-axis. x-axis must always point in positive world y direction
+                x_world = np.array([1, 0, 0])
+                x_grasp = R_ortho[:, 0]  # X-axis of the grasp frame
+
+                if np.dot(x_world, x_grasp) < 0: #dot=-1 oppisite direction, dot=1 same direction, dot=0 orthogonal
+                    R_ortho[:, 0] *= -1  # Flip X
+                    R_ortho[:, 1] *= -1  # Flip Y, Z stays the same
+
+                # Convert to roll-pitch-yaw
+                rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
+
+                # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
+                plane_normal = approach
+                plane_point = center
+
+                #  Filter points near the x-y plane (with threshold)
+                distances_to_plane = np.abs((original_points - plane_point) @ plane_normal)
+                on_plane_mask = distances_to_plane < 0.005  # 0.5 cm
+                plane_points = original_points[on_plane_mask]
+
+                if len(plane_points) < 2:
+                    grasp_width = 0.15  # Not enough data so max width
+                else:
+                    # Project points onto x-axis to get scalar positions along grasp width direction
+                    projections = (plane_points - center) @ x_axis
+                    min_proj = np.min(projections)
+                    max_proj = np.max(projections)
+                    grasp_width = np.abs(max_proj - min_proj) 
+
+                if  grasp_width >= 0.15: # Grasp width too high
+                    # Grasp width too big for grippers. Skip this one
+                    continue
+
+                grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
+
+                # Remove the group and stop
+                del groups[idx]
+                break
+
+            if idx == len(groups) - 1: # if no top down grasp was found
+                top_grasp = self.generate_top_down_grasp(pcd)
+                grasps.append(top_grasp) 
+                self.get_logger().info(f"Top-down grasp found using old top_grasp algorithm")
+
+        if np.max(points[:, 2]) > 0.05: # if the object is close to table
             for group in groups:
                 if count >= num_candidates:
                     break
@@ -757,7 +822,6 @@ class ObjectDetector(Node):
 
                 if  grasp_width >= 0.15: # Grasp width too high
                     # Grasp width too big for grippers. Skip this one
-                    self.get_logger().info(f"The found grasp's width too big: {grasp_width}, trying to find grasp again")
                     continue
 
                 # Add grasp to list [x, y, z, roll, pitch, yaw]
@@ -874,8 +938,12 @@ class ObjectDetector(Node):
             max_proj = np.max(projections)
             grasp_width = np.abs(max_proj - min_proj)
 
-        if grasp_width < 0.025: # Grasp width too high 
+        if grasp_width < 0.025: # Grasp width too small 
             grasp_width = 0.025
+
+        if  grasp_width >= 0.15: # Grasp width too high
+            # Grasp width too big for grippers. Skip this one
+            return []
 
         # Return 6D pose with width
         return [*center, *rpy, float(grasp_width)]
