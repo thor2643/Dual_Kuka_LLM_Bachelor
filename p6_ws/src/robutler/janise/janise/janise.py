@@ -1025,8 +1025,12 @@ class LLMNode(Node):
                         T_90z[2,3] = 0.03 # move the grasp point 3 cm into the object
                     elif pose[2]>0.03: 
                         T_90z[2,3] = 0.02 
-                    else:
-                        T_90z[2,3] = 0.005
+                    elif pose[2]>0.02: 
+                        T_90z[2,3] = 0.0175
+                    elif pose[2]>0.01:
+                        T_90z[2,3] = 0.0075
+                    elif pose[2]>0.005:
+                        T_90z[2,3] = 0.004
                     
                     T_new = T_W_G @ T_90z
                     pose_new = T_new[:3, 3]
