@@ -741,7 +741,7 @@ class ObjectDetector(Node):
                 grasps.append(top_grasp) 
                 self.get_logger().info(f"Top-down grasp found using old top_grasp algorithm")
 
-        if np.max(points[:, 2]) > 0.05: # if the object is close to table
+        if np.max(points[:, 2]) > 0.10: # if the object is close to table
             for group in groups:
                 if count >= num_candidates:
                     break
