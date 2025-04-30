@@ -1029,14 +1029,22 @@ class LLMNode(Node):
                         T_90z[2,3] = 0.0175
                     elif pose[2]>0.01:
                         T_90z[2,3] = 0.0075
+                    elif pose[2]>0.0075:
+                        T_90z[2,3] = 0.0035
                     elif pose[2]>0.005:
-                        T_90z[2,3] = 0.004
+                        T_90z[2,3] = 0.0025
+                    elif pose[2]>0.0025:
+                        T_90z[2,3] = 0.0015
                     
                     T_new = T_W_G @ T_90z
                     pose_new = T_new[:3, 3]
 
                     roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
                     roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
+
+                    if pose[2] < 0 or grasp.grasp_width >= 0.1525:
+                        self.get_logger().info(f'Grasp z value: {pose[2]}, grasp width: {grasp.grasp_width}')
+                        continue
 
                     if j == 0:
                         grasp_name = 'Top down grasp'
@@ -1054,7 +1062,7 @@ class LLMNode(Node):
                             'pitch': round(pitch,3),
                             'yaw': round(yaw,3)
                         },
-                        'width': round(grasp.grasp_width,3)
+                        'width': 0 #round(grasp.grasp_width,3)
                     }
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 

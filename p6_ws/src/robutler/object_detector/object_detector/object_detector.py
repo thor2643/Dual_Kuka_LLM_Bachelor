@@ -187,9 +187,6 @@ class ObjectDetector(Node):
         self.sam_result_img = None
         self.sam_masks = None
 
-        # grasp safety
-        self.close_to_table = False
-
         # Publish initial image to GUI
         self.retrieve_aligned_frames()
         image = self.get_color_image()
@@ -404,6 +401,9 @@ class ObjectDetector(Node):
             detected_object.center_of_object
 
             for grasp in grasps:
+                if not grasp or len(grasp) < 6:
+                    continue
+
                 grasp_msg = Grasp6D()
                 # Fill position
                 grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
@@ -420,8 +420,11 @@ class ObjectDetector(Node):
         image_copy = self.color_frame.copy()
         T_C_W = self.invert_transformation_matrix(self.transformation_matrix)
 
-        for grasp in all_grasps:
+        for grasp in all_grasps:           
             x, y, z, roll, pitch, yaw, grasp_width = grasp
+
+            if z < 0 or grasp_width >= 0.1525:
+                        continue
             
             T_W_G = np.eye(4)
             T_W_G[:3, :3] = ROT.from_euler('xyz', [roll, pitch, yaw], degrees=True).as_matrix()
@@ -730,6 +733,9 @@ class ObjectDetector(Node):
                     # Grasp width too big for grippers. Skip this one
                     continue
 
+                if center[2] <= 0: # make sure z is above 0
+                    continue
+
                 grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
 
                 # Remove the group and stop
@@ -883,16 +889,16 @@ class ObjectDetector(Node):
         # Get the highest z value
         z_max = pc_sorted[-1, 2]
 
-        if z_max < 0.55: # If the object is too low 
-            self.close_to_table = True
-        else:
-            self.close_to_table = False
-
         if z_max < top_band_height:
             top_band_height = z_max
 
         # Select points within top_band_height of max height
-        top_points = pc_sorted[pc_sorted[:, 2] > (z_max - top_band_height)]
+        top_points = pc_sorted[pc_sorted[:, 2] >= (z_max - top_band_height)]
+
+        while top_points.shape[0] < 3: # not enough points for PCA
+            # Select points within top_band_height of max height
+            top_band_height += 0.001
+            top_points = pc_sorted[pc_sorted[:, 2] >= (z_max - top_band_height)]
 
         # Compute center of top surface
         center = np.mean(top_points, axis=0)
@@ -938,12 +944,11 @@ class ObjectDetector(Node):
             max_proj = np.max(projections)
             grasp_width = np.abs(max_proj - min_proj)
 
-        if grasp_width < 0.025: # Grasp width too small 
-            grasp_width = 0.025
+        if grasp_width < 0.01: # Grasp width too small 
+            grasp_width = 0.01
 
-        if  grasp_width >= 0.15: # Grasp width too high
-            # Grasp width too big for grippers. Skip this one
-            return []
+        if center[2] <= 0: # Due to point_cloud errors, (unprecesion of +- 2cm of cam, or from callibration). this is added.
+            center[2] = 0.002
 
         # Return 6D pose with width
         return [*center, *rpy, float(grasp_width)]

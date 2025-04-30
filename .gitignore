@@ -437,3 +437,7 @@ FodyWeavers.xsd
 */yolov8l-world.pt
 
 /p6_ws/src/robutler/janise/API_KEY.json
+
+# Tolerances for GraspNet
+tolerance/
+tolerance.tar
