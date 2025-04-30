@@ -89,6 +89,8 @@ class AnyGraspPipeline(Node):
         self.width = None
         self.transformation_matrix = None
 
+        self.debugging_image = None
+
         # Intrinsic camera parameters & mm -> m factor
         self.intrinsic = np.array([
             [909.85,   0.0, 645.60],
@@ -107,6 +109,10 @@ class AnyGraspPipeline(Node):
         self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
         # Get image
         self.retrieve_aligned_frames()
+
+        # Capture and Save RGB image
+        save_path = os.path.expanduser("~/Desktop/RGB_Image_GraspNet.png")
+        cv2.imwrite(save_path, self.debugging_image)
 
         # Check what gripper will be used for grasping
         gripper = request.gripper
@@ -211,6 +217,11 @@ class AnyGraspPipeline(Node):
 
                 cv2.line(self.cv2img, (approach_start_u, approach_start_v), (approach_end_u, approach_end_v), (0, 0, 255), 2)
 
+                # Debugging, showcasing Mask from SAM
+                self.debugging_image = self.cv2img
+                save_path = os.path.expanduser("~/Desktop/GraspDrawn_Image_GraspNet.png")
+                cv2.imwrite(save_path, self.debugging_image)
+
                 # Convert the image to a ROS message and publish
                 image_msg = self.realsense_camera.bridge.cv2_to_imgmsg(self.cv2img.astype(np.uint8), encoding="rgb8")
                 self.image_publisher.publish(image_msg)
@@ -282,6 +293,7 @@ class AnyGraspPipeline(Node):
         self.depth_frame = self.realsense_camera.depth_img
         self.color_frame = self.realsense_camera.color_img
         self.cv2img = cv2.cvtColor(self.color_frame, cv2.COLOR_RGB2BGR)
+        self.debugging_image = self.cv2img
         self.color = self.color_frame / 255.0
 
 
@@ -301,6 +313,13 @@ class AnyGraspPipeline(Node):
         if len(yolo_results[0].boxes.data) > 0:
             self.mask_binaries = []
             for i in range(len(yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
+
+                # Debugging, showcasing Bounding Box from YOLO
+                self.debugging_image = yolo_results[0].plot()
+                save_path = os.path.expanduser("~/Desktop/BoundingBox_Image_GraspNet.png")
+                cv2.imwrite(save_path, self.debugging_image)
+
+
                 box = yolo_results[0].boxes.data[i]
                 x_min, y_min, x_max, y_max = box[:4]
                 class_id = int(box[5])
@@ -327,6 +346,11 @@ class AnyGraspPipeline(Node):
                 # Use SAM on image using YOLO bounding boxes.
                 sam_results = sam.predict(self.cv2img, stream=False, bboxes=[x_min, y_min, x_max, y_max], points=None, labels=None)
                 sam_masks = (sam_results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
+
+                # Debugging, showcasing Mask from SAM
+                self.debugging_image = sam_masks
+                save_path = os.path.expanduser("~/Desktop/SAMResults_Image_GraspNet.png")
+                cv2.imwrite(save_path, self.debugging_image)
                 
                 #convert the mask to binary
                 mask_binary = (sam_masks > 0).astype(np.uint8)
@@ -369,6 +393,12 @@ class AnyGraspPipeline(Node):
                         filtered_mask[v, u] = 1
 
                 self.mask_binaries.append([class_name, i, filtered_mask.astype(np.bool_), cart_point])
+
+                # Debugging, showcasing Mask from SAM
+                self.debugging_image = filtered_mask
+                save_path = os.path.expanduser("~/Desktop/SAMMask_Image_GraspNet.png")
+                cv2.imwrite(save_path, self.debugging_image)
+
             return True
         else: # This is used to return a fail statement and a list of all objects in the workspace.
             model = YOLOWorld("yolov8l-world.pt")
@@ -451,6 +481,16 @@ class AnyGraspPipeline(Node):
         mask = (self.mask_binary & (self.depth_frame > 0))
         cloud_masked = cloud_np[mask]
         color_masked = self.color[mask]
+
+        # Debugging, showcasing Mask from SAM
+        self.debugging_image = cloud_masked
+        save_path = os.path.expanduser("~/Desktop/MaskedCloud_Image_GraspNet.png")
+        cv2.imwrite(save_path, self.debugging_image)
+
+        # Debugging, showcasing Mask from SAM
+        self.debugging_image = color_masked
+        save_path = os.path.expanduser("~/Desktop/MaskedColor_Image_GraspNet.png")
+        cv2.imwrite(save_path, self.debugging_image)
 
         # sample points
         if len(cloud_masked) >= cfgs.num_point:
