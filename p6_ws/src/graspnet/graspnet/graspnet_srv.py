@@ -6,6 +6,7 @@ import open3d as o3d
 import argparse
 from scipy.spatial.transform import Rotation as R
 import cv2
+from datetime import datetime
 
 # GraspNet / AnyGrasp
 import torch
@@ -240,8 +241,9 @@ class AnyGraspPipeline(Node):
                 # Crop the image
                 cropped_img = self.cv2img[y_min:y_max, x_min:x_max]
 
-                # Save to disk
-                save_path = os.path.expanduser("~/Desktop/cropped_grasp_image.png")
+                # Save to disk using date and current time to get unique name
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                save_path = os.path.expanduser(f"~/Desktop/ImagesFromGraspTest/Image_{timestamp}.png")
                 cv2.imwrite(save_path, cropped_img)
 
                 # Change to world frame
@@ -325,6 +327,10 @@ class AnyGraspPipeline(Node):
                 class_id = int(box[5])
                 class_name = model.names[class_id]  # get class name
 
+                # Print the confidence level
+                confidence = box[4].item()  # Extract the confidence score (index 4)
+                print(f"Object: {class_name}, Confidence: {confidence:.2f}")
+
                 # Getting the center coordinate to follow the format:
                 pixel_x = int((x_min + x_max) / 2)
                 pixel_y = int((y_min + y_max) / 2)
@@ -400,6 +406,64 @@ class AnyGraspPipeline(Node):
                 cv2.imwrite(save_path, self.debugging_image)
 
             return True
+        else:
+            self.get_logger().info(f'YOLOWorld failed to detect {det_object}')
+            clicked_point = self.get_click_location(self.cv2img)
+
+            # Use SAM on image using choosen point
+            sam_results = sam.predict(self.cv2img, stream=False, points=clicked_point, labels=None)
+            sam_masks = (sam_results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
+
+            #convert the mask to binary
+            mask_binary = (sam_masks > 0).astype(np.uint8)
+            mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
+            
+            # Surface Normal Approximation to find highest graspable area:
+            points_3d = []
+            uvs = []
+            for v in range(mask_binary.shape[0]):
+                for u in range(mask_binary.shape[1]):
+                    if mask_binary[v, u]:
+                        z = self.depth_frame[v, u] / 1000.0
+                        if z == 0:
+                            continue
+                        x = (u - cx) * z / fx
+                        y = (v - cy) * z / fy
+                        points_3d.append([x, y, z])
+                        uvs.append((u, v))
+
+            points_3d = np.array(points_3d)
+            pixel_coords = np.array(uvs)
+
+            # Open3D point cloud & normal estimation
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(points_3d)
+            pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30))
+
+            # RANSAC Plane Segmentation (find dominant plane in region)
+            plane_model, inliers = pcd.segment_plane(distance_threshold=0.10,
+                                                    ransac_n=3,
+                                                    num_iterations=1000)
+
+            # Get inlier pixels (i.e., mask pixels belonging to the selected plane)
+            inlier_pixels = pixel_coords[inliers]
+
+            # Create filtered binary mask
+            filtered_mask = np.zeros_like(mask_binary, dtype=np.uint8)
+            for u, v in inlier_pixels:
+                if 0 <= v < filtered_mask.shape[0] and 0 <= u < filtered_mask.shape[1]:
+                    filtered_mask[v, u] = 1
+            
+            # As YOLO-World is not run, these values are not found, we just need mask for grasping, so set temp values:
+            class_name = "manual_select"
+            i = 0 
+            cart_point = np.array([0.0, 0.0, 0.0])
+
+
+            self.mask_binaries.append([class_name, i, filtered_mask.astype(np.bool_), cart_point])
+
+
+        """
         else: # This is used to return a fail statement and a list of all objects in the workspace.
             model = YOLOWorld("yolov8l-world.pt")
             yolo_results = model.predict(self.cv2img, verbose=False, conf=0.4, device='cuda:0')
@@ -449,6 +513,7 @@ class AnyGraspPipeline(Node):
                 obj.grasps = []  # No grasps since no object mask was found
                 response.detected_objects.append(obj)
             return False
+            """
 
 
     def get_net(self):
@@ -547,6 +612,21 @@ class AnyGraspPipeline(Node):
         grippers = gg.to_open3d_geometry_list()
         o3d.visualization.draw_geometries([self.storage, *grippers])
 
+    # Click to select code for grasping test:
+    def get_click_location(image):
+        coords = []
+
+        def click_event(event, x, y, flags, param):
+            if event == cv2.EVENT_LBUTTONDOWN:
+                coords.append((x, y))
+                print(f"Clicked at: {x}, {y}")
+                cv2.destroyAllWindows()  # Close window after first click
+
+        cv2.imshow("Click to Select Point", image)
+        cv2.setMouseCallback("Click to Select Point", click_event)
+        cv2.waitKey(0)
+
+        return coords[0] if coords else None
 
 def main(args=None):
     rclpy.init(args=args)
