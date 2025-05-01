@@ -300,7 +300,7 @@ private:
 
       // Applying planner configurations and constraints
       //move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
-      move_group_interface->setPlanningTime(20);
+      move_group_interface->setPlanningTime(40);
       move_group_interface->setPlannerId("TRRT"); // Other options in ompl_planning.yaml
       move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
       move_group_interface->setPathConstraints(constraints);

@@ -32,6 +32,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, Tool
 
 from IPython.display import Image, display
 from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeStyles
+from langchain.prompts import PromptTemplate
 
 
 # ROS 2 libraries and Node structure
@@ -160,7 +161,6 @@ class LLMNode(Node):
                       StructuredTool.from_function(self.find_object),
                       StructuredTool.from_function(self.manipulate_right_gripper), 
                       StructuredTool.from_function(self.manipulate_left_gripper), 
-                      #StructuredTool.from_function(self.get_current_pose), TODO: fix function in robot controller service
                       StructuredTool.from_function(self.move_to_pose),
                       StructuredTool.from_function(self.pick_up_object)]
         
@@ -185,7 +185,7 @@ class LLMNode(Node):
 
         # Initialise the model
         # Change this to the model you want to use. We might implement more
-        self.model = ChatOpenAI(model="gpt-4o")
+        self.model = ChatOpenAI(model="gpt-4.1")
 
         # In Isaac
         self.bound_model = self.model.bind_tools(self.tools)
@@ -362,23 +362,29 @@ class LLMNode(Node):
         
         # ------------------------- Real Cell Workflow ------------------------- #
 
+        # Variable to help format dictionary
+        self.function_call_id = 1
+
         # Define model nodes
         self.task_detector_model = self.model.bind_tools(self.task_detector_tools)
         self.correction_model = self.model.bind_tools(self.tools)
+        self.plan_tool_call_model = self.model.bind_tools(self.tools)
 
         self.cell_workflow = StateGraph(ToolExecutionState)
         self.cell_config = {"configurable": {"thread_id": "cell_1"}}
         self.cell_memory = MemorySaver()
 
         self.cell_workflow.add_node("init_cell", self.init_real_execution)
-        self.cell_workflow.add_node("execute_tool", self.execute_tool)
+        self.cell_workflow.add_node("plan_tool_call", self.plan_tool_call)
+        self.cell_workflow.add_node("execute_tool", self.tool_node)  
         self.cell_workflow.add_node("success_detector", self.call_success_detector)
         self.cell_workflow.add_node("error_corrector", self.call_error_corrector)
         self.cell_workflow.add_node("detector_action", self.task_detector_tool_node)
         self.cell_workflow.add_node("corrector_action", self.tool_node)
 
         self.cell_workflow.add_edge(START, "init_cell")
-        self.cell_workflow.add_edge("init_cell", "execute_tool")
+        self.cell_workflow.add_edge("init_cell", "plan_tool_call")
+        self.cell_workflow.add_edge("plan_tool_call", "execute_tool")
         self.cell_workflow.add_edge("execute_tool", "success_detector")
 
         self.cell_workflow.add_edge("success_detector", "detector_action")
@@ -437,7 +443,7 @@ class LLMNode(Node):
 
                                                                         As the given sequence has only been validated in simulation, it is possible that the sequence of tool calls is not valid in the real world.
                                                                         Therefore, your task is to determine whether the subtask or tool call was successful or not. 
-                                                                        To determine this, you are given the called tool name and its returned results.
+                                                                        To determine this, you are given the called tool call and its returned results. In the chat history.
                                                                         If you consider the tool call / subtask to be successful, you should call the function "detected_success".
                                                                         Otherwise call the function "detected_failure". Notice, it is not enough for the tool to simply return a result to bes successful.
                                                                         You must read the results and determine whether the tool call was successful or not.
@@ -449,7 +455,7 @@ class LLMNode(Node):
         self.initial_prompt_corrector = SystemMessage(content = """
                                                                 You are a part of a robotic cell consisting of two collaborative KUKA iiwa 7 robots, each with 7 degrees of freedom (DoF).
                                                                 The setup includes a left and right side, each equipped with its respective robot arm.
-                                                                Given a task a fully featured pipeline of LLM and VLM agents are generating a list of tool calls required to solve the task.
+                                                                Given a task, a fully featured pipeline of LLM and VLM agents are generating a list of tool calls required to solve the task.
                                                                 This pipeline is integrated in an Isaac Sim environment where the robot cell is simulated with all it components.
                                                                 A valid sequence of tool calls is generated by iteratively trying different sequences in the simulation.
                                                                 The sequence is then passed to the pipeline that runs the physical cell. This pipeline calls the tool one at a time in the provided order.
@@ -469,6 +475,39 @@ class LLMNode(Node):
         # Append the initial prompt to the message state
         self.cell_agent.update_state(self.cell_config, {"messages": self.initial_prompt_success_detector})
 
+        # Make the prompt template for the executor model
+        # Define the prompt template
+        self.plan_tool_call_prompt = PromptTemplate(
+            input_variables=["current_function", "sim_tool_calls", "real_tool_calls"],
+            template="""
+                    You are a robot task corrector.
+
+                    You are given:
+                    - The planned function call and its arguments.
+                    - The prior simulation outputs that were available when the function call was made.
+                    - Fresh real-world observations.
+
+                    Adjust the arguments for the real world, considering that small offsets or modifications may have been applied during planning.
+
+                    Only adjust values if necessary.
+
+                    The function to call is:
+                    {current_function}
+
+                    Simulated function calls and return values until now:
+                    {sim_tool_calls}
+
+                    Real-world function calls and return values until now:
+                    {real_tool_calls}
+
+                    You must call the same function as the current function but adjust the arguments to be valid in the real world.
+
+                    Always provide reasoning for your decision before calling the tool.
+
+                    Remember to format the tool calls appropriately.
+                """
+                
+        )
 
     ##############################################################################
     # -------------------------- SPEECH FUNCTIONALITY -------------------------- #
@@ -881,6 +920,7 @@ class LLMNode(Node):
     #######################################################################################
 
     # If a tool is to be called, the action node is called otherwise the agent node is called
+    @traceable
     def should_continue(self, state: MessagesState):
         """Return the next node to execute."""
         last_message = state["messages"][-1]
@@ -890,7 +930,9 @@ class LLMNode(Node):
         # Otherwise if there is, we continue
         return "action"
     
+    
     # If a tool is to be called, the action node is called otherwise the agent node is called
+    @traceable
     def check_successful_task(self, state: ToolExecutionState):
         """Determines whether the error corrector should be called or not."""
         self.get_logger().info("Checking if task was successful")
@@ -904,6 +946,27 @@ class LLMNode(Node):
             return "error_corrector"
         elif tool.name == "detected_success":
             self.get_logger().info("Detected success")
+
+            # Retrieve infromation about the executed tool
+            executed_tool_AI = state["messages"][-4] # The AI message before the tool call
+            executed_tool_message = state["messages"][-3] # The tool message
+
+            function_name = executed_tool_AI.tool_calls[0].name
+            function_args = executed_tool_AI.tool_calls[0].args
+            function_returns = executed_tool_message.content
+
+            self.get_logger().info(f"Executed tool: {function_name}")
+
+            # Format the tool message to the desired structure
+            tool_message = {
+                    "function_name": function_name,
+                    "args": function_args,
+                    "return_values": function_returns
+                }
+
+            state["real_tools_results"][f"function_call_{self.function_call_id}"] = tool_message
+
+            self.cell_agent.update_state(self.cell_config, {"real_tool_calls": state["real_tools_results"]})
 
             if tools_available:
                 return "execute_tool"
@@ -919,6 +982,7 @@ class LLMNode(Node):
         # This is very simple helper function which only ever uses the last message
         return messages[-1:]
     
+    @traceable
     def call_success_detector(self, state: ToolExecutionState):
         # We append the initial prompt to Janise
         state_shortened = {"messages": [self.initial_prompt_success_detector]}
@@ -942,6 +1006,7 @@ class LLMNode(Node):
 
         return state
     
+    @traceable
     def call_error_corrector(self, state: ToolExecutionState):
         # We make the initial prompt to Janise
         state["messages"][0] = self.initial_prompt_corrector
@@ -956,8 +1021,10 @@ class LLMNode(Node):
 
         return state
     
+    
     # Define the function that calls the model
     # Takes in the cureent message history and returns the response
+    @traceable
     def call_model(self, state: MessagesState):
         # We append the initial prompt to Janise
         state["messages"][0] = self.initial_prompt_Janise
@@ -970,6 +1037,7 @@ class LLMNode(Node):
         response.name = "Janise"
         return {"messages": response}
     
+    @traceable    
     def think(self, state: MessagesState):
         # We append an image to the CoT message
         #image_path = "image.jpg"
@@ -1040,6 +1108,7 @@ class LLMNode(Node):
         # We return a list, because this will get added to the existing list
         return {"messages": response_human}
     
+    @traceable
     def init_real_execution(self, state: ToolExecutionState):
         # Read the tool list from the tool_calls.json file
         tool_calls_path = 'src/robutler/janise/tool_calls.json'
@@ -1058,35 +1127,57 @@ class LLMNode(Node):
         except json.JSONDecodeError as e:
             self.get_logger().error(f"Error decoding JSON from {tool_calls_path}: {e}")
             return state
+        
+        self.function_call_id = 1
+
+        return state
+    
+    def update_real_tool_list(self, state: ToolExecutionState):
+        
 
         return state
     
     @traceable
-    def execute_tool(self, state: ToolExecutionState):
+    def plan_tool_call(self, state: ToolExecutionState):
         # Get the tool call details from the state
         tool_call_key = list(state["tools_left"].keys())[0]
-        tool_call = state["tools_left"][tool_call_key]
+        current_tool_call = state["tools_left"][tool_call_key]
 
-        tool_name = tool_call["function_name"]
-        self.get_logger().info(f"Executing tool: {tool_name}")
+        # Extract all key-value pairs from the dictionary before the tool_call_key
+        tool_call_dict = {k: v for k, v in state["tool_list"].items() if list(state["tool_list"].keys()).index(k) < list(state["tool_list"].keys()).index(tool_call_key)}
 
-        try:
-            # Call the function dynamically
-            func = getattr(self, tool_call["function_name"])
+        # Convert the extracted dictionary to a string
+        simulated_tool_calls = json.dumps(tool_call_dict, indent=4)
 
-            # Execute the function with the provided arguments
-            result = func(**tool_call["args"])
+        if self.function_call_id > 1:
+            real_tool_calls = json.dumps(state["real_tools_results"], indent=4)
+        else:
+            real_tool_calls = "None called yet"
 
-            # Convert to langgraph message
-            message = HumanMessage(f"Called {tool_call['function_name']} which returned: {result}")
+        self.get_logger().info(f"Simulated tool calls: {simulated_tool_calls}")
+        self.get_logger().info(f"Real tool calls: {real_tool_calls}")
 
-            state["messages"].append(message)
+        # Create a new message with the tool call details
+        formatted_prompt = self.plan_tool_call_prompt.format(
+                                                            current_function=current_tool_call,
+                                                            sim_tool_calls=simulated_tool_calls,
+                                                            real_tool_calls=real_tool_calls
+                                                        )
+        
+        self.get_logger().info(f"Formatted prompt: {formatted_prompt}")
 
-        except Exception as e:
-            self.get_logger().error(f"Error executing {tool_call['function_name']}: {e}")
+        message = SystemMessage(
+            content=formatted_prompt
+        )
 
-        # Remove the executed tool from the list
-        state["tools_left"].pop(tool_call_key)
+        # Invoke the model with the tool call details
+        response = self.plan_tool_call_model.invoke([message])
+
+        # We return a list, because this will get added to the existing list
+        response.name = "Plan_Tool_Call"
+
+        # Append the response to the message state
+        state["messages"].append(response)
 
         return state
     

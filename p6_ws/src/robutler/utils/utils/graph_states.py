@@ -19,5 +19,5 @@ class ToolExecutionState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     tool_list: Dict[str, Any]  # or a more structured type if your tools follow a strict schema
     tools_left: Dict[str, Any]  # or a more structured type if your tools follow a strict schema
-    last_tool_result: Any = None  # optionally store latest tool output
+    real_tools_results: Dict[str, Any]  # Stores the output of the real tool calls
     evaluation: str = ""  # optionally store LLM's evaluation of success

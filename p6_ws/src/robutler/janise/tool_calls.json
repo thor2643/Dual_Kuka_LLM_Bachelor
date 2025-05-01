@@ -11,7 +11,7 @@
     "function_call_2": {
         "function_name": "pick_up_object",
         "args": {
-            "pose": [0.681, 0.143, 0.175, -1.396, -83.390, 78.603],
+            "pose": [0.539, 0.097, 0.161, 1.719, 78.336, -71.565],
             "arm": "right"
         },
         "return_values": {
@@ -27,7 +27,7 @@
         }
     },
     "function_call_4": {
-        "function_name": "move_to",
+        "function_name": "move_to_pose",
         "args": {
             "pose": [0.1, 0.3, 0.3, 0, 0, 0],
             "arm": "right"
