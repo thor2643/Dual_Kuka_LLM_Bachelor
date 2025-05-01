@@ -11,6 +11,9 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from scipy.spatial.transform import Rotation 
 import math
+import time
+from utils.mode_switch import load_use_sim, set_use_sim
+from utils.linear_alg_utils import build_transform_matrix_from_rpy, get_zyz_transform, invert_transformation_matrix
 
 # Internal modules
 from utils.graph_states import ToolExecutionState
@@ -95,12 +98,12 @@ class LLMNode(Node):
         )
 
         # Create a service client for the simulated camera data
-        self.sim_cam_client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
+        self.sim_cam_client = self.create_client(GetSimCameraData, 'get_simulated_camera_data', callback_group=client_cb_group)
         self.sim_cam_req = GetSimCameraData.Request()
 
         self.bridge = CvBridge()
         self.color_img = None
-        self.use_sim = False
+        self.use_sim = load_use_sim()
 
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
@@ -560,6 +563,7 @@ class LLMNode(Node):
 
         if not event_occured:
             self.get_logger().info('Service call failed: timeout')
+
             return None
         else:
             return future.result()
@@ -709,6 +713,51 @@ class LLMNode(Node):
             [0.0196773, 0.00130301, -0.99980553, 0.15210002],
             [0.0, 0.0, 0.0, 1.0]
         ])
+        """
+        if load_use_sim():
+            T_cam_gripper = np.array([
+            [0, 1, 0, 0.09516971],
+            [1, 0, 0, 0.03406203],
+            [0, 0, -1, 0.15210002],
+            [0.0, 0.0, 0.0, 1.0]
+        ])
+        
+        if load_use_sim():
+            # START WORK FROM HERE! WE NEED CORRECT TRANSFORMATION MATRICES FOR SIMULATION
+            T_left_link_ee = build_transform_matrix_from_rpy(0.0, 0.0, 0.035, 0.0, 0.0, 0.0)
+            T_rsd455 = build_transform_matrix_from_rpy(0.09, -0.019, 0.03, 180, 90, 0.0)
+            T_RSD455 = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 0.0, 0.0, 180)
+            T_Camera_Pseudo_Depth = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 90, 90, 0.0)
+            T_a_2f_tool0 = build_transform_matrix_from_rpy(0.0, 0.0, 0.165, -180, 0.091, -180)
+
+            T_camera_left_link_ee  = T_left_link_ee @ T_rsd455 @ T_RSD455 @ T_Camera_Pseudo_Depth
+            T_tcp_left_link_ee = T_left_link_ee @ T_a_2f_tool0
+
+            T_cam_gripper = T_tcp_left_link_ee @ np.linalg.inv(T_camera_left_link_ee)
+        if load_use_sim():
+            T_rot = get_zyz_transform()
+
+            T_ee = build_transform_matrix_from_rpy(0.0, 0.0, 0.035, 0.0, 0.0, 0.0)
+            T_rsd455 = build_transform_matrix_from_rpy(0.09, -0.019, 0.03, 180, 90, 0.0)
+            T_RSD455 = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 0.0, 0.0, 180)
+            T_cam = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 90, 90, 0.0)
+            T_tcp = build_transform_matrix_from_rpy(0.0, 0.0, 0.165, -180, 0.0, -180)
+
+            T_ee_cam  = T_ee @ T_rsd455 @ T_RSD455 @ T_cam
+            T_ee_tcp = T_ee @ T_tcp
+            T_cam_gripper = T_rot @ invert_transformation_matrix(T_ee_cam) @ T_ee_tcp
+        """
+        if load_use_sim():
+            T_cam_gripper = np.array([[0.0, 1.0, 0.0, 0.019],
+                                    [1.0, 0.0, 0.0, 0.09],
+                                    [ 0.0, 0.0, -1.0, 0.135],
+                                    [ 0.0, 0.0, 0.0, 1.0]])
+        """
+        T_cam_tcp_real = [[-0.07, -1.0, -0.003, 0.095],
+                          [-1.0, 0.07, -0.02, 0.034],
+                          [0.02, 0.001, -1.0, 0.15],
+                          [0.0, 0.0, 0.0, 1.0]]
+        """
 
         # Get gripper pose (try a few times if not successful)
         for i in range(5):
@@ -752,8 +801,23 @@ class LLMNode(Node):
             [0., 0., 0., 1.]
         ])
 
+        if load_use_sim():
+            T_moveit_world = np.array([
+            [1.0, 0.0, -0.0, 0.025],
+            [-0.0, 1.0, -0.0, 0.04],
+            [0.0, 0.0, 1.0, -0.8],
+            [0.0, 0.0, 0.0, 1.0]
+        ])
+
         T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
 
+        # Apply correction offsets ONLY in simulation mode
+        """
+        if load_use_sim():
+            offset = np.eye(4)
+            offset[:3, 3] = [-0.05, -0.20, 0.10]  # Apply offsets: subtract where sim overshoots
+            T_cam_world = offset @ T_cam_world
+        """
         return T_cam_world
 
     def request_rvis_image(self):
@@ -876,6 +940,23 @@ class LLMNode(Node):
         response = self.wait_future(future, timeout=90)
 
         return response
+
+
+
+    def switch_robot_mode(self, use_sim: bool) -> str:
+        """
+        Switch between simulation and physical robot mode.
+
+        Args:
+            use_sim (bool): If True, switch to simulation mode. If False, switch to real robot.
+
+        Returns:
+            str: A confirmation message indicating the mode change.
+        """
+        new_mode = set_use_sim(use_sim)
+        self.use_sim = use_sim
+        return f"Robot mode has been set to: {'simulation' if new_mode == 'True' else 'real robot'}."
+
 
     #######################################################################################
     # ------------------------------ LANGGRAPH FUNCTIONS -------------------------------- #
@@ -1079,13 +1160,15 @@ class LLMNode(Node):
         # Resize the image to 524x524
         # Change this to get the actual image from the camera
         #original_image = cv2.imread(image_path)
-        if self.use_sim:
+        if load_use_sim():
+            original_image = cv2.imread("resized_image.jpg")
+            """
             for i in range(5):
                 request = GetSimCameraData.Request()
                 future = self.sim_cam_client.call_async(request)
 
                 # Wait for the result
-                response = self.wait_future(future, timeout=10)
+                response = self.wait_future(future, timeout=15)
 
                 if response is not None:
                     response = future.result()
@@ -1101,6 +1184,7 @@ class LLMNode(Node):
                         self.get_logger().info("Retrying to get simulated camera data...")
                         rclpy.spin_once(self, timeout_sec=0.1)
                         continue
+            """           
 
         else:
             original_image = self.color_img
@@ -1484,8 +1568,6 @@ class LLMNode(Node):
         # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
 
-        # Set the use_sim flag based on the current mode
-        self.detector_req.use_sim = self.use_sim
         T = self.get_cam2world_transform()
         transform_msg = TransformMatrix()
         transform_msg.matrix = T.flatten().tolist()
@@ -1770,27 +1852,32 @@ class LLMNode(Node):
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
 
-        self._3f_controller.output_registers.r_act = 1  # Active Gripper
-        self._3f_controller.output_registers.r_mod = 1  # Basic Gripper Mode
-        self._3f_controller.output_registers.r_gto = 1  # Go To Position
-        self._3f_controller.output_registers.r_atr = 0  # Stop Automatic Release
-        self._3f_controller.output_registers.r_pra = round((167 - width) / 167 * 112)          # Gripper limitations [0 - 167mm]
-        self._3f_controller.output_registers.r_spa = round((speed - 22) / (110 - 22) * 255)    # Speed limitations [22 - 110mm/sec]
-        self._3f_controller.output_registers.r_fra = round((force - 15) / (60 - 15) * 255)     # Force limitations [15 - 60N]
-
-        # Call the service asynchronously
-        future1 = self._3f_controller_cli.call_async(self._3f_controller)
-
         # Rviz gripper 
         self._gripper_req.width = float(width)   
         self._gripper_req.gripper_name = "3f"
         future2 = self._gripper_client.call_async(self._gripper_req)
 
         # Wait for the result
-        response1 = self.wait_future(future1, timeout=15)
         response2 = self.wait_future(future2, timeout=15)
 
-        return response1
+        if load_use_sim():
+            return response2
+        else:
+            self._3f_controller.output_registers.r_act = 1  # Active Gripper
+            self._3f_controller.output_registers.r_mod = 1  # Basic Gripper Mode
+            self._3f_controller.output_registers.r_gto = 1  # Go To Position
+            self._3f_controller.output_registers.r_atr = 0  # Stop Automatic Release
+            self._3f_controller.output_registers.r_pra = round((167 - width) / 167 * 112)          # Gripper limitations [0 - 167mm]
+            self._3f_controller.output_registers.r_spa = round((speed - 22) / (110 - 22) * 255)    # Speed limitations [22 - 110mm/sec]
+            self._3f_controller.output_registers.r_fra = round((force - 15) / (60 - 15) * 255)     # Force limitations [15 - 60N]
+
+            # Call the service asynchronously
+            future1 = self._3f_controller_cli.call_async(self._3f_controller)
+
+            response1 = self.wait_future(future1, timeout=15)
+
+            return response1
+
 
     #@tool
     def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=20) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
@@ -1831,23 +1918,30 @@ class LLMNode(Node):
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
 
-        self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
-        self._2f_req.speed = float(speed)   # Speed in mm/s. Must be between 20 and 150 mm/s.
-        self._2f_req.force = float(force)   # Force in N. Must be between 20 and 235 N.
-
-        # Publish command to left gripper
-        future1 = self._2f_client.call_async(self._2f_req)
-
         # Rviz gripper
         self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
         self._gripper_req.gripper_name = "2f"
-        future2 = self._gripper_client.call_async(self._gripper_req)
 
-        # Wait for the result
-        response1 = self.wait_future(future1, timeout=15)
+        self.get_logger().info("Simulated gripper command sent")
+        future2 = self._gripper_client.call_async(self._gripper_req)
         response2 = self.wait_future(future2, timeout=15)
 
-        return response1
+        # Wait for the result
+        if load_use_sim():
+            return response2
+        else:
+            self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
+            self._2f_req.speed = float(speed)   # Speed in mm/s. Must be between 20 and 150 mm/s.
+            self._2f_req.force = float(force)   # Force in N. Must be between 20 and 235 N.
+
+            # Publish command to left gripper
+            future1 = self._2f_client.call_async(self._2f_req)
+
+            self.get_logger().info("Real gripper command sent")
+
+            response1 = self.wait_future(future1, timeout=15)
+
+            return response1
     
 
     ################################################################################################
@@ -1921,6 +2015,10 @@ class LLMNode(Node):
             response.message = "Tool list generation failed."
 
         return response
+
+    ################################################################################################
+    # -------------------------- INTERACTION WITH LARGE LANGUAGE MODELS -------------------------- #
+    ################################################################################################
 
     def main_handle_service(self, request, response):
         self.get_logger().info("Request received")

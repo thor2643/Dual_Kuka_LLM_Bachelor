@@ -19,8 +19,8 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 import os
 
-
-
+# Simulation
+from utils.mode_switch import load_use_sim
 
 #ROS stuff
 from project_interfaces.srv import GetObjectInfo
@@ -126,17 +126,24 @@ class SimCamera(Node):
         request = GetSimCameraData.Request()
         future = self.client.call_async(request)
         rclpy.spin_until_future_complete(self, future)
+        self.get_logger().info("[SimCamera] Finished waiting for future")
 
         if future.result() is not None:
             response = future.result()
 
             # Convert image messages to OpenCV
-            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
+            #self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="16UC1")
+            self.depth_img = self.bridge.imgmsg_to_cv2(response.depth_image, desired_encoding="32FC1")
 
             color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
             self.color_img = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
 
             self.camera_info = response.camera_info.k
+
+            self.get_logger().info(f"[SimCamera] Depth image shape: {self.depth_img.shape}")
+            self.get_logger().info(f"[SimCamera] Depth image min: {np.min(self.depth_img)}, max: {np.max(self.depth_img)}")
+            self.get_logger().info(f"[SimCamera] Camera intrinsics: {self.camera_info}")
+
         else:
             self.get_logger().error("Failed to get simulated camera data")
 
@@ -159,7 +166,6 @@ In the grasp pipeline the following parameters are of importance: DO NOT CHANGE 
 class ObjectDetector(Node):
     def __init__(self):
         super().__init__('object_detector')
-        self.sim_enabled = False
 
         self.camera_source = RealSenseCamera()
 
@@ -194,7 +200,8 @@ class ObjectDetector(Node):
 
 
     def retrieve_aligned_frames(self):
-        if self.sim_enabled:
+        self.get_logger().error(f'{load_use_sim()}\n')
+        if load_use_sim():
             self.get_logger().info(f'Using sim camera\n')
             sim_camera = SimCamera()
         
@@ -235,7 +242,10 @@ class ObjectDetector(Node):
         u, v = np.meshgrid(np.arange(width), np.arange(height))
 
         # Get the depth in meters
-        z = self.depth_frame.astype(np.float32) / 1000.0  # Convert to meters
+        if not load_use_sim:
+            z = self.depth_frame.astype(np.float32) / 1000.0  # Convert to meters
+        else:
+            z = self.depth_frame.astype(np.float32)
 
         # Replace 0.0 with np.nan to mark invalid pixels
         z[z == 0.0] = np.nan
@@ -295,7 +305,7 @@ class ObjectDetector(Node):
     #The callback function for the detector service for YOLO World
     def get_object_information(self, request, response, clustered = True):
         object = request.object_name
-        self.sim_enabled = request.use_sim
+        self.get_logger().info(f'Requested to find {object}\n')
 
         self.found_objects.clear()
         self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
@@ -385,6 +395,9 @@ class ObjectDetector(Node):
 
             # Find center of the object in 3D space
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+
+            self.get_logger().info(f'Object bounding box: {x_min}, {y_min}, {x_max}, {y_max}\n')
+
             # Convert pixel coordinates to 3D coordinates
             cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
             if cart_point is None or len(cart_point) != 3:
@@ -1095,7 +1108,7 @@ class ObjectDetector(Node):
             return None
 
         # Calculate the x, y, z coordinates
-        if self.sim_enabled:
+        if load_use_sim():
             z = self.depth_frame[pixel_y, pixel_x] 
         else:
             z = self.depth_frame[pixel_y, pixel_x] / 1000  # Convert to meters

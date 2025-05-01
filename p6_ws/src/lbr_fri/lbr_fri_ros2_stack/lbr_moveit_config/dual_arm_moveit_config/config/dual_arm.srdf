@@ -108,8 +108,8 @@
         <joint name="a_3f_finger_middle_joint_1" value="1.1276"/>
         <joint name="a_3f_finger_middle_joint_2" value="0.0607"/>
         <joint name="a_3f_finger_middle_joint_3" value="-0.7736"/>
-        <joint name="a_3f_palm_finger_1_joint" value="0"/>
-        <joint name="a_3f_palm_finger_2_joint" value="0"/>
+        <joint name="a_3f_palm_finger_1_joint" value="-0.14"/>
+        <joint name="a_3f_palm_finger_2_joint" value="0.14"/>
     </group_state>
     <group_state name="brick_grip" group="3f_gripper">
         <joint name="a_3f_finger_1_joint_1" value="1.1276"/>
