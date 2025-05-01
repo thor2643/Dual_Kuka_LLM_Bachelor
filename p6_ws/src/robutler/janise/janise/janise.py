@@ -16,6 +16,7 @@ from scipy.spatial.transform import Rotation
 import math
 import time
 from utils.mode_switch import load_use_sim, set_use_sim
+from utils.linear_alg_utils import build_transform_matrix_from_rpy, get_zyz_transform, invert_transformation_matrix
 
 # Langgraph / Langchain libraries
 from langchain_openai import ChatOpenAI
@@ -593,6 +594,51 @@ class LLMNode(Node):
             [0.0196773, 0.00130301, -0.99980553, 0.15210002],
             [0.0, 0.0, 0.0, 1.0]
         ])
+        """
+        if load_use_sim():
+            T_cam_gripper = np.array([
+            [0, 1, 0, 0.09516971],
+            [1, 0, 0, 0.03406203],
+            [0, 0, -1, 0.15210002],
+            [0.0, 0.0, 0.0, 1.0]
+        ])
+        
+        if load_use_sim():
+            # START WORK FROM HERE! WE NEED CORRECT TRANSFORMATION MATRICES FOR SIMULATION
+            T_left_link_ee = build_transform_matrix_from_rpy(0.0, 0.0, 0.035, 0.0, 0.0, 0.0)
+            T_rsd455 = build_transform_matrix_from_rpy(0.09, -0.019, 0.03, 180, 90, 0.0)
+            T_RSD455 = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 0.0, 0.0, 180)
+            T_Camera_Pseudo_Depth = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 90, 90, 0.0)
+            T_a_2f_tool0 = build_transform_matrix_from_rpy(0.0, 0.0, 0.165, -180, 0.091, -180)
+
+            T_camera_left_link_ee  = T_left_link_ee @ T_rsd455 @ T_RSD455 @ T_Camera_Pseudo_Depth
+            T_tcp_left_link_ee = T_left_link_ee @ T_a_2f_tool0
+
+            T_cam_gripper = T_tcp_left_link_ee @ np.linalg.inv(T_camera_left_link_ee)
+        if load_use_sim():
+            T_rot = get_zyz_transform()
+
+            T_ee = build_transform_matrix_from_rpy(0.0, 0.0, 0.035, 0.0, 0.0, 0.0)
+            T_rsd455 = build_transform_matrix_from_rpy(0.09, -0.019, 0.03, 180, 90, 0.0)
+            T_RSD455 = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 0.0, 0.0, 180)
+            T_cam = build_transform_matrix_from_rpy(0.0, 0.0, 0.0, 90, 90, 0.0)
+            T_tcp = build_transform_matrix_from_rpy(0.0, 0.0, 0.165, -180, 0.0, -180)
+
+            T_ee_cam  = T_ee @ T_rsd455 @ T_RSD455 @ T_cam
+            T_ee_tcp = T_ee @ T_tcp
+            T_cam_gripper = T_rot @ invert_transformation_matrix(T_ee_cam) @ T_ee_tcp
+        """
+        if load_use_sim():
+            T_cam_gripper = np.array([[0.0, 1.0, 0.0, 0.019],
+                                    [1.0, 0.0, 0.0, 0.09],
+                                    [ 0.0, 0.0, -1.0, 0.135],
+                                    [ 0.0, 0.0, 0.0, 1.0]])
+        """
+        T_cam_tcp_real = [[-0.07, -1.0, -0.003, 0.095],
+                          [-1.0, 0.07, -0.02, 0.034],
+                          [0.02, 0.001, -1.0, 0.15],
+                          [0.0, 0.0, 0.0, 1.0]]
+        """
 
         # Get gripper pose (try a few times if not successful)
         for i in range(5):
@@ -636,8 +682,23 @@ class LLMNode(Node):
             [0., 0., 0., 1.]
         ])
 
+        if load_use_sim():
+            T_moveit_world = np.array([
+            [1.0, 0.0, -0.0, 0.025],
+            [-0.0, 1.0, -0.0, 0.04],
+            [0.0, 0.0, 1.0, -0.8],
+            [0.0, 0.0, 0.0, 1.0]
+        ])
+
         T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
 
+        # Apply correction offsets ONLY in simulation mode
+        """
+        if load_use_sim():
+            offset = np.eye(4)
+            offset[:3, 3] = [-0.05, -0.20, 0.10]  # Apply offsets: subtract where sim overshoots
+            T_cam_world = offset @ T_cam_world
+        """
         return T_cam_world
 
     def request_rvis_image(self):

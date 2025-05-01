@@ -392,7 +392,6 @@ class ObjectDetector(Node):
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
 
             self.get_logger().info(f'Object bounding box: {x_min}, {y_min}, {x_max}, {y_max}\n')
-            595.510986328125, 296.0084228515625, 725.259521484375, 412.3570556640625
 
             # Convert pixel coordinates to 3D coordinates
             cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
