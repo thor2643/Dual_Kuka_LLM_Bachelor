@@ -23,7 +23,7 @@ from langchain.tools.base import StructuredTool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, RemoveMessage
 
 from IPython.display import Image, display
 from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeStyles
@@ -136,6 +136,7 @@ class LLMNode(Node):
 
         # The path to the tool calls JSON file
         self.tool_calls_path = 'src/robutler/janise/resource/tool_calls_test.json'
+        self.user_prompt = None
 
         self.lego_bricks = {}
 
@@ -181,15 +182,14 @@ class LLMNode(Node):
 
         # Initialise the model
         # Change this to the model you want to use. We might implement more
-        self.model = ChatOpenAI(model="gpt-4o")
+        self.model = ChatOpenAI(model="gpt-4.1-mini")
 
-        # In Isaac
+        # ------------------------- Isaac Sim Workflow ------------------------- #
         self.bound_model = self.model.bind_tools(self.tools)
+        self.judge_model = self.model.bind_tools(self.task_detector_tools)
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
 
         self.sim_memory = MemorySaver()
-
-        # ------------------------- Isaac Sim Workflow ------------------------- #
 
         # Define a new graph
         # Using graphs allows us to define the flow of the conversation
@@ -202,8 +202,14 @@ class LLMNode(Node):
         # We could for an example also add an observation node for our evaluating model
         self.sim_workflow.add_node("Janise", self.model_Janise)
         self.sim_workflow.add_node("action", self.tool_node)
+        self.sim_workflow.add_node("action2", self.task_detector_tool_node)
+        self.sim_workflow.add_node("action3", self.task_detector_tool_node)
         self.sim_workflow.add_node("Socrates", self.model_Socrates)
-        self.sim_workflow.add_node("sim_Success_Detector", self.model_sim_Success_Detector)
+        self.sim_workflow.add_node("sim_judge", self.model_sim_judge)
+        self.sim_workflow.add_node("sim_subtask_judge", self.model_sim_subtask_judge)
+        self.sim_workflow.add_node("sim_error_explainer", self.model_sim_error_explainer)
+        self.sim_workflow.add_node("clear_history", self.clear_history)
+        self.sim_workflow.add_node("sim_subtask_judge_task_success", self.sim_subtask_judge_task_success)
 
         # Set the entrypoint as `Janise`
         # This means that this node is the first one called
@@ -222,28 +228,31 @@ class LLMNode(Node):
             # Next, we pass in the function that will determine which node is called next.
             self.sim_should_continue,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["action", "sim_Success_Detector"],
+            ["action", "sim_judge"],
         )
 
+        # ---- Right side of chart, this is called if janise did not make a tool call ----
         self.sim_workflow.add_conditional_edges(        
-            "sim_Success_Detector",
+            "sim_judge",
             # The function that will determine which node is called next.
-            self.sim_task_success,
+            self.sim_judge_task_success,
             # Path map - all the possible nodes this edge could go to
-            ["Socrates", END],
+            ["action2", END],
         )
+        self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
+        self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
+        self.sim_workflow.add_edge("clear_history", "Socrates")
 
-        #TODO: Replace END with Task success detector 
-        #Then task success determine Socrates
-        # Error explainer
-        
-        # We now add a normal edge from `tools` to `Socrates`.
-        self.sim_workflow.add_edge("action", "Socrates")
+        # ---- Left side of chart, this is called if janise made a tool call ----
+        self.sim_workflow.add_edge("action", "sim_subtask_judge")
+        self.sim_workflow.add_edge("sim_subtask_judge", "sim_subtask_judge_task_success")
+        self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
         self.sim_workflow.add_edge("Socrates", "Janise")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
         self.sim_workflow_manager = self.sim_workflow.compile(checkpointer=self.sim_memory)
+
 
         # Comment in to save a png of the graph and show it
         """
@@ -267,8 +276,8 @@ class LLMNode(Node):
                 self.get_logger().error("Failed to load the workflow graph image.")
         except ImportError:
             self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
-
         """
+        
 
         # Setting a thread_id helps the model remember the context of the conversation
         self.sim_config = {"configurable": {"thread_id": "sim_1"}}
@@ -364,9 +373,18 @@ class LLMNode(Node):
                                                                 Also apply your guidance in the context of the user request. You are to ensure that the overarching goal is not forgotten.
                                                                 """)
         
-        self.initial_prompt_sim_Success_Detector = SystemMessage(content = """You are a task success judge. You will be provided an image and you are to determine if the given task is completed or not.""")
+        self.initial_prompt_sim_judge = SystemMessage(content = """You are a task success judge. You will be provided an image and you are to determine if the given task is completed or not. If the task is completed, call the function "detected_success". If the task is not completed call the function "detected_failure".""")
         
-        # Append the initial prompt to the message state
+        #self.initial_prompt_sim_error_explainer = SystemMessage(content = """You are a task error explainer. The task was not completed correctly and you must explain why. Provide a brief explanation of the error and how it can be avoided in the future. 
+        #                                                        Aditonally you MUST asses if the task is even possible by calling a function EVERY TIME. If it is not possible to complete the task in the given scene, call the function "detected_failure". If there was a mistake in the aporach to solving the task, and it can be completed with the given options, call the function "detected_success". 
+        #                                                        The following messages are the conversation history, and you can use this to provide a better explanation of the error:""")
+
+        self.initial_prompt_sim_error_explainer = SystemMessage(content = """You are a task error explainer. The task was not completed correctly and you must explain why. Provide a brief explanation of the error and how it can be avoided in the future.  
+                                                                The following messages are the conversation history, and you can use this to provide a better explanation of the error:""")
+        
+        self.initial_prompt_sim_subtask_judge = SystemMessage(content = """You are a task success judge. You will be provided an image and you are to determine if the given tool calls are completed or not. If the task is completed, call the function "detected_success". If the task is not completed call the function "detected_failure".""")
+
+        # Append the initial prompt to the message statejudge_model
         self.sim_workflow_manager.update_state(self.sim_config, {"messages": self.initial_prompt})
 
         
@@ -409,11 +427,11 @@ class LLMNode(Node):
         # Comment in to save a png of the graph and show it
         """
         graph = self.real_workflow_manager.get_graph()
-
+        
         # Display the workflow graph using OpenCV
         graph_image_path = f"{self.conversation_log_folder}/workflow_graph_{self.current_time}.png"
         graph.draw_mermaid_png(
-            draw_method=MermaidDrawMethod.API,
+            draw_method=MermaidDrawMethod.PYPPETEER,
             output_file_path=graph_image_path,
         )
 
@@ -428,8 +446,7 @@ class LLMNode(Node):
                 self.get_logger().error("Failed to load the workflow graph image.")
         except ImportError:
             self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
-
-        """
+        """        
 
         self.initial_prompt_success_detector = SystemMessage(content = """ 
                                                                         You are a part of a robotic cell consisting of two collaborative KUKA iiwa 7 robots, each with 7 degrees of freedom (DoF).
@@ -790,22 +807,66 @@ class LLMNode(Node):
         last_message = state["messages"][-1]
         # If there is no function call, then we finish
         if not last_message.tool_calls:
-            return "sim_Success_Detector"
+            return "sim_judge"
         # Otherwise if there is, we continue
         return "action"
     
-    def sim_task_success(self, state: MessagesState):
-        """Switch to real system if the success detector says so, otherwise reset."""
-        last_message = state["messages"][-1]
-        # If there is no function call, then we finish
-        if not last_message.tool_calls:
+    def sim_judge_task_success(self, state: MessagesState):
+        """Used by the judge to either end simulation task or continue"""
 
-            #TODO: Switch from sim to real
+        tool = state["messages"][-1].tool_calls
+        tool_name = tool[0]["name"]
 
-            return END
-        # Otherwise if there is, we continue
-        return "action"
+        if tool_name == "detected_failure":
+            return "action2" #We need to actiave the tool calls before proceeding
+        elif tool_name == "detected_success":
+            #TODO:SWITCH TO REAL SYSTEM
+            return END # The system worked and we can move to the real system.
+  
+        # If it did not call anything we end anyways.
+        return END
+        
+    def sim_error_task_sucess(self, state: MessagesState):
+        """Used by the error explainer to either continue or end the task, beacuse it is not possible."""
+
+        try: 
+            tool = state["messages"][-1].tool_calls
+            tool_name = tool[0]["name"]
+            if tool_name == "detected_success":
+                self.get_logger().info("Explainer asses that the task can be completed")
+                return "action3" # The error explainer has determined that the task can be compeleted so we continue.
+            elif tool_name == "detected_failure":
+                self.get_logger().info("Detected failure")
+                return END 
+        except:
+            self.get_logger().info("No tool was called by error explainer")
+
+        # If they did not call anything we end anyways.
+        return END
     
+    def clear_history(self, state: MessagesState):
+        """ Removes all but the initial prompts and the latest message from the message history. """
+        self.get_logger().error("Clearing history")
+        messages = state["messages"]
+        return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt):-1]]}
+    
+
+    def sim_subtask_judge_task_success(self, state: MessagesState):
+        """Used after the subtask judge to either remove or keep previous tool call"""
+        messages = state["messages"]
+        tool = state["messages"][-1].tool_calls
+        tool_name = tool[0]["name"]
+
+        if tool_name == "detected_failure":
+            # Remove the latest two tool calls and go to socrates. 
+            return "Socrates",{"messages": [RemoveMessage(id=messages[-1].id),RemoveMessage(id=messages[-2].id)]} 
+        
+        elif tool_name == "detected_success":
+            return "Socrates" 
+  
+        # If it did not call anything we end anyways.
+        self.get_logger().error("No tool was called by subtask judge")
+        return END
     
     # If a tool is to be called, the action node is called otherwise the Janise node is called
     def successful_task(self, state: MessagesState):
@@ -875,20 +936,20 @@ class LLMNode(Node):
         return {"messages": response}
     
     def model_Socrates(self, state: MessagesState):
-
+        self.get_logger().info(f'state: {state}')
         # We append an image to the CoT message
         #image_path = "image.jpg"
 
         # Resize the image to 524x524
         # Change this to get the actual image from the camera
-        original_image = cv2.imread("/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/sample_image.jpg")
+        #original_image = cv2.imread("/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/sample_image.jpg")
 
         #original_image = self.color_img
-        resized_image = cv2.resize(original_image, (524, 524))  
+        #resized_image = cv2.resize(original_image, (524, 524))  
+        #cv2.imwrite(resized_image_path, resized_image)
         
         resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
-        cv2.imwrite(resized_image_path, resized_image)
-    
+        
         # Encode the resized image
         image = self.encode_image(resized_image_path)
 
@@ -920,22 +981,17 @@ class LLMNode(Node):
         # We return a list, because this will get added to the existing list
         return {"messages": response_human}
     
-    def model_sim_Success_Detector(self, state_shortened: MessagesState):
-    
-        original_image = cv2.imread("/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/sample_image.jpg")
-
-        #original_image = self.color_img
-        resized_image = cv2.resize(original_image, (524, 524))  
+    def model_sim_judge(self, state_shortened: MessagesState):
+        # This is the function that will be called to judge the simulation when janise determine the task is completed.
        
         resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
-        cv2.imwrite(resized_image_path, resized_image)
-    
+       
         # Encode the resized image
         image = self.encode_image(resized_image_path)
 
         message = HumanMessage(
             content=[
-                {"type": "text", "text": """Here is an image of the workspace.
+                {"type": "text", "text": f"""The task was: "{self.user_prompt}". Here is an image of the workspace. 
                 """},
                 {
                     "type": "image_url",
@@ -944,12 +1000,155 @@ class LLMNode(Node):
             ]
         )
 
-        state_shortened = {"messages": [self.initial_prompt_sim_Success_Detector]}
+        state_shortened = {"messages": [self.initial_prompt_sim_judge]}
         state_shortened["messages"].append(message)
         
-        response = self.bound_model.invoke(state_shortened["messages"])
+        response = self.judge_model.invoke(state_shortened["messages"])
        
-        response.name = "sim_Success_Detector"
+        response.name = "sim_judge"
+
+        return {"messages": response}
+    
+    def model_sim_error_explainer(self, state: MessagesState):
+
+        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
+        
+        # Encode the resized image
+        image = self.encode_image(resized_image_path)
+
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"""The task was: {self.user_prompt}. Here is an overview of the workspace.
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        # We must replace the system message for Janise and Sokrates
+        state["messages"][0] = self.initial_prompt_sim_error_explainer
+        state["messages"].append(message)
+
+        response = self.think_model.invoke(state["messages"])
+        response.name = "sim_error_explainer"
+
+        # METHOD 1 ---------------- POP (ONLY THE FIRST ONE WORKS)
+        #self.get_logger().info(f"State before pop --------- {state['messages']}")
+        state["messages"].pop() # Remove the image message
+        #state["messages"].pop()
+        #state["messages"].pop()
+        #state["messages"].pop()
+        #state["messages"].pop()
+        #self.get_logger().info(f"State After 6 x pop --------- {state['messages']}")
+
+
+        # Metod 2 ---------------- CLEAR AND ADD initial prompt (DOES NOT WORK)
+        #state["messages"].clear 
+        #state["messages"].append(self.initial_prompt_sim_error_explainer)
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": state["messages"]})
+
+
+        # METHOD 3 ---------------- REMOVE ID (DOES NOT WORK)
+
+        #messages = self.sim_workflow_manager.get_state(self.sim_config).values["messages"]
+        #messages = state["messages"]
+        #id=messages[-1].id
+        #self.get_logger().info(f"---------id: {str(id)} ------------------")
+        #for message in messages:
+        #    if message.id == id:
+        #        self.get_logger().info(f"Message with id {str(id)}: {str(message)}")
+                #self.sim_workflow_manager.update_state(self.sim_config, {"messages": [RemoveMessage(id)]})
+        #        break
+        
+        # IF I TRY TO DO IT TWICE I GET TOLD THE ID IS ALLREADY REMOVED
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": RemoveMessage(id)})
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": state["messages"]})
+        
+
+        # METHOD 4 ----------------- NEW THREAD (DOES NOT WORK)
+
+        #current_id = self.sim_config["configurable"]["thread_id"]
+        #new_id = current_id + "_another_run"
+        #self.sim_config["configurable"]["thread_id"] = new_id
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": self.initial_prompt})
+        
+        # We 
+        final = AIMessage(content=f"During previous atempts to solve the task, the following mistake(s) was detected: {response.text()}")
+
+        # We return a list, because this will get added to the existing list
+        return {"messages": final} 
+    
+
+    def model_sim_subtask_judge(self, state_shortened: MessagesState):
+        # This is the function that will be called to judge each tool call made by janice.
+
+        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
+        image = self.encode_image(resized_image_path)
+
+        self.get_logger().info(f"State subtask judge {state_shortened['messages']}")
+
+        judge_tool_info = []
+
+        for i in range(1, len(state_shortened["messages"])):
+            if isinstance(state_shortened["messages"][-i], AIMessage):
+
+                # The latest AI STATE WAS:
+                self.get_logger().info(f"AI message {str(state_shortened['messages'][-i])}")
+
+                self.get_logger().info(f"Number of tool calls is: {i-1}")
+                self.get_logger().info(f"Tool message (right after): {str(state_shortened['messages'][-i+1])}")
+
+                judge_tool_info.append(state_shortened["messages"][-i+1])
+                judge_tool_info.append(". Which resulted in: ")
+
+
+                self.get_logger().info(f"Tool result -2 after: {state_shortened['messages'][-i+2]}")
+                                       
+                #for j in range(1,i-1):
+                #    self.get_logger().info("TOOL CALL RESULT FUND")
+                #    self.get_logger().info(f"Tool result: {state_shortened['messages'][-i-j-1]}")
+
+                #    judge_tool_info.append(state_shortened["messages"][-i-j-1])
+                  
+                break
+
+        #for i, message in enumerate(reversed(state_shortened["messages"])):
+        #    if isinstance(state_shortened["messages"][-i], AIMessage):
+        #        self.get_logger().info(f"Number of tool calls is: {i-1}")
+        #        self.get_logger().info(f"AI message {str(state_shortened['messages'][-i].tool_calls)}")
+
+        #        judge_tool_info.append(state_shortened["messages"][-i].tool_calls)
+        #        judge_tool_info.append(". Which resulted in: ")
+
+        #        for j in range(i-1):
+        #            self.get_logger().info(f"Tool call result {state_shortened['messages'][-i+j-1]}")
+
+        #            judge_tool_info.append(state_shortened["messages"][-i+j-1])
+                  
+        #        break
+
+
+        #self.get_logger().info(f"Judge tool info: {judge_tool_info}")
+        
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"""The tools call(s) you must judge the success of are: {judge_tool_info}. Here is an image of the workspace which may be useful 
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        state_shortened = {"messages": [self.initial_prompt_sim_subtask_judge]}
+        state_shortened["messages"].append(message)
+        
+        response = self.judge_model.invoke(state_shortened["messages"])
+       
+        response.name = "sim_subtask_judge"
 
         return {"messages": response}
     
@@ -1536,13 +1735,12 @@ class LLMNode(Node):
     def sim_system(self,request, response):
         """ Generates the tool list uisng Isaac Sim """
 
-        # If the user wants to clear the history, do so
-        #content = request.message  
+        # Convert to langgraph message format
+        query = HumanMessage(self.user_prompt)
 
-        content="End the loop immediately"
-
-        for event in self.sim_workflow_manager.stream({"messages": [HumanMessage(content)]}, self.sim_config, stream_mode="values"):
+        for event in self.sim_workflow_manager.stream({"messages": [query]}, self.sim_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
+            
 
         # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #
 
@@ -1566,7 +1764,7 @@ class LLMNode(Node):
                     tool_list[function_nr] ={
                         "function_name": tool_call["name"],
                         "args": tool_call["args"],
-                        "return_values": tool_message.content
+                        "return_values": json.dump(tool_message.content)
                     }                    
                 
         # Write the tool calls to the JSON file
@@ -1627,21 +1825,12 @@ class LLMNode(Node):
 
 
     def main_handle_service(self, request, response):
-            
-        prompt = request.prompt  # prompt is a string
-
         self.get_logger().info("Request received")
 
-        # TEst image retrieval
-        # self.request_rvis_image()
-
-        # Convert to langgraph message
-        query = HumanMessage(prompt)
-
-        print("Received request")
+        self.user_prompt = request.prompt  # prompt is a string
 
         #If the user wants to clear the history, do so
-        if "clear history" in prompt:
+        if "clear history" in self.user_prompt:
             os.system('clear')
             response.message = "History cleared."
 
