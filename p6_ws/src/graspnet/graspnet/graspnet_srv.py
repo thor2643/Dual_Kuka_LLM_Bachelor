@@ -7,6 +7,7 @@ import argparse
 from scipy.spatial.transform import Rotation as R
 import cv2
 from datetime import datetime
+import time
 
 # GraspNet / AnyGrasp
 import torch
@@ -131,6 +132,7 @@ class AnyGraspPipeline(Node):
         if flag == False:
             return response
 
+        start_time = time.time()
         # Run the neural network AnyGrasp
         net = self.get_net()
 
@@ -229,7 +231,7 @@ class AnyGraspPipeline(Node):
 
                 # Crop image and save it to PC, for test section!
                 # Define crop boundaries
-                crop_size = 100  # Half of 200
+                crop_size = 200  # Half of 200
                 h, w, _ = self.cv2img.shape
 
                 # Ensure crop boundaries stay within image bounds
@@ -276,6 +278,10 @@ class AnyGraspPipeline(Node):
             # Fill the response
             response.detected_objects.append(detected_object)
             response.object_count += 1
+
+        stop_time = time.time()
+        elapsed_time = stop_time - start_time
+        self.get_logger().info(f'Total time spent: {elapsed_time:.2f} seconds')
 
         return response
 
