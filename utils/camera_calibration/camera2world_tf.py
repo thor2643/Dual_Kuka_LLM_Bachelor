@@ -204,17 +204,17 @@ def quaternion_to_euler_angle( w, x, y, z):
     return X, Y, Z
 
 def invert_transformation_matrix(T):
-            """
-            Inverts a 4x4 transformation matrix.
-            """
-            R = T[:3, :3]
-            t = T[:3, 3]
-            R_inv = R.T
-            t_inv = -np.dot(R_inv, t)
-            T_inv = np.eye(4)
-            T_inv[:3, :3] = R_inv
-            T_inv[:3, 3] = t_inv
-            return T_inv
+    """
+    Inverts a 4x4 transformation matrix.
+    """
+    R = T[:3, :3]
+    t = T[:3, 3]
+    R_inv = R.T
+    t_inv = -np.dot(R_inv, t)
+    T_inv = np.eye(4)
+    T_inv[:3, :3] = R_inv
+    T_inv[:3, 3] = t_inv
+    return T_inv
 
 t_matrices = []
 
