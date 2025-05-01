@@ -28,7 +28,7 @@ from langsmith import traceable
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, StateGraph, START, END
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage, RemoveMessage
 
 from IPython.display import Image, display
 from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeStyles
@@ -49,13 +49,9 @@ from project_interfaces.srv import PlanMoveCommand
 from project_interfaces.srv import ExecuteMoveCommand
 from project_interfaces.srv import PromptJanice
 from project_interfaces.srv import GetCurrentPose
-from project_interfaces.srv import GripperMoveit
-from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
-from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
-from project_interfaces.srv import GetSimCameraData
 from geometry_msgs.msg import TransformStamped
 from sensor_msgs.msg import Image
 
@@ -78,14 +74,14 @@ class LLMNode(Node):
         self._2f_client = self.create_client(Robotiq2F85GripperCommand, 'gripper_2f_service', callback_group=client_cb_group)
         self._2f_req = Robotiq2F85GripperCommand.Request()
 
-        # Moveit gripper client
-        self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
-        self._gripper_req = GripperMoveit.Request()
-
         #Object detector service client
         self.detector_client = self.create_client(GetObjectInfo, 'get_object_info', callback_group=client_cb_group)
         self.detector_req = GetObjectInfo.Request()
         self.objects_on_table = {}
+
+        self.detector_client_yolo = self.create_client(GetObjectInfo, 'get_object_info_yolo', callback_group=client_cb_group)
+        self.detector_req_yolo = GetObjectInfo.Request()
+        self.objects_on_table_yolo = {}
 
         self.get_image_client = self.create_client(GetImage, 'get_image_from_rviz')
         self.get_image_req = GetImage.Request()
@@ -98,14 +94,9 @@ class LLMNode(Node):
             10  # Queue size
         )
 
-        # Create a service client for the simulated camera data
-        self.sim_cam_client = self.create_client(GetSimCameraData, 'get_simulated_camera_data')
-        self.sim_cam_req = GetSimCameraData.Request()
-
         self.bridge = CvBridge()
         self.color_img = None
-        self.use_sim = False
-
+        
         # Robot service client
         self.robot_plan_client = self.create_client(PlanMoveCommand, 'plan_move_command', callback_group=client_cb_group)
         self.robot_plan_req = PlanMoveCommand.Request()
@@ -135,6 +126,7 @@ class LLMNode(Node):
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
         self.get_logger().info(f"Current time and date: {self.current_time}")
 
+        self.object_file = 'src/robutler/object_detector/object_detector/lego_bricks_config.json'
         self.conversation_log_folder = 'src/robutler/janise/resource/conversation_logs'
         self.conversation_log_file = self.conversation_log_folder + f'/{self.current_time}.json'
 
@@ -149,16 +141,28 @@ class LLMNode(Node):
                 pass
         """
 
+        # The path to the tool calls JSON file
+        self.tool_calls_path = 'src/robutler/janise/resource/tool_calls_test.json'
+        self.user_prompt = None
+
+        self.lego_bricks = {}
+
+        with open(self.object_file, 'r') as file:
+            self.lego_bricks = json.load(file)
+
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'},
+            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'}
         }
 
         # Define the tools available to the LLM
         self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
-                      StructuredTool.from_function(self.find_object),
+                      StructuredTool.from_function(self.find_object), 
+                      StructuredTool.from_function(self.get_available_objects), 
+                      StructuredTool.from_function(self.find_object_yolo), 
+                      StructuredTool.from_function(self.plan_robot_trajectory), 
+                      StructuredTool.from_function(self.execute_planned_trajectory), 
                       StructuredTool.from_function(self.manipulate_right_gripper), 
                       StructuredTool.from_function(self.manipulate_left_gripper), 
                       StructuredTool.from_function(self.move_to_pose),
@@ -185,59 +189,81 @@ class LLMNode(Node):
 
         # Initialise the model
         # Change this to the model you want to use. We might implement more
-        self.model = ChatOpenAI(model="gpt-4.1")
-
-        # In Isaac
-        self.bound_model = self.model.bind_tools(self.tools)
-        self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
-
-        self.memory = MemorySaver()
+        self.model = ChatOpenAI(model="gpt-4.1-mini")
 
         # ------------------------- Isaac Sim Workflow ------------------------- #
+        self.bound_model = self.model.bind_tools(self.tools)
+        self.judge_model = self.model.bind_tools(self.task_detector_tools)
+        self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
+
+        self.sim_memory = MemorySaver()
 
         # Define a new graph
         # Using graphs allows us to define the flow of the conversation
         # To grasp this, it might be helpful to read a bit about graph theory
         # For each node action taken, we can will store the state of the conversation i.e. the messages
-        self.isaac_workflow = StateGraph(MessagesState)
+        self.sim_workflow = StateGraph(MessagesState)
 
         # Define the two nodes we will cycle between
         # The action node is the node that can actually call the tool using langgraphs's ToolNode class
         # We could for an example also add an observation node for our evaluating model
-        self.isaac_workflow.add_node("agent", self.call_model)
-        self.isaac_workflow.add_node("action", self.tool_node)
-        self.isaac_workflow.add_node("thought", self.think)
+        self.sim_workflow.add_node("Janise", self.model_Janise)
+        self.sim_workflow.add_node("action", self.tool_node)
+        self.sim_workflow.add_node("action2", self.task_detector_tool_node)
+        self.sim_workflow.add_node("action3", self.task_detector_tool_node)
+        self.sim_workflow.add_node("Socrates", self.model_Socrates)
+        self.sim_workflow.add_node("sim_judge", self.model_sim_judge)
+        self.sim_workflow.add_node("sim_subtask_judge", self.model_sim_subtask_judge)
+        self.sim_workflow.add_node("sim_error_explainer", self.model_sim_error_explainer)
+        self.sim_workflow.add_node("clear_history", self.clear_history)
+        self.sim_workflow.add_node("sim_subtask_judge_task_success", self.sim_subtask_judge_task_success)
 
-        # Set the entrypoint as `agent`
+        # Set the entrypoint as `Janise`
         # This means that this node is the first one called
-        # self.isaac_workflow.add_edge(START, "agent")
-        self.isaac_workflow.add_edge(START, "thought")
-        self.isaac_workflow.add_edge("thought", "agent")
+        #self.sim_workflow.add_edge(START, "Janise")
+        #self.sim_workflow.add_edge("Janise",END)
+
+        self.sim_workflow.add_edge(START, "Socrates")
+        self.sim_workflow.add_edge("Socrates", "Janise")
 
         # We now add a conditional edge
         # This means that the edge taken is determined by the function passed in
-        self.isaac_workflow.add_conditional_edges(
-            # First, we define the start node. We use `agent`.
-            # This means these are the edges taken after the `agent` node is called.
-            "agent",
+        self.sim_workflow.add_conditional_edges(
+            # First, we define the start node. We use `Janise`.
+            # This means these are the edges taken after the `Janise` node is called.
+            "Janise",
             # Next, we pass in the function that will determine which node is called next.
-            self.should_continue,
+            self.sim_should_continue,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["action", END],
+            ["action", "sim_judge"],
         )
 
-        # We now add a normal edge from `tools` to `thought`.
-        self.isaac_workflow.add_edge("action", "thought")
-        self.isaac_workflow.add_edge("thought", "agent")
+        # ---- Right side of chart, this is called if janise did not make a tool call ----
+        self.sim_workflow.add_conditional_edges(        
+            "sim_judge",
+            # The function that will determine which node is called next.
+            self.sim_judge_task_success,
+            # Path map - all the possible nodes this edge could go to
+            ["action2", END],
+        )
+        self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
+        self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
+        self.sim_workflow.add_edge("clear_history", "Socrates")
 
+        # ---- Left side of chart, this is called if janise made a tool call ----
+        self.sim_workflow.add_edge("action", "sim_subtask_judge")
+        self.sim_workflow.add_edge("sim_subtask_judge", "sim_subtask_judge_task_success")
+        self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
+        self.sim_workflow.add_edge("Socrates", "Janise")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
-        self.agent = self.isaac_workflow.compile(checkpointer=self.memory)
+        self.sim_workflow_manager = self.sim_workflow.compile(checkpointer=self.sim_memory)
+
 
         # Comment in to save a png of the graph and show it
         """
-        graph = self.agent.get_graph()
+        graph = self.sim_workflow_manager.get_graph()
 
         # Display the workflow graph using OpenCV
         graph_image_path = f"{self.conversation_log_folder}/workflow_graph_{self.current_time}.png"
@@ -257,11 +283,11 @@ class LLMNode(Node):
                 self.get_logger().error("Failed to load the workflow graph image.")
         except ImportError:
             self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
-
         """
+        
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.isaac_config = {"configurable": {"thread_id": "isaac_1"}}
+        self.sim_config = {"configurable": {"thread_id": "sim_1"}}
 
         self.initial_prompt_Janise = SystemMessage(content = """
             Your name is Janise. You are an AI robotic arm assistant for task reasoning and manipulation tasks.
@@ -289,14 +315,12 @@ class LLMNode(Node):
             - Before you are to make decisions, another agent named Socrates will provide you with insights and guidance to ensure that the correct actions are taken. You should always consider the suggestions made by Socrates before making a decision.
             - If not specified by the user, use the left arm for operations on the left side and use the right arm for operations on the right side.
             - Perform steps in an appropriate order e.g. move arm to object before closing gripper and plan trajectory before executing it.
-            - Never manipulate the grippers before the arms are moved to the desired position!! 
-            - Close the gripper to 0 and not grasp_width for the object you must grasp.
             - Safety is of utmost importance, so when in doubt always consult the user first. Especially for actions that move the robot.
                   
         """)
 
         self.initial_prompt = [
-            self.initial_prompt_Janise, #TODO get_available_objects does not ecxist anymore
+            self.initial_prompt_Janise,
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                       name = "Socrates"),
@@ -344,7 +368,7 @@ class LLMNode(Node):
                     name = "Janise")
             ]
         
-        self.initial_prompt_CoT = SystemMessage(content = """Your name is Socrates. You act as a critical thinker and must help the other LLM agent Janise to take proper action based on a user's request. 
+        self.initial_prompt_Socrates = SystemMessage(content = """Your name is Socrates. You act as a critical thinker and must help the other LLM agent Janise to take proper action based on a user's request. 
                                                                 You are to provide short and precise reasoning and guidance to Janise to ensure that the correct actions are taken. Your message is appended to the conversation for Janise to consider.
                                                                 As Janise is controlling a dual arm robot you must provide her with insights to the physical world, while considering the robot's capabilities and limitations.
                                                                 You are NOT allowed to call any tools yourself and can therefore only make suggestions for Janise to consider. You should always provide reasoning for your suggestions.
@@ -356,11 +380,22 @@ class LLMNode(Node):
                                                                 Also apply your guidance in the context of the user request. You are to ensure that the overarching goal is not forgotten.
                                                                 """)
         
-        # Append the initial prompt to the message state
-        self.agent.update_state(self.isaac_config, {"messages": self.initial_prompt})
+        self.initial_prompt_sim_judge = SystemMessage(content = """You are a task success judge. You will be provided an image and you are to determine if the given task is completed or not. If the task is completed, call the function "detected_success". If the task is not completed call the function "detected_failure".""")
+        
+        #self.initial_prompt_sim_error_explainer = SystemMessage(content = """You are a task error explainer. The task was not completed correctly and you must explain why. Provide a brief explanation of the error and how it can be avoided in the future. 
+        #                                                        Aditonally you MUST asses if the task is even possible by calling a function EVERY TIME. If it is not possible to complete the task in the given scene, call the function "detected_failure". If there was a mistake in the aporach to solving the task, and it can be completed with the given options, call the function "detected_success". 
+        #                                                        The following messages are the conversation history, and you can use this to provide a better explanation of the error:""")
+
+        self.initial_prompt_sim_error_explainer = SystemMessage(content = """You are a task error explainer. The task was not completed correctly and you must explain why. Provide a brief explanation of the error and how it can be avoided in the future.  
+                                                                The following messages are the conversation history, and you can use this to provide a better explanation of the error:""")
+        
+        self.initial_prompt_sim_subtask_judge = SystemMessage(content = """You are a task success judge. You will be provided an image and you are to determine if the given tool calls are completed or not. If the task is completed, call the function "detected_success". If the task is not completed call the function "detected_failure".""")
+
+        # Append the initial prompt to the message statejudge_model
+        self.sim_workflow_manager.update_state(self.sim_config, {"messages": self.initial_prompt})
 
         
-        # ------------------------- Real Cell Workflow ------------------------- #
+        # ------------------------- real Workflow ------------------------- #
 
         # Variable to help format dictionary
         self.function_call_id = 1
@@ -389,7 +424,7 @@ class LLMNode(Node):
 
         self.cell_workflow.add_edge("success_detector", "detector_action")
 
-        self.cell_workflow.add_conditional_edges(
+        self.real_workflow.add_conditional_edges(
             # First, we define the start node. We use `agent`.
             # This means these are the edges taken after the `agent` node is called.
             "detector_action",
@@ -400,17 +435,17 @@ class LLMNode(Node):
         )
 
         #TODO: Add a condition to check if the task was successful
-        self.cell_workflow.add_edge("error_corrector", "corrector_action")
-        self.cell_workflow.add_edge("corrector_action", "success_detector")
+        self.real_workflow.add_edge("error_corrector", "corrector_action")
+        self.real_workflow.add_edge("corrector_action", "success_detector")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
-        self.cell_agent = self.cell_workflow.compile(checkpointer=self.cell_memory)
+        self.real_workflow_manager = self.real_workflow.compile(checkpointer=self.real_memory)
 
         # Comment in to save a png of the graph and show it
         """
-        graph = self.cell_agent.get_graph()
-
+        graph = self.real_workflow_manager.get_graph()
+        
         # Display the workflow graph using OpenCV
         graph_image_path = f"{self.conversation_log_folder}/workflow_graph_{self.current_time}.png"
         graph.draw_mermaid_png(
@@ -429,9 +464,7 @@ class LLMNode(Node):
                 self.get_logger().error("Failed to load the workflow graph image.")
         except ImportError:
             self.get_logger().error("OpenCV is not installed. Please install it to display the workflow graph.")
-        """
-
-        
+        """        
 
         self.initial_prompt_success_detector = SystemMessage(content = """ 
                                                                         You are a part of a robotic cell consisting of two collaborative KUKA iiwa 7 robots, each with 7 degrees of freedom (DoF).
@@ -443,7 +476,7 @@ class LLMNode(Node):
 
                                                                         As the given sequence has only been validated in simulation, it is possible that the sequence of tool calls is not valid in the real world.
                                                                         Therefore, your task is to determine whether the subtask or tool call was successful or not. 
-                                                                        To determine this, you are given the called tool call and its returned results. In the chat history.
+                                                                        To determine this, you are given the called tool name and its returned results.
                                                                         If you consider the tool call / subtask to be successful, you should call the function "detected_success".
                                                                         Otherwise call the function "detected_failure". Notice, it is not enough for the tool to simply return a result to bes successful.
                                                                         You must read the results and determine whether the tool call was successful or not.
@@ -455,7 +488,7 @@ class LLMNode(Node):
         self.initial_prompt_corrector = SystemMessage(content = """
                                                                 You are a part of a robotic cell consisting of two collaborative KUKA iiwa 7 robots, each with 7 degrees of freedom (DoF).
                                                                 The setup includes a left and right side, each equipped with its respective robot arm.
-                                                                Given a task, a fully featured pipeline of LLM and VLM agents are generating a list of tool calls required to solve the task.
+                                                                Given a task a fully featured pipeline of LLM and VLM agents are generating a list of tool calls required to solve the task.
                                                                 This pipeline is integrated in an Isaac Sim environment where the robot cell is simulated with all it components.
                                                                 A valid sequence of tool calls is generated by iteratively trying different sequences in the simulation.
                                                                 The sequence is then passed to the pipeline that runs the physical cell. This pipeline calls the tool one at a time in the provided order.
@@ -473,7 +506,7 @@ class LLMNode(Node):
                                                                 """)
 
         # Append the initial prompt to the message state
-        self.cell_agent.update_state(self.cell_config, {"messages": self.initial_prompt_success_detector})
+        self.real_workflow_manager.update_state(self.real_config, {"messages": self.initial_prompt_success_detector})
 
         # Make the prompt template for the executor model
         # Define the prompt template
@@ -669,7 +702,7 @@ class LLMNode(Node):
                 'width': 85,
             },
             'right_gripper': {
-                'width': 167, # 167 before but thats wrong
+                'width': 167,
             },
             'services_unavailable': None,
         }
@@ -695,9 +728,9 @@ class LLMNode(Node):
         # Get current time and date from OS and format it for log file differentiation
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
 
-        # Save the current state snapshot of the agent app to a file
+        # Save the current state snapshot of the sim_workflow_manager app to a file
         state_snapshot_file = self.conversation_log_folder + f"/state_snapshot_{self.current_time}.json"
-        snapshot = self.agent.get_state(self.isaac_config).values
+        snapshot = self.sim_workflow_manager.get_state(self.sim_config).values
 
         serializable_snapshot = {
             key: [self.serialize_message(msg) for msg in value] if isinstance(value, list) else value
@@ -743,9 +776,9 @@ class LLMNode(Node):
     def get_cam2world_transform(self):
         """Get the transformation matrix from camera to gripper coordinates."""
         T_cam_gripper = np.array([
-            [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
-            [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
-            [0.0196773, 0.00130301, -0.99980553, 0.15210002],
+            [-0.0917179, -0.99558678, 0.01986943, 0.09246569],
+            [-0.99558723, 0.09128373, -0.02175657, 0.02742328],
+            [0.0198468, -0.02177722, -0.99956583, 0.1631206],
             [0.0, 0.0, 0.0, 1.0]
         ])
 
@@ -774,6 +807,7 @@ class LLMNode(Node):
 
                 R_gripper_moveit = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
                 T_gripper_moveit = self.convert_to_transformation_matrix(R_gripper_moveit, t_gripper_moveit)
+                self.get_logger().info("Succefully got gripper pose")
 
                 break
 
@@ -813,122 +847,95 @@ class LLMNode(Node):
         else:
             self.get_logger().error("Failed to retrieve image from RViz")
             return None
-        
-    def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
-        """
-        Plans a robot trajectory to a specified pose for a given arm. The planned trajectory is simulated 
-        and visualized for the user. The trajectory can later be executed using the execute_planned_trajectory method.
-
-        Args:
-            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
-                         The first three numbers correspond to the x, y, z position in meters, and the last 
-                         three numbers represent the roll, pitch, and yaw angles in degrees.
-            arm (str): Specifies which arm to plan the trajectory for. Must be either 'left' or 'right'.
-
-        Returns:
-            PlanMoveCommand.Response: The response from the robot planning service, containing the result 
-                                      of the trajectory planning process.
-        Raises:
-            ValueError: If the provided arm argument is not 'left' or 'right'.
-            TimeoutError: If the planning service does not respond within the specified timeout period.
-
-        Notes:
-            - The function uses pre-calibrated transformation matrices to convert the pose from world 
-              coordinates to MoveIt coordinates, depending on the selected arm.
-            - The pose's orientation in roll, pitch, and yaw is converted to a quaternion format before 
-              being sent to the planning service.
-            - The function waits asynchronously for the planning service to respond, with a timeout of 75 seconds.
-        """
-
-        if arm == 'right':
-            # Calibrated transformation matrix from world to moveit coordinates based on right arm
-            T_world_moveit = np.array([ [ 0.99998383, -0.00168775,  0.00543034, -0.03063849],
-                                        [ 0.00168078,  0.99999776,  0.00128864, -0.02827154],
-                                        [-0.00543251, -0.00127949,  0.99998443,  0.8001058 ],
-                                        [ 0.0,         0.0,         0.0,         1.0,      ] ])
-            
-        if arm == 'left':
-            # Calibrated transformation matrix from world to moveit coordinates based on left arm
-            T_world_moveit = np.array([ [ 0.99993911, -0.01089373,  0.00176324, -0.02348162],
-                                        [ 0.01089142,  0.99993982,  0.00131455, -0.03821792],
-                                        [-0.00177746, -0.00129526,  0.99999758,  0.80140745],
-                                        [ 0.0,         0.0,         0.0,         1.0       ] ])
-            
-        
-        # Extract the position from the pose and append 1 to make it a 4D vector
-        pos_world = pose[:3]
-        pos_world.append(1)
-
-        # Transform the position from camera to world coordinates
-        #pos_world = np.dot(T_world_cam, pos_cam)
-        pos_moveit = np.dot(T_world_moveit, pos_world)
-
-        rpy_world = pose[3:]
-        quat_moveit = self.euler_to_quat(rpy_world)
-
-        self.robot_plan_req.arm = arm
-        self.robot_plan_req.position.x = float(pos_moveit[0])
-        self.robot_plan_req.position.y = float(pos_moveit[1])
-        self.robot_plan_req.position.z = float(pos_moveit[2])
-        self.robot_plan_req.orientation.x = float(quat_moveit[1])
-        self.robot_plan_req.orientation.y = float(quat_moveit[2])
-        self.robot_plan_req.orientation.z = float(quat_moveit[3])
-        self.robot_plan_req.orientation.w = float(quat_moveit[0])
-
-        # Call the service asynchronously
-        future = self.robot_plan_client.call_async(self.robot_plan_req)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=75)
-        return response
-
-    def execute_planned_trajectory(self, arm: str) -> ExecuteMoveCommand.Response:
-        """
-        Executes a planned trajectory on the specified arm of the physical robot.
-
-        This function sends a request to execute a trajectory that has been planned 
-        using the `plan_robot_trajectory` function. It is important to ensure that 
-        the `plan_robot_trajectory` function has been called prior to invoking this 
-        function, as it relies on the trajectory data generated by the planning step.
-
-        Args:
-            arm (str): The identifier of the robot arm on which the trajectory 
-                       should be executed (e.g., "left_arm" or "right_arm").
-
-        Returns:
-            ExecuteMoveCommand.Response: The response object containing the result 
-                                         of the execution request, including success 
-                                         status and any relevant feedback.
-
-        Raises:
-            TimeoutError: If the execution request does not complete within the 
-                          specified timeout period (90 seconds).
-        """
-
-        self.robot_execute_req.arm = arm
-
-        future = self.robot_execute_client.call_async(self.robot_execute_req)
-
-        # Wait for the result
-        response = self.wait_future(future, timeout=90)
-
-        return response
-
 
     #######################################################################################
     # ------------------------------ LANGGRAPH FUNCTIONS -------------------------------- #
     #######################################################################################
 
-    # If a tool is to be called, the action node is called otherwise the agent node is called
-    @traceable
-    def should_continue(self, state: MessagesState):
+    # If a tool is to be called, the action node is called otherwise the Janise node is called
+    def sim_should_continue(self, state: MessagesState):
         """Return the next node to execute."""
         last_message = state["messages"][-1]
         # If there is no function call, then we finish
         if not last_message.tool_calls:
-            return END
+            return "sim_judge"
         # Otherwise if there is, we continue
         return "action"
+    
+    def sim_judge_task_success(self, state: MessagesState):
+        """Used by the judge to either end simulation task or continue"""
+
+        tool = state["messages"][-1].tool_calls
+        tool_name = tool[0]["name"]
+
+        if tool_name == "detected_failure":
+            return "action2" #We need to actiave the tool calls before proceeding
+        elif tool_name == "detected_success":
+            #TODO:SWITCH TO REAL SYSTEM
+            return END # The system worked and we can move to the real system.
+  
+        # If it did not call anything we end anyways.
+        return END
+        
+    def sim_error_task_sucess(self, state: MessagesState):
+        """Used by the error explainer to either continue or end the task, beacuse it is not possible."""
+
+        try: 
+            tool = state["messages"][-1].tool_calls
+            tool_name = tool[0]["name"]
+            if tool_name == "detected_success":
+                self.get_logger().info("Explainer asses that the task can be completed")
+                return "action3" # The error explainer has determined that the task can be compeleted so we continue.
+            elif tool_name == "detected_failure":
+                self.get_logger().info("Detected failure")
+                return END 
+        except:
+            self.get_logger().info("No tool was called by error explainer")
+
+        # If they did not call anything we end anyways.
+        return END
+    
+    def clear_history(self, state: MessagesState):
+        """ Removes all but the initial prompts and the latest message from the message history. """
+        self.get_logger().error("Clearing history")
+        messages = state["messages"]
+        return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt):-1]]}
+    
+
+    def sim_subtask_judge_task_success(self, state: MessagesState):
+        """Used after the subtask judge to either remove or keep previous tool call"""
+        messages = state["messages"]
+        tool = state["messages"][-1].tool_calls
+        tool_name = tool[0]["name"]
+
+        if tool_name == "detected_failure":
+            # Remove the latest two tool calls and go to socrates. 
+            return "Socrates",{"messages": [RemoveMessage(id=messages[-1].id),RemoveMessage(id=messages[-2].id)]} 
+        
+        elif tool_name == "detected_success":
+            return "Socrates" 
+  
+        # If it did not call anything we end anyways.
+        self.get_logger().error("No tool was called by subtask judge")
+        return END
+    
+    # If a tool is to be called, the action node is called otherwise the Janise node is called
+    def successful_task(self, state: MessagesState):
+        """Determines whether the error corrector should be called or not."""
+        self.get_logger().info("Checking if task was successful")
+
+        tool = state["messages"][-1]
+
+        # Check if the model has called the "detected_failure" or "detected_success" function
+        if tool.name == "detected_failure":
+            self.get_logger().info("Detected failure")
+            return "error_corrector"
+        elif tool.name == "detected_success":
+            self.get_logger().info("Detected success")
+            return END
+ 
+        # If no relevant function call, finish
+        return END
     
     
     # If a tool is to be called, the action node is called otherwise the agent node is called
@@ -1024,54 +1031,30 @@ class LLMNode(Node):
     
     # Define the function that calls the model
     # Takes in the cureent message history and returns the response
-    @traceable
-    def call_model(self, state: MessagesState):
+    def model_Janise(self, state: MessagesState):
         # We append the initial prompt to Janise
         state["messages"][0] = self.initial_prompt_Janise
 
         # Append the initial prompt to the message state
-        self.agent.update_state(self.isaac_config, {"messages": state["messages"]})
+        self.sim_workflow_manager.update_state(self.sim_config, {"messages": state["messages"]})
 
         response = self.bound_model.invoke(state["messages"])
         # We return a list, because this will get added to the existing list
         response.name = "Janise"
         return {"messages": response}
     
-    @traceable    
-    def think(self, state: MessagesState):
+    def model_Socrates(self, state: MessagesState):
+        self.get_logger().info(f'state: {state}')
         # We append an image to the CoT message
         #image_path = "image.jpg"
 
         # Resize the image to 524x524
         # Change this to get the actual image from the camera
-        #original_image = cv2.imread(image_path)
-        if self.use_sim:
-            for i in range(5):
-                request = GetSimCameraData.Request()
-                future = self.sim_cam_client.call_async(request)
+        #original_image = cv2.imread("/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/sample_image.jpg")
 
-                # Wait for the result
-                response = self.wait_future(future, timeout=10)
-
-                if response is not None:
-                    response = future.result()
-
-                    color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
-                    self.color_img_sim = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
-                    original_image = self.color_img_sim
-                else:
-                    if i == 4:
-                        self.get_logger().error("Failed to retrieve image from simulated camera after multiple attempts")
-                        original_image = cv2.imread("resized_image.jpg")
-                    else:
-                        self.get_logger().info("Retrying to get simulated camera data...")
-                        rclpy.spin_once(self, timeout_sec=0.1)
-                        continue
-
-        else:
-            original_image = self.color_img
-
-        resized_image = cv2.resize(original_image, (524, 524))
+        #original_image = self.color_img
+        #resized_image = cv2.resize(original_image, (524, 524))  
+        #cv2.imwrite(resized_image_path, resized_image)
         
         #resized_image_path = "resized_image.jpg"
         #cv2.imwrite(resized_image_path, resized_image)
@@ -1092,7 +1075,7 @@ class LLMNode(Node):
         )
 
         # We must replace the system message for Janise with the system message for Sokrates
-        state["messages"][0] = self.initial_prompt_CoT
+        state["messages"][0] = self.initial_prompt_Socrates
         state["messages"].append(message)
 
         # But it cannot analyze the image and the chat history at the same time
@@ -1107,6 +1090,177 @@ class LLMNode(Node):
 
         # We return a list, because this will get added to the existing list
         return {"messages": response_human}
+    
+    def model_sim_judge(self, state_shortened: MessagesState):
+        # This is the function that will be called to judge the simulation when janise determine the task is completed.
+       
+        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
+       
+        # Encode the resized image
+        image = self.encode_image(resized_image_path)
+
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"""The task was: "{self.user_prompt}". Here is an image of the workspace. 
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        state_shortened = {"messages": [self.initial_prompt_sim_judge]}
+        state_shortened["messages"].append(message)
+        
+        response = self.judge_model.invoke(state_shortened["messages"])
+       
+        response.name = "sim_judge"
+
+        return {"messages": response}
+    
+    def model_sim_error_explainer(self, state: MessagesState):
+
+        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
+        
+        # Encode the resized image
+        image = self.encode_image(resized_image_path)
+
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"""The task was: {self.user_prompt}. Here is an overview of the workspace.
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        # We must replace the system message for Janise and Sokrates
+        state["messages"][0] = self.initial_prompt_sim_error_explainer
+        state["messages"].append(message)
+
+        response = self.think_model.invoke(state["messages"])
+        response.name = "sim_error_explainer"
+
+        # METHOD 1 ---------------- POP (ONLY THE FIRST ONE WORKS)
+        #self.get_logger().info(f"State before pop --------- {state['messages']}")
+        state["messages"].pop() # Remove the image message
+        #state["messages"].pop()
+        #state["messages"].pop()
+        #state["messages"].pop()
+        #state["messages"].pop()
+        #self.get_logger().info(f"State After 6 x pop --------- {state['messages']}")
+
+
+        # Metod 2 ---------------- CLEAR AND ADD initial prompt (DOES NOT WORK)
+        #state["messages"].clear 
+        #state["messages"].append(self.initial_prompt_sim_error_explainer)
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": state["messages"]})
+
+
+        # METHOD 3 ---------------- REMOVE ID (DOES NOT WORK)
+
+        #messages = self.sim_workflow_manager.get_state(self.sim_config).values["messages"]
+        #messages = state["messages"]
+        #id=messages[-1].id
+        #self.get_logger().info(f"---------id: {str(id)} ------------------")
+        #for message in messages:
+        #    if message.id == id:
+        #        self.get_logger().info(f"Message with id {str(id)}: {str(message)}")
+                #self.sim_workflow_manager.update_state(self.sim_config, {"messages": [RemoveMessage(id)]})
+        #        break
+        
+        # IF I TRY TO DO IT TWICE I GET TOLD THE ID IS ALLREADY REMOVED
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": RemoveMessage(id)})
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": state["messages"]})
+        
+
+        # METHOD 4 ----------------- NEW THREAD (DOES NOT WORK)
+
+        #current_id = self.sim_config["configurable"]["thread_id"]
+        #new_id = current_id + "_another_run"
+        #self.sim_config["configurable"]["thread_id"] = new_id
+        #self.sim_workflow_manager.update_state(self.sim_config, {"messages": self.initial_prompt})
+        
+        # We 
+        final = AIMessage(content=f"During previous atempts to solve the task, the following mistake(s) was detected: {response.text()}")
+
+        # We return a list, because this will get added to the existing list
+        return {"messages": final} 
+    
+
+    def model_sim_subtask_judge(self, state_shortened: MessagesState):
+        # This is the function that will be called to judge each tool call made by janice.
+
+        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
+        image = self.encode_image(resized_image_path)
+
+        self.get_logger().info(f"State subtask judge {state_shortened['messages']}")
+
+        judge_tool_info = []
+
+        for i in range(1, len(state_shortened["messages"])):
+            if isinstance(state_shortened["messages"][-i], AIMessage):
+
+                # The latest AI STATE WAS:
+                self.get_logger().info(f"AI message {str(state_shortened['messages'][-i])}")
+
+                self.get_logger().info(f"Number of tool calls is: {i-1}")
+                self.get_logger().info(f"Tool message (right after): {str(state_shortened['messages'][-i+1])}")
+
+                judge_tool_info.append(state_shortened["messages"][-i+1])
+                judge_tool_info.append(". Which resulted in: ")
+
+
+                self.get_logger().info(f"Tool result -2 after: {state_shortened['messages'][-i+2]}")
+                                       
+                #for j in range(1,i-1):
+                #    self.get_logger().info("TOOL CALL RESULT FUND")
+                #    self.get_logger().info(f"Tool result: {state_shortened['messages'][-i-j-1]}")
+
+                #    judge_tool_info.append(state_shortened["messages"][-i-j-1])
+                  
+                break
+
+        #for i, message in enumerate(reversed(state_shortened["messages"])):
+        #    if isinstance(state_shortened["messages"][-i], AIMessage):
+        #        self.get_logger().info(f"Number of tool calls is: {i-1}")
+        #        self.get_logger().info(f"AI message {str(state_shortened['messages'][-i].tool_calls)}")
+
+        #        judge_tool_info.append(state_shortened["messages"][-i].tool_calls)
+        #        judge_tool_info.append(". Which resulted in: ")
+
+        #        for j in range(i-1):
+        #            self.get_logger().info(f"Tool call result {state_shortened['messages'][-i+j-1]}")
+
+        #            judge_tool_info.append(state_shortened["messages"][-i+j-1])
+                  
+        #        break
+
+
+        #self.get_logger().info(f"Judge tool info: {judge_tool_info}")
+        
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"""The tools call(s) you must judge the success of are: {judge_tool_info}. Here is an image of the workspace which may be useful 
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        state_shortened = {"messages": [self.initial_prompt_sim_subtask_judge]}
+        state_shortened["messages"].append(message)
+        
+        response = self.judge_model.invoke(state_shortened["messages"])
+       
+        response.name = "sim_subtask_judge"
+
+        return {"messages": response}
     
     @traceable
     def init_real_execution(self, state: ToolExecutionState):
@@ -1248,7 +1402,7 @@ class LLMNode(Node):
 
         return self.coordinates
 
-    #@tool   
+    #@tool
     def find_object(self, object_name: str) -> GetObjectInfo.Response:
         """
         Uses the object detection service to locate and retrieve grasp poses for a specified object, 
@@ -1411,133 +1565,189 @@ class LLMNode(Node):
 
         return self.objects_on_table
 
-    def flip_if_near_180(self, angle_deg):
+    #@tool   
+    def find_object_yolo(self, object_name: str) -> GetObjectInfo.Response:
         """
-        If angle is near ±180, flip it to the equivalent small negative or positive.
-        Assumes input is already in [-180, 180)
-        """
-        if angle_deg > 90:
-            return angle_deg - 180
-        elif angle_deg < -90:
-            return angle_deg + 180
-        return angle_deg
+        Uses the YoloWorld object detection service to locate a specified object in the environment.
+        This function interacts with the YoloWorld detector service to identify the specified object 
+        and retrieve its details, including its Cartesian center point, orientation, and grasping width. 
+        If the object is found, its position is transformed from camera coordinates to world coordinates 
+        using a calibrated transformation matrix. The detected objects are stored in a dictionary with 
+        unique names to avoid conflicts.
 
+        Args:
+            object_name (str): The name of the object to locate.
+
+        Returns:
+            GetObjectInfo.Response: A response object containing the details of the detected objects. 
+            If no objects are found or the service call fails, an empty response is returned.
+
+        Raises:
+            None
+
+        Notes:
+            - The function waits for the YoloWorld service call to complete with a timeout of 40 seconds.
+            - If multiple objects with the same name are detected, unique names are generated by appending 
+              an incrementing number to the object name.
+            - The transformation matrix `T_world_cam` is hardcoded and used to convert coordinates from 
+              the camera frame to the world frame.
+            - Detected objects are stored in the `self.objects_on_table_yolo` dictionary with their 
+              transformed center points, orientations, and grasp widths.
+        """
+        
+        print(f"\nRequesting the YoloWorld detector service to find {object_name}")
+        self.get_logger().info(f"\nLooking for object: {object_name}\n")
+        self.detector_req_yolo.object_name = object_name
+
+        future = self.detector_client_yolo.call_async(self.detector_req_yolo)
+
+        # Wait for the result
+        response = self.wait_future(future, timeout=40)
+
+        print("The service call has been completed.")  # Debugging
+
+        if response is None:
+            self.get_logger().error('Service call failed')
+            return GetObjectInfo.Response()
+        
+        if response.object_count != 0:
+            self.get_logger().info(f"\nObjects found: {response.object_count}")
+            self.get_logger().info(f"Center points: {response.centers}")
+            self.get_logger().info(f"Object orientations: {response.orientations}")
+            self.get_logger().info(f"Grasping widths: {response.grasp_widths}\n")
+
+            # Calibrated transformation matrix from coordinates to camera world
+            T_world_cam = np.array([[ 0.9998524,  -0.00382788,  0.01674907,  0.48649258],
+                                    [ 0.00545733, -0.85361904, -0.52086923,  0.78510204],
+                                    [ 0.01629115,  0.52088376, -0.85347215,  0.70742285],
+                                    [ 0.0,          0.0,          0.0,          1.0, ]])
+            
+            # Extract the position from the pose and append 1 to make it a 4D vector
+            center_pts = []
+            for point in response.centers:
+                center_pts.append([point.x, point.y, point.z, 1])
+
+            # Transform the position from camera to world coordinates
+            center_pts_world = np.dot(T_world_cam, np.array(center_pts).T).T
+
+            # Save the object information in a dictionary
+            for i, center in enumerate(center_pts_world):
+                # Make sure the object name is unique
+                object_name_temp = object_name
+                count = 1
+                while object_name_temp in self.objects_on_table_yolo:
+                    object_name_temp = f"{object_name}_{count}"
+                    count += 1
+
+                self.objects_on_table_yolo[object_name_temp] = {
+                    'center': center.tolist()[0:3],
+                    'orientation': response.orientations[i],
+                    'grasp_width': response.grasp_widths[i]
+                }
+
+            return self.objects_on_table_yolo
+    
     #@tool
-    def pick_up_object(self, pose: list, arm: str, object_width: int=0) -> bool:
+    def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
         """
-        Picks up an object by planning and executing a trajectory and closing the gripper.
+        Plans a robot trajectory to a specified pose for a given arm. The planned trajectory is simulated 
+        and visualized for the user. The trajectory can later be executed using the execute_planned_trajectory method.
+
         Args:
-            pose (list): Target pose for the robot arm.
-            arm (str): Specifies which arm to use ('left' or 'right').
-            object_width (int, optional): Width of the object to grip in millimeters. Defaults to 0 mm.
+            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
+                         The first three numbers correspond to the x, y, z position in meters, and the last 
+                         three numbers represent the roll, pitch, and yaw angles in degrees.
+            arm (str): Specifies which arm to plan the trajectory for. Must be either 'left' or 'right'.
+
         Returns:
-            bool: True if the object was successfully picked up, False otherwise.
+            PlanMoveCommand.Response: The response from the robot planning service, containing the result 
+                                      of the trajectory planning process.
+        Raises:
+            ValueError: If the provided arm argument is not 'left' or 'right'.
+            TimeoutError: If the planning service does not respond within the specified timeout period.
+
+        Notes:
+            - The function uses pre-calibrated transformation matrices to convert the pose from world 
+              coordinates to MoveIt coordinates, depending on the selected arm.
+            - The pose's orientation in roll, pitch, and yaw is converted to a quaternion format before 
+              being sent to the planning service.
+            - The function waits asynchronously for the planning service to respond, with a timeout of 75 seconds.
         """
-        # First we calculate the approach pose
-        T_approach = np.eye(4)
-        T_approach[2, 3] = 0.05 # Place approach 5 cm along grasp z-axis
 
-        R_pose = Rotation.from_euler('xyz', [pose[3], pose[4], pose[5]], degrees=True).as_matrix()
-        T_pose = np.eye(4)
-        T_pose[:3, :3] = R_pose
-        T_pose[:3, 3] = pose[:3]
-
-        # Convert the pose to the correct coordinate system
-        T_pose = np.dot(T_pose, T_approach)
-
-        # print(f"Old pose to pick up object: {pose}")
-
-        # Now convert back to x, y, z, roll, pitch, yaw
-        x, y, z = T_pose[:3, 3]
-        roll, pitch, yaw = Rotation.from_matrix(T_pose[:3, :3]).as_euler('xyz', degrees=True)
-
-        pose_approach = [x, y, z, roll, pitch, yaw]
-        pose_depart = pose.copy()
-        pose_depart[2] += 0.1 # Move up 10 cm
-
-        # print(f"New pose to pick up object: {pose}")
-
-        # First make sure the gripper is open
+        if arm == 'right':
+            # Calibrated transformation matrix from world to moveit coordinates based on right arm
+            T_world_moveit = np.array([ [ 0.99998383, -0.00168775,  0.00543034, -0.03063849],
+                                        [ 0.00168078,  0.99999776,  0.00128864, -0.02827154],
+                                        [-0.00543251, -0.00127949,  0.99998443,  0.8001058 ],
+                                        [ 0.0,         0.0,         0.0,         1.0,      ] ])
+            
         if arm == 'left':
-            gripper_response = self.manipulate_left_gripper(width=85)
-        else:
-            gripper_response = self.manipulate_right_gripper(width=167)
+            # Calibrated transformation matrix from world to moveit coordinates based on left arm
+            T_world_moveit = np.array([ [ 0.99993911, -0.01089373,  0.00176324, -0.02348162],
+                                        [ 0.01089142,  0.99993982,  0.00131455, -0.03821792],
+                                        [-0.00177746, -0.00129526,  0.99999758,  0.80140745],
+                                        [ 0.0,         0.0,         0.0,         1.0       ] ])
+            
+        
+        # Extract the position from the pose and append 1 to make it a 4D vector
+        pos_world = pose[:3]
+        pos_world.append(1)
 
-        if gripper_response is None or not gripper_response.success:
-            self.get_logger().error("Failed to open gripper")
-            return False
-        
-        # Now plan the movement to the approach pose
-        plan_response = self.plan_robot_trajectory(pose_approach, arm)
-        if plan_response is None or not plan_response.success:
-            self.get_logger().error("Failed to plan approach trajectory")
-            return False
-        
-        # The execute the planned trajectory
-        execute_response = self.execute_planned_trajectory(arm)
-        if execute_response is None or not execute_response.success:
-            self.get_logger().error("Failed to execute approach trajectory")
-            return False
-        
-        # Now plan the movement to the pose
-        plan_response = self.plan_robot_trajectory(pose, arm)
-        if plan_response is None or not plan_response.success:
-            self.get_logger().error("Failed to plan grasp trajectory")
-            return False
-        
-        # Execute the planned trajectory
-        execute_response = self.execute_planned_trajectory(arm)
-        if execute_response is None or not execute_response.success:
-            self.get_logger().error("Failed to execute grasp trajectory")
-            return False
-        
-        # Close the gripper
-        if arm == 'left':
-            gripper_response = self.manipulate_left_gripper(width=object_width)
-        else:
-            gripper_response = self.manipulate_right_gripper(width=object_width)
+        # Transform the position from camera to world coordinates
+        #pos_world = np.dot(T_world_cam, pos_cam)
+        pos_moveit = np.dot(T_world_moveit, pos_world)
 
-        if gripper_response is None or not gripper_response.success:
-            self.get_logger().error("Failed to close gripper")
-            return False
-        
-        # At last lift the object to avoid collision when moving away
-        plan_response = self.plan_robot_trajectory(pose_depart, arm)
-        if plan_response is None or not plan_response.success:
-            self.get_logger().error("Failed to plan grasp trajectory")
-            return False
-        
-        # The execute the planned trajectory
-        execute_response = self.execute_planned_trajectory(arm)
-        if execute_response is None or not execute_response.success:
-            self.get_logger().error("Failed to execute grasp trajectory")
-            return False
-        
-        return True
+        rpy_world = pose[3:]
+        quat_moveit = self.euler_to_quat(rpy_world)
 
-    def move_to_pose(self, pose: list, arm: str) -> bool:
+        self.robot_plan_req.arm = arm
+        self.robot_plan_req.position.x = float(pos_moveit[0])
+        self.robot_plan_req.position.y = float(pos_moveit[1])
+        self.robot_plan_req.position.z = float(pos_moveit[2])
+        self.robot_plan_req.orientation.x = float(quat_moveit[1])
+        self.robot_plan_req.orientation.y = float(quat_moveit[2])
+        self.robot_plan_req.orientation.z = float(quat_moveit[3])
+        self.robot_plan_req.orientation.w = float(quat_moveit[0])
+
+        # Call the service asynchronously
+        future = self.robot_plan_client.call_async(self.robot_plan_req)
+
+        # Wait for the result
+        response = self.wait_future(future, timeout=75)
+        return response
+
+    #@tool  
+    def execute_planned_trajectory(self, arm: str) -> ExecuteMoveCommand.Response:
         """
-        Moves the specified robotic arm to the given pose.
+        Executes a planned trajectory on the specified arm of the physical robot.
+
+        This function sends a request to execute a trajectory that has been planned 
+        using the `plan_robot_trajectory` function. It is important to ensure that 
+        the `plan_robot_trajectory` function has been called prior to invoking this 
+        function, as it relies on the trajectory data generated by the planning step.
+
         Args:
-            pose (list): Target pose for the robotic arm.
-            arm (str): Identifier for the arm to be moved.
+            arm (str): The identifier of the robot arm on which the trajectory 
+                       should be executed (e.g., "left_arm" or "right_arm").
+
         Returns:
-            bool: True if the movement was successful, False otherwise.
+            ExecuteMoveCommand.Response: The response object containing the result 
+                                         of the execution request, including success 
+                                         status and any relevant feedback.
+
+        Raises:
+            TimeoutError: If the execution request does not complete within the 
+                          specified timeout period (90 seconds).
         """
 
-        # First plan the movement to the pose
-        plan_response = self.plan_robot_trajectory(pose, arm)
-        if plan_response is None or not plan_response.success:
-            self.get_logger().error("Failed to plan trajectory")
-            return False
-        
-        # The execute the planned trajectory
-        execute_response = self.execute_planned_trajectory(arm)
-        if execute_response is None or not execute_response.success:
-            self.get_logger().error("Failed to execute trajectory")
-            return False
-        
-        return True
+        self.robot_execute_req.arm = arm
+
+        future = self.robot_execute_client.call_async(self.robot_execute_req)
+
+        # Wait for the result
+        response = self.wait_future(future, timeout=90)
+
+        return response
 
     #@tool
     def manipulate_right_gripper(self, width: int=167, speed: int=110, force: int=15) -> Robotiq3FGripperOutputService.Response:  # Defaults to open gripper with max speed and minimum force
@@ -1748,11 +1958,62 @@ class LLMNode(Node):
         return response
 
 
+    def sim_system(self,request, response):
+        """ Generates the tool list uisng Isaac Sim """
+
+        # Convert to langgraph message format
+        query = HumanMessage(self.user_prompt)
+
+        for event in self.sim_workflow_manager.stream({"messages": [query]}, self.sim_config, stream_mode="values"):
+            event["messages"][-1].pretty_print()
+            
+
+        # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #
+
+        # Retrieve the tool calls generated during the simulation workflow
+        state_snapshot = self.sim_workflow_manager.get_state(self.sim_config).values
+        messages = state_snapshot["messages"]
+        
+        # Go througt all the messages and find the tool calls 
+        tool_list = {} 
+        call_nr = 0
+        for i, message in enumerate(messages):
+            if isinstance(message, AIMessage) and message.tool_calls:
+                for j, tool_call in enumerate(message.tool_calls):
+                                    
+                    # Find the result of the tool call(s)
+                    if isinstance(messages[i + j + 1], ToolMessage):
+                        tool_message = messages[i + j + 1]
+                        
+                    call_nr += 1
+                    function_nr = f'function_call_{call_nr}'
+                    tool_list[function_nr] ={
+                        "function_name": tool_call["name"],
+                        "args": tool_call["args"],
+                        "return_values": json.dump(tool_message.content)
+                    }                    
+                
+        # Write the tool calls to the JSON file
+        try:
+            with open(self.tool_calls_path, 'w') as file:
+                json.dump(tool_list, file, indent=4)
+                self.get_logger().info(f"Tool list written to {self.tool_calls_path}")
+
+                response.message = "Tool list generated successfully."
+        except Exception as e:
+            self.get_logger().error(f"Failed to write tool list to {self.tool_calls_path}: {e}")
+            response.message = "Tool list generation failed."
+
+        return response
+    
     def gui_handle_service(self, request, response):
+
         prompt = request.prompt  # prompt is a string
 
+        self.get_logger().info("Request received")
+
         # TEst image retrieval
-        # self.request_rvis_image()
+        # self.request_rvis_image()sim_config
 
         # Convert to langgraph message
         query = HumanMessage(prompt)
@@ -1768,24 +2029,57 @@ class LLMNode(Node):
             self.save_snapshot()
 
             # Update config
-            current_id = int(self.isaac_config["configurable"]["thread_id"])
+            current_id = int(self.sim_config["configurable"]["thread_id"])
             new_id = current_id + 1
-            self.isaac_config["configurable"]["thread_id"] = str(new_id)
+            self.sim_config["configurable"]["thread_id"] = str(new_id)
 
             # Append the initial prompt to the message state
-            self.agent.update_state(self.isaac_config, {"messages": self.initial_prompt})
+            self.sim_workflow_manager.update_state(self.sim_config, {"messages": self.initial_prompt})
 
             return response
         
         # Run the graph
-        # We stream the message through the agent (consider using this for updating GUI continuously)
-        for event in self.agent.stream({"messages": [query]}, self.isaac_config, stream_mode="values"):
+        # We stream the message through the sim_workflow_manager (consider using this for updating GUI continuously)
+        for event in self.sim_workflow_manager.stream({"messages": [query]}, self.sim_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
 
-        # Retrieve the last message from the agent and send it back to the user
-        response.message = self.agent.get_state(self.isaac_config).values["messages"][-1].content
+        # Retrieve the last message from the sim_workflow_manager and send it back to the user
+        response.message = self.sim_workflow_manager.get_state(self.sim_config).values["messages"][-1].content
 
         return response       
+
+
+    def main_handle_service(self, request, response):
+        self.get_logger().info("Request received")
+
+        self.user_prompt = request.prompt  # prompt is a string
+
+        #If the user wants to clear the history, do so
+        if "clear history" in self.user_prompt:
+            os.system('clear')
+            response.message = "History cleared."
+
+            # Log the conversation
+            self.save_snapshot()
+
+            # Update config
+            current_id = int(self.sim_config["configurable"]["thread_id"])
+            new_id = current_id + 1
+            self.sim_config["configurable"]["thread_id"] = str(new_id)
+
+            # Append the initial prompt to the message state
+            self.sim_workflow_manager.update_state(self.sim_config, {"messages": self.initial_prompt})
+
+            return response
+
+        sim = True
+
+        if sim:
+            response = self.sim_system(request, response)
+        else:
+            response = self.real_system(request, response)
+
+        return response
 
 
 def main(args=None):

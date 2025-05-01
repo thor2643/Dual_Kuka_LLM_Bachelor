@@ -1,0 +1,17 @@
+{
+    "function_call_1": {
+        "function_name": "get_predefined_locations_and_poses",
+        "args": {},
+        "return_values": "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}"
+    },
+    "function_call_2": {
+        "function_name": "get_available_objects",
+        "args": {},
+        "return_values": "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']"
+    },
+    "function_call_3": {
+        "function_name": "stop_message_looping",
+        "args": {},
+        "return_values": "Message looping has been disabled."
+    }
+}
