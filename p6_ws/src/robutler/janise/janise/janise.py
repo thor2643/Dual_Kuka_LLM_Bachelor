@@ -689,31 +689,31 @@ class LLMNode(Node):
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to open gripper")
-            return False
+            return "Failed to open gripper"
         
         # Now plan the movement to the approach pose
         plan_response = self.plan_robot_trajectory(pose_approach, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan approach trajectory")
-            return False
+            return "Failed to plan approach trajectory"
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute approach trajectory")
-            return False
+            return "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
-            return False
+            return "Failed to plan grasp trajectory"
         
         # Execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
-            return False
+            return "Failed to execute grasp trajectory"
         
         # Close the gripper
         if arm == 'left':
@@ -723,21 +723,21 @@ class LLMNode(Node):
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to close gripper")
-            return False
+            return "Failed to close gripper"
         
         # At last lift the object to avoid collision when moving away
         plan_response = self.plan_robot_trajectory(pose_depart, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
-            return False
+            return "Failed to plan grasp trajectory"
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
-            return False
+            return "Failed to execute grasp trajectory"
         
-        return True
+        return "Pick up function run successfully"
 
     def move_to_pose(self, pose: list, arm: str) -> bool:
         """
