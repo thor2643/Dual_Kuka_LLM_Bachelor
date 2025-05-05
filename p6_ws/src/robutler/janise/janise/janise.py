@@ -137,6 +137,47 @@ class LLMNode(Node):
     # --------------------------------- EXTRA FUNCTIONS --------------------------------- #
     #######################################################################################
 
+    def get_image(self):
+        # Returns the resized image from the camera, either from simulation or the real one.
+
+        if load_use_sim():
+            original_image = cv2.imread("resized_image.jpg")
+            
+            for i in range(5):
+                request = GetSimCameraData.Request()
+                future = self.sim_cam_client.call_async(request)
+
+                # Wait for the result
+                response = self.wait_future(future, timeout=15)
+
+                if response is not None:
+                    response = future.result()
+
+                    color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
+                    self.color_img_sim = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
+                    original_image = self.color_img_sim
+                else:
+                    if i == 4:
+                        self.get_logger().error("Failed to retrieve image from simulated camera after multiple attempts")
+                        original_image = cv2.imread("resized_image.jpg")
+                    else:
+                        self.get_logger().info("Retrying to get simulated camera data...")
+                        rclpy.spin_once(self, timeout_sec=0.1)
+                        continue
+                 
+        else:
+            original_image = self.color_img
+
+        resized_image = cv2.resize(original_image, (524, 524))
+        resized_image_path = "resized_image.jpg"
+        cv2.imwrite(resized_image_path, resized_image)
+
+        # Encode the resized image
+        image = self.encode_image(resized_image_path)
+
+        return image
+        
+
     def convert_to_color_img(self, msg):
         try:
             # Convert the ROS Image message to an OpenCV image

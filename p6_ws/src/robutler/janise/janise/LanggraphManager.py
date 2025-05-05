@@ -2,6 +2,7 @@
 import yaml
 import json
 import os
+import cv2
 
 # Internal modules
 from utils.graph_states import ToolExecutionState
@@ -21,6 +22,7 @@ from langchain.prompts import PromptTemplate
 # ROS2 libraries
 import rclpy
 from rclpy.executors import MultiThreadedExecutor
+
 
 
 class LanggraphManager(LLMNode):
@@ -543,8 +545,7 @@ class LanggraphManager(LLMNode):
         state["messages"].append(response)
 
         return state
-    
-    
+
     # Define the function that calls the model
     # Takes in the cureent message history and returns the response
     def model_Janise(self, state: MessagesState):
@@ -560,49 +561,10 @@ class LanggraphManager(LLMNode):
         return {"messages": response}
     
     def model_Socrates(self, state: MessagesState):
-        # We append an image to the CoT message
-        #image_path = "image.jpg"
+        # We append an image to the CoT message       
 
-        # Resize the image to 524x524
-        # Change this to get the actual image from the camera
-        #original_image = cv2.imread(image_path)
-        if load_use_sim():
-            original_image = cv2.imread("resized_image.jpg")
-            """
-            for i in range(5):
-                request = GetSimCameraData.Request()
-                future = self.sim_cam_client.call_async(request)
-
-                # Wait for the result
-                response = self.wait_future(future, timeout=15)
-
-                if response is not None:
-                    response = future.result()
-
-                    color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
-                    self.color_img_sim = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
-                    original_image = self.color_img_sim
-                else:
-                    if i == 4:
-                        self.get_logger().error("Failed to retrieve image from simulated camera after multiple attempts")
-                        original_image = cv2.imread("resized_image.jpg")
-                    else:
-                        self.get_logger().info("Retrying to get simulated camera data...")
-                        rclpy.spin_once(self, timeout_sec=0.1)
-                        continue
-            """           
-
-        else:
-            original_image = self.color_img
-
-        resized_image = cv2.resize(original_image, (524, 524))
-        
-        resized_image_path = "resized_image.jpg"
-        cv2.imwrite(resized_image_path, resized_image)
-
-        # Encode the resized image
-        image = self.encode_image(resized_image_path)
-        image = self.encode_image(resized_image_path)
+        # Get image of cell (Either simulated or real)
+        image = self.get_image()
 
         message = HumanMessage(
             content=[
@@ -636,11 +598,9 @@ class LanggraphManager(LLMNode):
     def model_sim_judge(self, state_shortened: MessagesState):
         # This is the function that will be called to judge the simulation when janise determine the task is completed.
        
-        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
-       
-        # Encode the resized image
-        image = self.encode_image(resized_image_path)
-
+        # Get image of cell (Either simulated or real)
+        image = self.get_image()
+        
         message = HumanMessage(
             content=[
                 {"type": "text", "text": f"""The task was: "{self.user_prompt}". Here is an image of the workspace. 
@@ -663,10 +623,8 @@ class LanggraphManager(LLMNode):
     
     def model_sim_error_explainer(self, state: MessagesState):
 
-        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
-        
-        # Encode the resized image
-        image = self.encode_image(resized_image_path)
+        # Get image of cell (Either simulated or real)
+        image = self.get_image()
 
         message = HumanMessage(
             content=[
@@ -833,7 +791,7 @@ class LanggraphManager(LLMNode):
             event["messages"][-1].pretty_print()
             
         # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #          
-                
+        
         # Write the tool calls to the JSON file
         try:
             with open(self.tool_calls_path, 'w') as file:
@@ -874,7 +832,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = False
+        sim = True
 
         if sim:
             response = self.sim_system(request, response)
