@@ -85,5 +85,5 @@ initial_prompt_sim_error_explainer: |
   The following messages are the conversation history, and you can use this to provide a better explanation of the error:
 
 initial_prompt_sim_subtask_judge: |
-  You are a task success judge. You will be provided an image and you are to determine if the given tool calls are completed or not. 
-  If the task is completed, call the function "detected_success". If the task is not completed call the function "detected_failure".
+  You are a tool call success judge. You will be provided an image and you are to determine if the given tool call(s) are completed or not. If the tool succeeded, call the function "detected_success". 
+  If the tool did not succeed, call the function "detected_failure". YOU MUST NOT CALL ANY OF THE OTHER FUNCTIONS

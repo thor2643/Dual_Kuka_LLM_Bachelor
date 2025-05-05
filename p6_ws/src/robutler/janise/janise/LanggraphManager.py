@@ -37,6 +37,8 @@ class LanggraphManager(LLMNode):
         
         self.task_detector_tools = [StructuredTool.from_function(self.detected_failure), 
                                    StructuredTool.from_function(self.detected_success)]
+        
+        self.all_tools = self.tools + self.task_detector_tools
                 
         self.tool_node = ToolNode(self.tools)
         self.task_detector_tool_node = ToolNode(self.task_detector_tools)
@@ -67,7 +69,8 @@ class LanggraphManager(LLMNode):
         
     def _init_sim_workflow(self):
         self.bound_model = self.model.bind_tools(self.tools)
-        self.judge_model = self.model.bind_tools(self.task_detector_tools)
+        self.judge_model = self.model.bind_tools(self.task_detector_tools, tool_choice="any")
+        self.subtask_judge_model = self.model.bind_tools(self.all_tools,tool_choice="any")                                                       
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
 
         self.sim_memory = MemorySaver()
@@ -125,8 +128,10 @@ class LanggraphManager(LLMNode):
         self.sim_workflow.add_edge("clear_history", "Socrates")
 
         # ---- Left side of chart, this is called if janise made a tool call ----
+        # ---- Left side of chart, this is called if janise made a tool call ----
         self.sim_workflow.add_edge("action", "sim_subtask_judge")
-        self.sim_workflow.add_edge("sim_subtask_judge", "sim_subtask_judge_task_success")
+        self.sim_workflow.add_edge("sim_subtask_judge", "action3")
+        self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
         self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
         self.sim_workflow.add_edge("Socrates", "Janise")
 
@@ -385,28 +390,55 @@ class LanggraphManager(LLMNode):
         return END
     
     def clear_history(self, state: MessagesState):
-        """ Removes all but the initial prompts and the latest message from the message history. """
+        """ Removes all but: initial prompts, user query prompt, and the latest message by the error explainer. """
         self.get_logger().error("Clearing history")
         messages = state["messages"]
-        return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt):-1]]}
+        return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt)+1:-1]]}
     
 
     def sim_subtask_judge_task_success(self, state: MessagesState):
-        """Used after the subtask judge to either remove or keep previous tool call"""
+        """Used after the subtask judge to ignore or save previous tool call"""
+        #self.get_logger().info(f"The state is {state}")
+
         messages = state["messages"]
-        tool = state["messages"][-1].tool_calls
+        tool = state["messages"][-2].tool_calls
         tool_name = tool[0]["name"]
 
         if tool_name == "detected_failure":
-            # Remove the latest two tool calls and go to socrates. 
-            return "Socrates",{"messages": [RemoveMessage(id=messages[-1].id),RemoveMessage(id=messages[-2].id)]} 
+            human_message = HumanMessage(content="The prevoius tool call was rejected by the subtask judge, it was not successful, please correct it.")
+            return {"messages": [human_message]} 
         
-        elif tool_name == "detected_success":
-            return "Socrates" 
+        elif tool_name == "detected_success":   
+            # Find the second latest ai message (Made by janise)
+            for i in range(3,len(messages)):
+                if isinstance(messages[-i], AIMessage):
+                    # The tool calls from janise.
+                    tool_message = messages[-i].tool_calls 
+
+                    # We add the tool calls to the list of tool calls
+                    for j in range(len(tool_message)):
+                        # The result of each tool call
+                        tool_result = messages[-i+j+1].content
+
+                        call_nr = len(self.sim_tool_list)+1
+
+                        function_nr = f'function_call_{call_nr}'
+
+                        self.sim_tool_list[function_nr] ={
+                            "function_name": tool_message[j]["name"],
+                            "args": tool_message[j]["args"],
+                            "return_values": json.dumps(tool_result)
+                        } 
+
+                        self.get_logger().info(f"Tool call {str(self.sim_tool_list)} added to the list of tool calls")
+                    break
+
+            human_message = HumanMessage(content="The tool call was accepted by the subtask judge")
+            return {"messages": [human_message]}
   
-        # If it did not call anything we end anyways.
-        self.get_logger().error("No tool was called by subtask judge")
-        return END
+        self.get_logger().error("Critical error. No tool was called by subtask judge")
+        human_message = HumanMessage(content="Critical error. No tool was called by subtask judge")
+        return {"messages": [human_message]}
     
     # If a tool is to be called, the action node is called otherwise the Janise node is called
     def successful_task(self, state: MessagesState):
@@ -668,33 +700,22 @@ class LanggraphManager(LLMNode):
         resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
         image = self.encode_image(resized_image_path)
 
-        self.get_logger().info(f"State subtask judge {state_shortened['messages']}")
-
         judge_tool_info = []
 
+        # Loop through the messages in reverse order to find the last AI message (This is beacuse janise can make multiple tool calls)
         for i in range(1, len(state_shortened["messages"])):
-            if isinstance(state_shortened["messages"][-i], AIMessage):
+            if isinstance(state_shortened["messages"][-i], AIMessage): 
+                self.get_logger().info(f"Number of tool calls made by Janise: {i-1}")
 
-                # The latest AI STATE WAS:
-                self.get_logger().info(f"AI message {str(state_shortened['messages'][-i])}")
-
-                self.get_logger().info(f"Number of tool calls is: {i-1}")
-                self.get_logger().info(f"Tool message (right after): {str(state_shortened['messages'][-i+1])}")
-
-                judge_tool_info.append(state_shortened["messages"][-i+1])
+                judge_tool_info.append(state_shortened["messages"][-i].tool_calls)
                 judge_tool_info.append(". Which resulted in: ")
 
+                # Add every tool call result to the tool_info list       
+                for j in range(i-1):
+                    judge_tool_info.append(state_shortened["messages"][-i+j+1])
 
-                self.get_logger().info(f"Tool result -2 after: {state_shortened['messages'][-i+2]}")
-                                       
-                #for j in range(1,i-1):
-                #    self.get_logger().info("TOOL CALL RESULT FUND")
-                #    self.get_logger().info(f"Tool result: {state_shortened['messages'][-i-j-1]}")
-
-                #    judge_tool_info.append(state_shortened["messages"][-i-j-1])
-                  
                 break
-        
+     
         message = HumanMessage(
             content=[
                 {"type": "text", "text": f"""The tools call(s) you must judge the success of are: {judge_tool_info}. Here is an image of the workspace which may be useful 
@@ -709,8 +730,7 @@ class LanggraphManager(LLMNode):
         state_shortened = {"messages": [self.initial_prompt_sim_subtask_judge]}
         state_shortened["messages"].append(message)
         
-        response = self.judge_model.invoke(state_shortened["messages"])
-       
+        response = self.subtask_judge_model.invoke(state_shortened["messages"])
         response.name = "sim_subtask_judge"
 
         return {"messages": response}
@@ -812,36 +832,12 @@ class LanggraphManager(LLMNode):
         for event in self.sim_workflow_manager.stream({"messages": [query]}, self.sim_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
             
-
-        # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #
-
-        # Retrieve the tool calls generated during the simulation workflow
-        state_snapshot = self.sim_workflow_manager.get_state(self.sim_config).values
-        messages = state_snapshot["messages"]
-        
-        # Go througt all the messages and find the tool calls 
-        tool_list = {} 
-        call_nr = 0
-        for i, message in enumerate(messages):
-            if isinstance(message, AIMessage) and message.tool_calls:
-                for j, tool_call in enumerate(message.tool_calls):
-                                    
-                    # Find the result of the tool call(s)
-                    if isinstance(messages[i + j + 1], ToolMessage):
-                        tool_message = messages[i + j + 1]
-                        
-                    call_nr += 1
-                    function_nr = f'function_call_{call_nr}'
-                    tool_list[function_nr] ={
-                        "function_name": tool_call["name"],
-                        "args": tool_call["args"],
-                        "return_values": json.dump(tool_message.content)
-                    }                    
+        # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #          
                 
         # Write the tool calls to the JSON file
         try:
             with open(self.tool_calls_path, 'w') as file:
-                json.dump(tool_list, file, indent=4)
+                json.dump(self.sim_tool_list, file, indent=4)
                 self.get_logger().info(f"Tool list written to {self.tool_calls_path}")
 
                 response.message = "Tool list generated successfully."
