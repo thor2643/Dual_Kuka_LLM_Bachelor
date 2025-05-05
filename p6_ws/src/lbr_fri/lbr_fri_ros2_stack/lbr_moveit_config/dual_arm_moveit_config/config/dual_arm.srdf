@@ -70,6 +70,33 @@
         <joint name="left_A6" value="-1.5882"/>
         <joint name="left_A7" value="-2.0595"/>
     </group_state>
+    <group_state name="take_image2" group="left_arm">
+        <joint name="left_A1" value="1.7802"/>
+        <joint name="left_A2" value="-0.1222"/>
+        <joint name="left_A3" value="0.2094"/>
+        <joint name="left_A4" value="1.5009"/>
+        <joint name="left_A5" value="0.6109"/>
+        <joint name="left_A6" value="-1.8151"/>
+        <joint name="left_A7" value="-1.9897"/>
+    </group_state>
+    <group_state name="take_image3" group="left_arm">
+        <joint name="left_A1" value="2.391"/>
+        <joint name="left_A2" value="-0.122"/>
+        <joint name="left_A3" value="0.698"/>
+        <joint name="left_A4" value="0.996"/>
+        <joint name="left_A5" value="0.035"/>
+        <joint name="left_A6" value="-1.991"/>
+        <joint name="left_A7" value="-0.960"/>
+    </group_state>
+    <group_state name="take_image_top" group="left_arm">
+        <joint name="left_A1" value="0.436"/>
+        <joint name="left_A2" value="0.105"/>
+        <joint name="left_A3" value="0.035"/>
+        <joint name="left_A4" value="-1.030"/>
+        <joint name="left_A5" value="0.017"/>
+        <joint name="left_A6" value="1.991"/>
+        <joint name="left_A7" value="2.608"/>
+    </group_state>
     <group_state name="open" group="2f_gripper">
         <joint name="left_finger_joint" value="0"/>
     </group_state>

@@ -34,7 +34,7 @@ from ultralytics import SAM
 
 # Arguments parsed to AnyGrasp.
 parser = argparse.ArgumentParser()
-parser.add_argument('--num_point', type=int, default=80000, help='Point Number [default: 20000]')
+parser.add_argument('--num_point', type=int, default=160000, help='Point Number [default: 20000]')
 parser.add_argument('--num_view', type=int, default=300, help='View Number [default: 300]')
 parser.add_argument('--collision_thresh', type=float, default=0.01, help='Collision Threshold in collision detection [default: 0.01]')
 parser.add_argument('--voxel_size', type=float, default=0.01, help='Voxel Size to process point clouds before collision detection [default: 0.01]')
@@ -111,10 +111,11 @@ class AnyGraspPipeline(Node):
         self.transformation_matrix = np.array(request.transform.matrix).reshape((4, 4))  
         # Get image
         self.retrieve_aligned_frames()
-
+        """
         # Capture and Save RGB image
         save_path = os.path.expanduser("~/Desktop/RGB_Image_GraspNet.png")
         cv2.imwrite(save_path, self.debugging_image)
+        """
 
         # Check what gripper will be used for grasping
         gripper = request.gripper
@@ -221,10 +222,12 @@ class AnyGraspPipeline(Node):
                 cv2.line(self.cv2img, (approach_start_u, approach_start_v), (approach_end_u, approach_end_v), (0, 0, 255), 2)
 
                 # Debugging, showcasing Mask from SAM
+                """
                 self.debugging_image = self.cv2img
                 save_path = os.path.expanduser("~/Desktop/GraspDrawn_Image_GraspNet.png")
                 cv2.imwrite(save_path, self.debugging_image)
-
+                """
+                
                 # Convert the image to a ROS message and publish
                 image_msg = self.realsense_camera.bridge.cv2_to_imgmsg(self.cv2img.astype(np.uint8), encoding="rgb8")
                 self.image_publisher.publish(image_msg)
@@ -323,9 +326,11 @@ class AnyGraspPipeline(Node):
             for i in range(len(yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
 
                 # Debugging, showcasing Bounding Box from YOLO
+                """
                 self.debugging_image = yolo_results[0].plot()
                 save_path = os.path.expanduser("~/Desktop/BoundingBox_Image_GraspNet.png")
                 cv2.imwrite(save_path, self.debugging_image)
+                """
 
 
                 box = yolo_results[0].boxes.data[i]
@@ -335,7 +340,7 @@ class AnyGraspPipeline(Node):
 
                 # Print the confidence level
                 confidence = box[4].item()  # Extract the confidence score (index 4)
-                print(f"Object: {class_name}, Confidence: {confidence:.2f}")
+                self.get_logger().info(f"Object: {class_name}, Confidence: {confidence:.2f}")
 
                 # Getting the center coordinate to follow the format:
                 pixel_x = int((x_min + x_max) / 2)
@@ -360,59 +365,28 @@ class AnyGraspPipeline(Node):
                 sam_masks = (sam_results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
 
                 # Debugging, showcasing Mask from SAM
+                """
                 self.debugging_image = sam_masks
                 save_path = os.path.expanduser("~/Desktop/SAMResults_Image_GraspNet.png")
                 cv2.imwrite(save_path, self.debugging_image)
-                
+                """
+
                 #convert the mask to binary
                 mask_binary = (sam_masks > 0).astype(np.uint8)
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
-                
-                # Surface Normal Approximation to find highest graspable area:
-                points_3d = []
-                uvs = []
-                for v in range(mask_binary.shape[0]):
-                    for u in range(mask_binary.shape[1]):
-                        if mask_binary[v, u]:
-                            z = self.depth_frame[v, u] / 1000.0
-                            if z == 0:
-                                continue
-                            x = (u - cx) * z / fx
-                            y = (v - cy) * z / fy
-                            points_3d.append([x, y, z])
-                            uvs.append((u, v))
 
-                points_3d = np.array(points_3d)
-                pixel_coords = np.array(uvs)
-
-                # Open3D point cloud & normal estimation
-                pcd = o3d.geometry.PointCloud()
-                pcd.points = o3d.utility.Vector3dVector(points_3d)
-                pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30))
-
-                # RANSAC Plane Segmentation (find dominant plane in region)
-                plane_model, inliers = pcd.segment_plane(distance_threshold=0.10,
-                                                        ransac_n=3,
-                                                        num_iterations=1000)
-
-                # Get inlier pixels (i.e., mask pixels belonging to the selected plane)
-                inlier_pixels = pixel_coords[inliers]
-
-                # Create filtered binary mask
-                filtered_mask = np.zeros_like(mask_binary, dtype=np.uint8)
-                for u, v in inlier_pixels:
-                    if 0 <= v < filtered_mask.shape[0] and 0 <= u < filtered_mask.shape[1]:
-                        filtered_mask[v, u] = 1
-
-                self.mask_binaries.append([class_name, i, filtered_mask.astype(np.bool_), cart_point])
+                self.mask_binaries.append([class_name, i, mask_binary.astype(np.bool_), cart_point])
 
                 # Debugging, showcasing Mask from SAM
-                self.debugging_image = filtered_mask
+                """
+                self.debugging_image = mask_binary
                 save_path = os.path.expanduser("~/Desktop/SAMMask_Image_GraspNet.png")
                 cv2.imwrite(save_path, self.debugging_image)
+                """
 
             return True
         else:
+            self.mask_binaries = []
             self.get_logger().info(f'YOLOWorld failed to detect {det_object}')
             clicked_point = self.get_click_location(self.cv2img)
 
@@ -424,49 +398,13 @@ class AnyGraspPipeline(Node):
             mask_binary = (sam_masks > 0).astype(np.uint8)
             mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
             
-            # Surface Normal Approximation to find highest graspable area:
-            points_3d = []
-            uvs = []
-            for v in range(mask_binary.shape[0]):
-                for u in range(mask_binary.shape[1]):
-                    if mask_binary[v, u]:
-                        z = self.depth_frame[v, u] / 1000.0
-                        if z == 0:
-                            continue
-                        x = (u - cx) * z / fx
-                        y = (v - cy) * z / fy
-                        points_3d.append([x, y, z])
-                        uvs.append((u, v))
-
-            points_3d = np.array(points_3d)
-            pixel_coords = np.array(uvs)
-
-            # Open3D point cloud & normal estimation
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(points_3d)
-            pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamKNN(knn=30))
-
-            # RANSAC Plane Segmentation (find dominant plane in region)
-            plane_model, inliers = pcd.segment_plane(distance_threshold=0.10,
-                                                    ransac_n=3,
-                                                    num_iterations=1000)
-
-            # Get inlier pixels (i.e., mask pixels belonging to the selected plane)
-            inlier_pixels = pixel_coords[inliers]
-
-            # Create filtered binary mask
-            filtered_mask = np.zeros_like(mask_binary, dtype=np.uint8)
-            for u, v in inlier_pixels:
-                if 0 <= v < filtered_mask.shape[0] and 0 <= u < filtered_mask.shape[1]:
-                    filtered_mask[v, u] = 1
-            
             # As YOLO-World is not run, these values are not found, we just need mask for grasping, so set temp values:
             class_name = "manual_select"
             i = 0 
             cart_point = np.array([0.0, 0.0, 0.0])
 
 
-            self.mask_binaries.append([class_name, i, filtered_mask.astype(np.bool_), cart_point])
+            self.mask_binaries.append([class_name, i, mask_binary.astype(np.bool_), cart_point])
 
 
         """
@@ -554,14 +492,18 @@ class AnyGraspPipeline(Node):
         color_masked = self.color[mask]
 
         # Debugging, showcasing Mask from SAM
+        """
         self.debugging_image = cloud_masked
         save_path = os.path.expanduser("~/Desktop/MaskedCloud_Image_GraspNet.png")
         cv2.imwrite(save_path, self.debugging_image)
-
+        """
+        
         # Debugging, showcasing Mask from SAM
+        """
         self.debugging_image = color_masked
         save_path = os.path.expanduser("~/Desktop/MaskedColor_Image_GraspNet.png")
         cv2.imwrite(save_path, self.debugging_image)
+        """
 
         # sample points
         if len(cloud_masked) >= cfgs.num_point:
@@ -619,18 +561,18 @@ class AnyGraspPipeline(Node):
         o3d.visualization.draw_geometries([self.storage, *grippers])
 
     # Click to select code for grasping test:
-    def get_click_location(image):
+    def get_click_location(self, image):
         coords = []
 
         def click_event(event, x, y, flags, param):
             if event == cv2.EVENT_LBUTTONDOWN:
                 coords.append((x, y))
                 print(f"Clicked at: {x}, {y}")
-                cv2.destroyAllWindows()  # Close window after first click
 
         cv2.imshow("Click to Select Point", image)
         cv2.setMouseCallback("Click to Select Point", click_event)
-        cv2.waitKey(0)
+        cv2.waitKey(5000)
+        cv2.destroyAllWindows()  # Close window after first click
 
         return coords[0] if coords else None
 

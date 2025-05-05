@@ -146,7 +146,8 @@ class LLMNode(Node):
                       StructuredTool.from_function(self.manipulate_right_gripper), 
                       StructuredTool.from_function(self.manipulate_left_gripper), 
                       StructuredTool.from_function(self.get_current_pose), 
-                      StructuredTool.from_function(self.stop_message_looping)]
+                      StructuredTool.from_function(self.stop_message_looping),
+                      StructuredTool.from_function(self.pick_up_object)]
                 
         self.tool_node = ToolNode(self.tools)
 
@@ -1006,17 +1007,15 @@ class LLMNode(Node):
                 for j, grasp in enumerate(detected_obj.grasps):
                     T_90z = np.eye(4)
                     # Define the rotation matrix for -90 degrees around the z-axis
-                    R_90z = Rotation.from_euler('y', -90, degrees=True).as_matrix()
+                    R_90z = Rotation.from_euler('y', 90, degrees=True).as_matrix()
                     T_90z[:3, :3] = R_90z
 
-                    R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
+                    R_W_G = Rotation.from_euler('xyz', [-grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
                     pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
                     T_W_G = np.eye(4)
                     T_W_G[:3, :3] = R_W_G
                     T_W_G[:3, 3] = pose
-                    if pose[2]>0.03: # if center point is more than 3 cm above the table 
-                        T_90z[2,3] = 0.02 # move the grasp point 2 cm into the object
-                    
+                        
                     T_new = T_W_G @ T_90z
                     pose_new = T_new[:3, 3]
 
@@ -1035,12 +1034,105 @@ class LLMNode(Node):
                             'pitch': pitch,
                             'yaw': yaw
                         },
-                        'width': grasp.grasp_width
+                        'width': 0
                     }
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table_any}\n")
 
         return self.objects_on_table_any
 
+
+    #@tool
+    def pick_up_object(self, pose: list, arm: str, object_width: int=0) -> bool:
+        """
+        Picks up an object by planning and executing a trajectory and closing the gripper.
+        Args:
+            pose (list): Target pose for the robot arm.
+            arm (str): Specifies which arm to use ('left' or 'right').
+            object_width (int, optional): Width of the object to grip in millimeters. Defaults to 0 mm.
+        Returns:
+            bool: True if the object was successfully picked up, False otherwise.
+        """
+        # First we calculate the approach pose
+        T_approach = np.eye(4)
+        T_approach[2, 3] = 0.05 # Place approach 5 cm along grasp z-axis
+
+        R_pose = Rotation.from_euler('xyz', [pose[3], pose[4], pose[5]], degrees=True).as_matrix()
+        T_pose = np.eye(4)
+        T_pose[:3, :3] = R_pose
+        T_pose[:3, 3] = pose[:3]
+
+        # Convert the pose to the correct coordinate system
+        T_pose = np.dot(T_pose, T_approach)
+
+        # print(f"Old pose to pick up object: {pose}")
+
+        # Now convert back to x, y, z, roll, pitch, yaw
+        x, y, z = T_pose[:3, 3]
+        roll, pitch, yaw = Rotation.from_matrix(T_pose[:3, :3]).as_euler('xyz', degrees=True)
+
+        pose_approach = [x, y, z, roll, pitch, yaw]
+        pose_depart = pose.copy()
+        pose_depart[2] += 0.1 # Move up 10 cm
+
+        # print(f"New pose to pick up object: {pose}")
+
+        # First make sure the gripper is open
+        if arm == 'left':
+            gripper_response = self.manipulate_left_gripper(width=85)
+        else:
+            gripper_response = self.manipulate_right_gripper(width=167)
+
+        if gripper_response is None or not gripper_response.success:
+            self.get_logger().error("Failed to open gripper")
+            return False
+        
+        # Now plan the movement to the approach pose
+        plan_response = self.plan_robot_trajectory(pose_approach, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan approach trajectory")
+            return False
+        
+        # The execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute approach trajectory")
+            return False
+        
+        # Now plan the movement to the pose
+        plan_response = self.plan_robot_trajectory(pose, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan grasp trajectory")
+            return False
+        
+        # Execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute grasp trajectory")
+            return False
+        
+        # Close the gripper
+        if arm == 'left':
+            gripper_response = self.manipulate_left_gripper(width=object_width)
+        else:
+            gripper_response = self.manipulate_right_gripper(width=object_width)
+
+        if gripper_response is None or not gripper_response.success:
+            self.get_logger().error("Failed to close gripper")
+            return False
+        
+        # At last lift the object to avoid collision when moving away
+        plan_response = self.plan_robot_trajectory(pose_depart, arm)
+        if plan_response is None or not plan_response.success:
+            self.get_logger().error("Failed to plan grasp trajectory")
+            return False
+        
+        # The execute the planned trajectory
+        execute_response = self.execute_planned_trajectory(arm)
+        if execute_response is None or not execute_response.success:
+            self.get_logger().error("Failed to execute grasp trajectory")
+            return False
+        
+        return True
 
     #@tool
     def plan_robot_trajectory(self, pose: list, arm: str) -> PlanMoveCommand.Response:
