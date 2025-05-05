@@ -24,7 +24,6 @@ import rclpy
 from rclpy.executors import MultiThreadedExecutor
 
 
-
 class LanggraphManager(LLMNode):
     def __init__(self):
         super().__init__()
@@ -129,7 +128,6 @@ class LanggraphManager(LLMNode):
         self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
         self.sim_workflow.add_edge("clear_history", "Socrates")
 
-        # ---- Left side of chart, this is called if janise made a tool call ----
         # ---- Left side of chart, this is called if janise made a tool call ----
         self.sim_workflow.add_edge("action", "sim_subtask_judge")
         self.sim_workflow.add_edge("sim_subtask_judge", "action3")
@@ -396,7 +394,6 @@ class LanggraphManager(LLMNode):
         self.get_logger().error("Clearing history")
         messages = state["messages"]
         return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt)+1:-1]]}
-    
 
     def sim_subtask_judge_task_success(self, state: MessagesState):
         """Used after the subtask judge to ignore or save previous tool call"""
@@ -644,19 +641,18 @@ class LanggraphManager(LLMNode):
         response = self.think_model.invoke(state["messages"])
         response.name = "sim_error_explainer"
 
-        # METHOD 1 ---------------- POP (ONLY THE FIRST ONE WORKS)
         state["messages"].pop() # Remove the image message
-        
-        final = AIMessage(content=f"During previous atempts to solve the task, the following mistake(s) was detected: {response.text()}")
 
+        response.content = f"During previous atempts to solve the task, the following mistake(s) was detected: {response.text()}"
+        
         # We return a list, because this will get added to the existing list
-        return {"messages": final} 
+        return {"messages": response} 
 
     def model_sim_subtask_judge(self, state_shortened: MessagesState):
         # This is the function that will be called to judge each tool call made by janice.
 
-        resized_image_path = "/home/gustav/Dual_Kuka_LLM_Bachelor/p6_ws/src/robutler/janise/resource/resized_image.jpg"
-        image = self.encode_image(resized_image_path)
+        # Get image of cell (Either simulated or real)
+        image = self.get_image()
 
         judge_tool_info = []
 

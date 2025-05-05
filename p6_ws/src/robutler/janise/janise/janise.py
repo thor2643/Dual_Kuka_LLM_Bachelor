@@ -143,7 +143,7 @@ class LLMNode(Node):
         if load_use_sim():
             original_image = cv2.imread("resized_image.jpg")
             
-            for i in range(5):
+            for i in range(1):
                 request = GetSimCameraData.Request()
                 future = self.sim_cam_client.call_async(request)
 
