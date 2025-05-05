@@ -139,9 +139,7 @@ class LLMNode(Node):
 
         # Define the tools available to the LLM
         self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
-                      StructuredTool.from_function(self.find_object),
-                      StructuredTool.from_function(self.find_object_anygrasp),
-                      StructuredTool.from_function(self.plan_robot_trajectory), 
+                      StructuredTool.from_function(self.find_object_anygrasp), 
                       StructuredTool.from_function(self.execute_planned_trajectory), 
                       StructuredTool.from_function(self.manipulate_right_gripper), 
                       StructuredTool.from_function(self.manipulate_left_gripper), 
@@ -1004,30 +1002,34 @@ class LLMNode(Node):
                     'grasps': {}
                 }
 
-                for j, grasp in enumerate(detected_obj.grasps):
+                for j, grasp in enumerate(detected_obj.grasps):  
                     T_90z = np.eye(4)
-                    # Define the rotation matrix for -90 degrees around the z-axis
-                    R_90z = Rotation.from_euler('y', 90, degrees=True).as_matrix()
-                    T_90z[:3, :3] = R_90z
-
-                    R_W_G = Rotation.from_euler('xyz', [-grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
-                    pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
+                    R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
                     T_W_G = np.eye(4)
                     T_W_G[:3, :3] = R_W_G
-                    T_W_G[:3, 3] = pose
-                        
-                    T_new = T_W_G @ T_90z
-                    pose_new = T_new[:3, 3]
+                    T_W_G[:3, 3] = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
 
-                    roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
+                    pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
+
+                    if pose[2] > 0.02:
+                        T_90z[2,3] = 0.01
+                    
+                    T_new = T_W_G @ T_90z
+                    pose = T_new[:3, 3]
+
+
+                    roll, pitch, yaw = grasp.orientation.x, grasp.orientation.y, grasp.orientation.z
                     roll, pitch, yaw = [self.flip_if_near_180(a) for a in [roll, pitch, yaw]]
                     roll, pitch, yaw = round(roll, 3), round(pitch, 3), round(yaw, 3)
 
+
+
+                    # Store the new grasp information
                     self.objects_on_table_any[object_name]['grasps'][f'grasp {j}'] = {
                         'center': {
-                            'x': round(pose_new[0], 3),
-                            'y': round(pose_new[1], 3),
-                            'z': round(pose_new[2], 3),
+                            'x': round(pose[0], 3),
+                            'y': round(pose[1], 3),
+                            'z': round(pose[2], 3),
                         },
                         'orientation': {
                             'roll': roll,
@@ -1036,6 +1038,7 @@ class LLMNode(Node):
                         },
                         'width': 0
                     }
+
         print(f"\nThe object detection service returned the following objects: {self.objects_on_table_any}\n")
 
         return self.objects_on_table_any

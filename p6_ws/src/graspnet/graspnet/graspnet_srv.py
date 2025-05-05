@@ -143,6 +143,7 @@ class AnyGraspPipeline(Node):
             class_name, index, mask, cart = obj
             self.mask_binary = mask
             end_points, cloud = self.get_and_process_data()
+            cloud_p = cloud
             gg = self.infer_grasps(net, end_points)
             if cfgs.collision_thresh > 0:
                 gg = self.collision_detection(gg, np.array(cloud.points))
@@ -167,6 +168,10 @@ class AnyGraspPipeline(Node):
 
             rotation_matrix = self.transformation_matrix[:3, :3]
 
+            # Convert the image to a ROS message and publish
+            image_msg = self.realsense_camera.bridge.cv2_to_imgmsg(self.cv2img.astype(np.uint8), encoding="rgb8")
+            self.image_publisher.publish(image_msg)
+
             if len(gg) > 0:
                 top_grasp = gg[0]
 
@@ -186,40 +191,99 @@ class AnyGraspPipeline(Node):
                 # Draw grasp as a circle on the color image
                 cv2.circle(self.cv2img, (u, v), radius=2, color=(0, 255, 0), thickness=2)
 
-                # Extract position & orientation
-                grasp_position_homogeneous = np.array([top_grasp.translation[0], top_grasp.translation[1], top_grasp.translation[2], 1.0])
-                grasp_rotation_matrix = np.array(top_grasp.rotation_matrix).reshape(3, 3)
+                #flip_x = np.diag([-1, 1, 1])  # flip x keep y, z positive
+
+
+
+                # Create a 4x4 identity matrix
+                rot_y_90 = R.from_euler('y', 90, degrees=True).as_matrix()
+                rot_z_180 = R.from_euler('z', 180, degrees=True).as_matrix()
+                rot_y_180 = R.from_euler('y', 180, degrees=True).as_matrix() #180
+                rot_grasp = top_grasp.rotation_matrix @ rot_y_180 @ rot_z_180 @ rot_y_90
+                grasp_transform = np.eye(4)
+                grasp_transform[:3, :3] = rot_grasp 
+                grasp_transform[:3, 3] = top_grasp.translation
+
+                """
+                # Create an Open3D PointCloud object
+                cloud_p = o3d.geometry.PointCloud()
+
+                # Assign the numpy array to the PointCloud object
+                cloud_p.points = o3d.utility.Vector3dVector(self.signe)
+
+
+                pointcloud = np.asarray(cloud_p.points)
+                if pointcloud.shape[1] != 3:
+                    raise ValueError("Point cloud must be Nx3")
+
+                # Convert to homogeneous coordinates (Nx4)
+                ones = np.ones((pointcloud.shape[0], 1))
+                pc_homogeneous = np.hstack([pointcloud, ones])  # Nx4
+
+                # Apply transformation
+                pc_transformed = (self.transformation_matrix @ pc_homogeneous.T).T[:, :3]  # Nx3
+
+                # Create new Open3D point cloud and assign points
+                pcd = o3d.geometry.PointCloud()
+
+                # Assign to the point cloud
+                pcd.points = o3d.utility.Vector3dVector(pc_transformed)
+
+                grasp = self.transformation_matrix @ grasp_transform
                 
+                #plot in 3d:
+                # Create the coordinate frame
+                frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.05)
+
+                # Apply the transformation to the frame
+                frame.transform(grasp)
+
+                # Visualize the point cloud and the frame together
+                o3d.visualization.draw_geometries([pcd, frame])
+                """
+
                 # Draw the grasps on the image:
                 line_offset = self.width / 2
 
-                gripper_y_axis = grasp_rotation_matrix[:, 1]  # Y-axis of the gripper
+                gripper_y_axis = rot_grasp[:, 1]  # Y-axis of the gripper
 
-                line_start_y = grasp_cam_xyz - line_offset * gripper_y_axis
-                line_end_y = grasp_cam_xyz + line_offset * gripper_y_axis
+                # Compute positive and negative ends of the Y-axis line
+                line_end_y_pos = grasp_cam_xyz + line_offset * gripper_y_axis    # Positive direction
+                line_end_y_neg = grasp_cam_xyz - line_offset * gripper_y_axis    # Negative direction
 
-                # Project the start and end points of the grasp width lines to 2D for Y-axis lines
-                line_start_y_u = int((line_start_y[0] * fx / line_start_y[2]) + cx)
-                line_start_y_v = int((line_start_y[1] * fy / line_start_y[2]) + cy)
-                line_end_y_u = int((line_end_y[0] * fx / line_end_y[2]) + cx)
-                line_end_y_v = int((line_end_y[1] * fy / line_end_y[2]) + cy)
+                # Project to image coordinates
+                line_end_y_u_pos = int((line_end_y_pos[0] * fx / line_end_y_pos[2]) + cx)
+                line_end_y_v_pos = int((line_end_y_pos[1] * fy / line_end_y_pos[2]) + cy)
 
-                # Draw the Y-axis lines on the image (representing part of the grasp width)
-                cv2.line(self.cv2img, (line_start_y_u, line_start_y_v), (line_end_y_u, line_end_y_v), (255, 0, 0), 3)
+                line_end_y_u_neg = int((line_end_y_neg[0] * fx / line_end_y_neg[2]) + cx)
+                line_end_y_v_neg = int((line_end_y_neg[1] * fy / line_end_y_neg[2]) + cy)
+
+                center_u = int((grasp_cam_xyz[0] * fx / grasp_cam_xyz[2]) + cx)
+                center_v = int((grasp_cam_xyz[1] * fy / grasp_cam_xyz[2]) + cy)
+
+                # Draw Y-axis in both directions (green)
+                cv2.line(self.cv2img, (center_u, center_v), (line_end_y_u_pos, line_end_y_v_pos), (0, 255, 0), 3)
+                cv2.line(self.cv2img, (center_u, center_v), (line_end_y_u_neg, line_end_y_v_neg), (0, 255, 0), 3)
 
                 # --- Approach direction line (Z-axis of gripper) ---
-                approach_length = 0.05  # You can tune this value (in meters)
-                gripper_z_axis = grasp_rotation_matrix[:, 2]
+                approach_length = 0.05  # Length of the line in meters
+                gripper_z_axis = rot_grasp[:, 2]  # Z-axis of the gripper
 
-                approach_start = grasp_cam_xyz
-                approach_end = grasp_cam_xyz + approach_length * gripper_z_axis
+                # Compute positive and negative Z ends
+                approach_end_pos = grasp_cam_xyz + approach_length * gripper_z_axis  # Positive Z
 
-                approach_start_u = int((approach_start[0] * fx / approach_start[2]) + cx)
-                approach_start_v = int((approach_start[1] * fy / approach_start[2]) + cy)
-                approach_end_u = int((approach_end[0] * fx / approach_end[2]) + cx)
-                approach_end_v = int((approach_end[1] * fy / approach_end[2]) + cy)
+                # Project center (same for all)
+                center_u = int((grasp_cam_xyz[0] * fx / grasp_cam_xyz[2]) + cx)
+                center_v = int((grasp_cam_xyz[1] * fy / grasp_cam_xyz[2]) + cy)
 
-                cv2.line(self.cv2img, (approach_start_u, approach_start_v), (approach_end_u, approach_end_v), (0, 0, 255), 2)
+                # Project positive Z end
+                end_z_u_pos = int((approach_end_pos[0] * fx / approach_end_pos[2]) + cx)
+                end_z_v_pos = int((approach_end_pos[1] * fy / approach_end_pos[2]) + cy)
+
+                # Draw positive Z-axis (magenta)
+                cv2.line(self.cv2img, (center_u, center_v), (end_z_u_pos, end_z_v_pos), (255, 0, 0), 2)
+
+
 
                 # Debugging, showcasing Mask from SAM
                 """
@@ -251,21 +315,23 @@ class AnyGraspPipeline(Node):
                 save_path = os.path.expanduser(f"~/Desktop/ImagesFromGraspTest/Image_{timestamp}.png")
                 cv2.imwrite(save_path, cropped_img)
 
-                # Change to world frame
-                grasp_position_world_homogeneous = np.dot(self.transformation_matrix, grasp_position_homogeneous)
+                grasp_world_transform = self.transformation_matrix @ grasp_transform
 
+                # Extract position from the resulting 4x4 matrix
                 grasp_msg.position = Point(
-                    x=np.round(grasp_position_world_homogeneous[0], 3),
-                    y=np.round(grasp_position_world_homogeneous[1], 3),
-                    z=np.round(grasp_position_world_homogeneous[2], 3)
+                    x=np.round(grasp_world_transform[0, 3], 3),
+                    y=np.round(grasp_world_transform[1, 3], 3),
+                    z=np.round(grasp_world_transform[2, 3], 3)
                 )
 
-                combined_rotation_matrix = np.dot(rotation_matrix, grasp_rotation_matrix)
+                # Extract rotation matrix from the top-left 3x3 submatrix
+                combined_rotation_matrix = grasp_world_transform[:3, :3]
 
+                # Convert rotation matrix to Euler angles
                 r = R.from_matrix(combined_rotation_matrix)
                 roll, pitch, yaw = r.as_euler('xyz', degrees=True)
 
-                # Wrap angles within +-180 degs, so 181 is -179, -190 is 170
+                # Wrap angles to [-180, 180]
                 grasp_msg.orientation = Vector3(
                     x=(roll + 180) % 360 - 180,
                     y=(pitch + 180) % 360 - 180,
@@ -318,7 +384,7 @@ class AnyGraspPipeline(Node):
         model.set_classes([det_object])  # Set the class list to only include the specified object
             
         # Execute inference with the YOLOv8l-world model on the specified image
-        yolo_results = model.predict(self.cv2img, verbose=False, conf=0.4, device='cuda:0') #, conf = 0.3
+        yolo_results = model.predict(self.cv2img, verbose=False, conf=0.1, device='cuda:0') #, conf = 0.3
 
         # Sanity check - Was object detected?
         if len(yolo_results[0].boxes.data) > 0:
@@ -489,6 +555,7 @@ class AnyGraspPipeline(Node):
         # get valid points
         mask = (self.mask_binary & (self.depth_frame > 0))
         cloud_masked = cloud_np[mask]
+        self.signe = cloud_masked
         color_masked = self.color[mask]
 
         # Debugging, showcasing Mask from SAM
@@ -524,6 +591,8 @@ class AnyGraspPipeline(Node):
         cloud.points = o3d.utility.Vector3dVector(cloud_np.astype(np.float32)) # Changed to cloud
         #cloud.colors = o3d.utility.Vector3dVector(color.astype(np.float32)) # Changed to full img
         
+        self.temp = o3d.utility.Vector3dVector(cloud_masked.astype(np.float32))
+
         self.storage = o3d.geometry.PointCloud()
         self.storage.points = o3d.utility.Vector3dVector(cloud_masked.astype(np.float32))
         self.storage.colors = o3d.utility.Vector3dVector(color_masked.astype(np.float32))
@@ -547,7 +616,7 @@ class AnyGraspPipeline(Node):
         return gg
 
     def collision_detection(self, gg, cloud):
-        mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size, finger_width=0.03, finger_length=0.11)
+        mfcdetector = ModelFreeCollisionDetector(cloud, voxel_size=cfgs.voxel_size, finger_width=0.02, finger_length=0.04)
         collision_mask = mfcdetector.detect(gg, approach_dist=0, collision_thresh=cfgs.collision_thresh)
         gg = gg[~collision_mask]
         return gg
