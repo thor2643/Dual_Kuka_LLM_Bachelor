@@ -133,6 +133,8 @@ class LLMNode(Node):
             'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'},
         }
 
+        self.sim_tool_list = {}
+
     #######################################################################################
     # --------------------------------- EXTRA FUNCTIONS --------------------------------- #
     #######################################################################################
@@ -141,7 +143,7 @@ class LLMNode(Node):
         # Returns the resized image from the camera, either from simulation or the real one.
 
         if load_use_sim():
-            original_image = cv2.imread("resized_image.jpg")
+            #original_image = cv2.imread("resized_image.jpg")
             
             for i in range(1):
                 request = GetSimCameraData.Request()
@@ -290,71 +292,79 @@ class LLMNode(Node):
         self.get_logger().info(f"State snapshot saved to {state_snapshot_file}")
     
     def get_cam2world_transform(self):
-        """Get the transformation matrix from camera to gripper coordinates."""
-        T_cam_gripper = np.array([
-            [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
-            [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
-            [0.0196773, 0.00130301, -0.99980553, 0.15210002],
-            [0.0, 0.0, 0.0, 1.0]
-        ])
-        
-        if load_use_sim():
-            T_cam_gripper = np.array([[0.0, 1.0, 0.0, 0.019],
-                                    [1.0, 0.0, 0.0, 0.09],
-                                    [ 0.0, 0.0, -1.0, 0.135],
-                                    [ 0.0, 0.0, 0.0, 1.0]])
+        """Get the transformation matrix from camera to gripper coordinates."""        
+        if load_use_sim():           
+            # Works with topdown
+            """
+            T_cam_world = np.array([
+                                    [-1.0, 0, 0, 0.425],
+                                    [0, 1, 0, 0.640],
+                                    [0, 0, -1, 1],
+                                    [0.0, 0.0, 0.0, 1.0]
+                                ])
 
-        # Get gripper pose (try a few times if not successful)
-        for i in range(5):
-            try:
-                transform_3: TransformStamped = self.tf_buffer.lookup_transform(
-                    "world", "2f_tool0", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=2.0))
+            """
 
-                # Assuming transform_3 is your TransformStamped object
-                quaternion = [
-                    transform_3.transform.rotation.w,
-                    transform_3.transform.rotation.x,
-                    transform_3.transform.rotation.y,
-                    transform_3.transform.rotation.z,
-                ]
+            # Works with 45 degree angle
+            T_cam_world = np.array([
+                                        [-1.0, -0.0,  0.0,  0.425],
+                                        [-0.0,  np.cos(np.pi/4),  -np.cos(np.pi/4), 0.84],
+                                        [-0.0,  -np.cos(np.pi/4),  -np.cos(np.pi/4), 0.65],
+                                        [ 0.0,  0.0,  0.0,  1.0]
+                                    ])
+                 
+        else:
+            T_cam_gripper = np.array([
+                    [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
+                    [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
+                    [0.0196773, 0.00130301, -0.99980553, 0.15210002],
+                    [0.0, 0.0, 0.0, 1.0]
+                ])
 
-                # Convert quaternion to Euler angles
-                roll, pitch, yaw = quat_to_euler(*quaternion)
 
-                t_gripper_moveit =  [
-                    transform_3.transform.translation.x,
-                    transform_3.transform.translation.y,
-                    transform_3.transform.translation.z
-                ]
+            # Get gripper pose (try a few times if not successful)
+            for i in range(5):
+                try:
+                    transform_3: TransformStamped = self.tf_buffer.lookup_transform(
+                        "world", "2f_tool0", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=2.0))
 
-                R_gripper_moveit = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
-                T_gripper_moveit = T_mat_from_Rotm_tvec(R_gripper_moveit, t_gripper_moveit)
+                    # Assuming transform_3 is your TransformStamped object
+                    quaternion = [
+                        transform_3.transform.rotation.w,
+                        transform_3.transform.rotation.x,
+                        transform_3.transform.rotation.y,
+                        transform_3.transform.rotation.z,
+                    ]
 
-                break
+                    # Convert quaternion to Euler angles
+                    roll, pitch, yaw = quat_to_euler(*quaternion)
 
-            except tf2_ros.LookupException:
-                if i < 4:
-                    self.get_logger().info("Retrying...")
-                    #rclpy.spin_once(self, timeout_sec=0.1)
-                else:
-                    self.get_logger().error("Failed to get gripper pose after multiple attempts")
+                    t_gripper_moveit =  [
+                        transform_3.transform.translation.x,
+                        transform_3.transform.translation.y,
+                        transform_3.transform.translation.z
+                    ]
 
-        T_moveit_world = np.array([
-            [0.99993911, 0.01089142, -0.00177746, 0.02532091],
-            [-0.01089373, 0.99993982, -0.00129526, 0.03899785],
-            [0.00176324, 0.00131455, 0.99999758, -0.80131387],
-            [0., 0., 0., 1.]
-        ])
+                    R_gripper_moveit = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
+                    T_gripper_moveit = T_mat_from_Rotm_tvec(R_gripper_moveit, t_gripper_moveit)
 
-        if load_use_sim():
+                    break
+
+                except tf2_ros.LookupException:
+                    if i < 4:
+                        self.get_logger().info("Retrying...")
+                        #rclpy.spin_once(self, timeout_sec=0.1)
+                    else:
+                        self.get_logger().error("Failed to get gripper pose after multiple attempts")
+
             T_moveit_world = np.array([
-            [1.0, 0.0, -0.0, 0.025],
-            [-0.0, 1.0, -0.0, 0.04],
-            [0.0, 0.0, 1.0, -0.8],
-            [0.0, 0.0, 0.0, 1.0]
-        ])
+                [0.99993911, 0.01089142, -0.00177746, 0.02532091],
+                [-0.01089373, 0.99993982, -0.00129526, 0.03899785],
+                [0.00176324, 0.00131455, 0.99999758, -0.80131387],
+                [0., 0., 0., 1.]
+            ])
 
-        T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
+            T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
 
         # Apply correction offsets ONLY in simulation mode
         """

@@ -76,6 +76,10 @@ initial_prompt_Socrates: |
 
   Also apply your guidance in the context of the user request. You are to ensure that the overarching goal is not forgotten.
 
+  You must not write more than 5 sentences in your response.
+
+  Always start with "- Socrates:" and then your message.
+
 initial_prompt_sim_judge: |
   You are a task success judge. You will be provided an image and you are to determine if the given task is completed or not. If the task is completed, call the function "detected_success". 
   If the task is not completed call the function "detected_failure".

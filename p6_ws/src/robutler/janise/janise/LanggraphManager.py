@@ -429,7 +429,7 @@ class LanggraphManager(LLMNode):
                             "return_values": json.dumps(tool_result)
                         } 
 
-                        self.get_logger().info(f"Tool call {str(self.sim_tool_list)} added to the list of tool calls")
+                        #self.get_logger().info(f"Tool call {str(self.sim_tool_list)} added to the list of tool calls")
                     break
 
             human_message = HumanMessage(content="The tool call was accepted by the subtask judge")
@@ -832,6 +832,10 @@ class LanggraphManager(LLMNode):
 
         if sim:
             response = self.sim_system(request, response)
+
+            #Debbugging
+            #returns = self.find_object("bottle")
+            #response.message = "done"
         else:
             response = self.real_system(request, response)
 
@@ -841,14 +845,16 @@ class LanggraphManager(LLMNode):
 def main(args=None):
     rclpy.init()
     node = LanggraphManager()
+
     executor = MultiThreadedExecutor()
     executor.add_node(node)
-
+    
     try:
         node.get_logger().info('Beginning client, shut down with CTRL-C')
         executor.spin()
     except KeyboardInterrupt:
         node.get_logger().info('Keyboard interrupt, shutting down.\n')
+    
     node.destroy_node()
     rclpy.shutdown()
 
