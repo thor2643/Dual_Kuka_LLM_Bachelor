@@ -113,7 +113,7 @@ class LLMNode(Node):
         # Get current time and date from OS and format it for log file differentiation
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
         self.get_logger().info(f"Current time and date: {self.current_time}")
-
+        
         self.object_file = 'src/robutler/object_detector/object_detector/lego_bricks_config.json'
         self.conversation_log_folder = 'src/robutler/janise/resource/conversation_logs'
         self.conversation_log_file = self.conversation_log_folder + f'/{self.current_time}.json'
@@ -132,6 +132,8 @@ class LLMNode(Node):
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'},
         }
+
+        self.sim_tool_list = {}
 
     #######################################################################################
     # --------------------------------- EXTRA FUNCTIONS --------------------------------- #
@@ -164,7 +166,7 @@ class LLMNode(Node):
                         self.get_logger().info("Retrying to get simulated camera data...")
                         rclpy.spin_once(self, timeout_sec=0.1)
                         continue
-                 
+        
         else:
             original_image = self.color_img
 
