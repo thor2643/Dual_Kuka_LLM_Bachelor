@@ -173,6 +173,43 @@ class LanggraphManager(LLMNode):
         self.initial_prompt = [
             self.initial_prompt_Janise,
             HumanMessage(content = "To which poses can the robot arm be moved?"),
+            AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
+                    name = "Socrates"),
+            AIMessage(content = "",
+                    tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
+                    name = "Janise"),
+            ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'}",
+                        tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
+            AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user.",
+                        name = "Socrates"),
+            AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
+
+                    1. **Home Position for Right Arm**:
+                    - Coordinates: (0.1, 0.3, 0.3)
+                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+
+                    2. **Home Position for Left Arm**:
+                    - Coordinates: (0.9, 0.3, 0.3)
+                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+
+                    Should you desire to move one of the arms to one of these positions, feel free to let me know.""",
+                    name = "Janise"),
+            HumanMessage(content = "Move the red cup to the left side of the table."),
+            AIMessage(content = "I see a white table with a red cup on it. In order to move the red cup, its location must be known. Janise should consider calling the function \"find_object\" to get the location of the red cup.",
+                    name = "Socrates"),
+            AIMessage(content = "",
+                    additional_kwargs={'tool_calls': [{'id': 'call_GYSTkPcmHtckTbWL6bfegcPS', 'function': {'arguments': '{"object_name":"cup"}', 'name': 'find_object'}, 'type': 'function'}], 'refusal': None},
+                    name = "Janise"),
+            ToolMessage(content={'cup 1': {'center_object': {'x': 0.616, 'y': 0.319, 'z': 0.045}, 'grasps': {}}}, 
+                    name='find_object', id='8c73eb54-7f37-4f46-81d8-564123ee37b3', tool_call_id='call_GYSTkPcmHtckTbWL6bfegcPS'), 
+            ]
+            
+        
+
+        
+        self.initial_prompt_old = [
+            self.initial_prompt_Janise,
+            HumanMessage(content = "To which poses can the robot arm be moved?"),
             HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                     name = "Socrates"),
             AIMessage(content = "",
@@ -558,7 +595,8 @@ class LanggraphManager(LLMNode):
         return {"messages": response}
     
     def model_Socrates(self, state: MessagesState):
-        # We append an image to the CoT message       
+        # We append an image to the CoT message     
+        self.get_logger().info(f"The state is {state}")  
 
         # Get image of cell (Either simulated or real)
         image = self.get_image()
@@ -579,17 +617,17 @@ class LanggraphManager(LLMNode):
         state["messages"].append(message)
 
         # But it cannot analyze the image and the chat history at the same time
-        response_2 = self.think_model.invoke(state["messages"])
+        response = self.think_model.invoke(state["messages"])
 
         # Delete the image from history to save tokens
         state["messages"].pop()
 
         # Convert to Human message, such that Janise does not think she answered herself.
-        response_human = HumanMessage(content=response_2.text())
-        response_human.name = "Socrates"
+        #response_human = HumanMessage(content=response_2.text())
+        response.name = "Socrates"
 
         # We return a list, because this will get added to the existing list
-        return {"messages": response_human}
+        return {"messages": response}
     
     
     def model_sim_judge(self, state_shortened: MessagesState):
@@ -642,14 +680,14 @@ class LanggraphManager(LLMNode):
         response.name = "sim_error_explainer"
 
         state["messages"].pop() # Remove the image message
-
+        
         response.content = f"During previous atempts to solve the task, the following mistake(s) was detected: {response.text()}"
         
         # We return a list, because this will get added to the existing list
         return {"messages": response} 
 
     def model_sim_subtask_judge(self, state_shortened: MessagesState):
-        # This is the function that will be called to judge each tool call made by janice.
+        # This is the function that will be called to judge each tool call made by janise
 
         # Get image of cell (Either simulated or real)
         image = self.get_image()
