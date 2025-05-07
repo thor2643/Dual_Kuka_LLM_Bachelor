@@ -755,7 +755,7 @@ class LLMNode(Node):
             return "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
-        pose[2] -= 0.02 # Move down 2 cm
+        #pose[2] -= 0.02 # Move down 2 cm
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
