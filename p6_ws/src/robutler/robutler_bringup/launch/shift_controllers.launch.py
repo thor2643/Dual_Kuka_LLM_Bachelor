@@ -18,7 +18,7 @@ urdf_path = os.path.join(
     get_package_share_directory('lbr_description'),
     'urdf',
     'dual_arm',
-    'dual_arm_sim.xacro'
+    'dual_arm.xacro'
 )
 
 controller_path = os.path.join(
