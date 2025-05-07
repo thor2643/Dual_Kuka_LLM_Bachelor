@@ -59,7 +59,7 @@ class LanggraphManager(LLMNode):
 
         # Initialise the model
         # Change this to the model you want to use. We might implement more
-        self.model = ChatOpenAI(model="gpt-4.1-mini")
+        self.model = ChatOpenAI(model="gpt-4o")
 
         # Initialise the simulation workflow
         self._init_sim_workflow()
@@ -171,8 +171,7 @@ class LanggraphManager(LLMNode):
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
         self.initial_prompt = [
-            self.initial_prompt_Janise]
-        """
+            self.initial_prompt_Janise,
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                     name = "Socrates"),
@@ -183,7 +182,7 @@ class LanggraphManager(LLMNode):
                         tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
             AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user.",
                         name = "Socrates"),
-            AIMessage(content = The robot arms can be moved to several predefined poses. Here are some of the poses:
+            AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
 
                     1. **Home Position for Right Arm**:
                     - Coordinates: (0.1, 0.3, 0.3)
@@ -193,20 +192,39 @@ class LanggraphManager(LLMNode):
                     - Coordinates: (0.9, 0.3, 0.3)
                     - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
 
-                    Should you desire to move one of the arms to one of these positions, feel free to let me know.,
+                    Should you desire to move one of the arms to one of these positions, feel free to let me know.""",
                     name = "Janise"),
+             
             HumanMessage(content = "Move the red cup to the left side of the table."),
             AIMessage(content = "I see a white table with a red cup on it. In order to move the red cup, its location must be known. Janise should consider calling the function \"find_object\" to get the location of the red cup.",
                     name = "Socrates"),
-            AIMessage(content = "",
-                    additional_kwargs={'tool_calls': [{'id': 'call_GYSTkPcmHtckTbWL6bfegcPS', 'function': {'arguments': '{"object_name":"cup"}', 'name': 'find_object'}, 'type': 'function'}], 'refusal': None},
+
+            AIMessage(content = "", additional_kwargs={'tool_calls': [{'id': 'call_GYSTkPcmHtckTbWL6bfegcPS', 'function': {'arguments': '{"object_name":"cup"}', 'name': 'find_object'}, 'type': 'function'}], 'refusal': None},
                     name = "Janise"),
+
             ToolMessage(content={'cup 1': {'center_object': {'x': 0.616, 'y': 0.319, 'z': 0.045}, 'grasps': {}}}, 
                     name='find_object', id='8c73eb54-7f37-4f46-81d8-564123ee37b3', tool_call_id='call_GYSTkPcmHtckTbWL6bfegcPS'), 
-            ]
-        """
-        
 
+            AIMessage(content = "Since the position of the object was found, Janise sould call the function \"pick_up_object\", to pick up the red cup.",
+                    name = "Socrates"),
+            
+            AIMessage(content='',additional_kwargs={'tool_calls': [{'id': 'call_SwM9P6dfv9BYlIOoznJaDBgJ', 'function': {'arguments': '{"pose":[0.616,0.319,0.045,0,0,0,1],"arm":"right"}', 'name': 'pick_up_object'}, 'type': 'function'}], 'refusal': None}),
+            
+            ToolMessage(content='Pick up function run successfully', name='pick_up_object', id='d0b799b7-119b-4ad2-8a4b-1a873810068c', tool_call_id='call_SwM9P6dfv9BYlIOoznJaDBgJ'),
+            
+            AIMessage(content = "The red cup seems to be picked up successfully, so the cup can be transportated. Janise should now call the function \"move_to_pose\" to move the red cup to the left side of the table.",
+                    name = "Socrates"),    
+
+            AIMessage(content = "", additional_kwargs={'tool_calls': [{'id': 'call_6m6ScCVHmsB9IOdaxDckPH01', 'function': {'arguments': '{"pose":[0.5,0.2,0.1,0,0,0,1],"arm":"right"}', 'name': 'move_to_pose'}, 'type': 'function'}], 'refusal': None},
+                    name = "Janise"),
+            
+            ToolMessage(content='true', name='move_to_pose', id='a548a7af-8862-4eb4-b63e-5499cfbc5335', tool_call_id='call_6m6ScCVHmsB9IOdaxDckPH01'),
+            
+            AIMessage(content = "The tool call has returend true, and the red cup appears to still be in the gripper. Thus the original task 'Move the red cup to the left side of the table.' is fulfilled. Janise should now return this information to the user.",
+                    name = "Socrates"),
+            AIMessage(content = "The red cup has been successfully moved to the left side of the table. If you need any further assistance, please let me know.")
+            ]
+            
         
         self.initial_prompt_old = [
             self.initial_prompt_Janise,
@@ -597,7 +615,7 @@ class LanggraphManager(LLMNode):
     
     def model_Socrates(self, state: MessagesState):
         # We append an image to the CoT message     
-        #self.get_logger().info(f"The state is {state}")  
+        self.get_logger().info(f"The state is {state}")  
 
         # Get image of cell (Either simulated or real)
         image = self.get_image()
