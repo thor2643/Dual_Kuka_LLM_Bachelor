@@ -700,7 +700,7 @@ class ObjectDetector(Node):
                 y_axis = np.cross(approach, x_axis)
                 R_ortho = np.stack([x_axis, y_axis, approach], axis=1)
 
-                # added untwist: takes dot product between x-axis of frame and world x-axis. x-axis must always point in positive world y direction
+                # added untwist: takes dot product between x-axis of frame and world x-axis. x-axis must always point in positive world x direction
                 x_world = np.array([1, 0, 0])
                 x_grasp = R_ortho[:, 0]  # X-axis of the grasp frame
 
@@ -747,6 +747,7 @@ class ObjectDetector(Node):
                 grasps.append(top_grasp) 
                 self.get_logger().info(f"Top-down grasp found using old top_grasp algorithm")
 
+        """ #General grasp disabeled
         if np.max(points[:, 2]) > 0.10: # if the object is close to table
             for group in groups:
                 if count >= num_candidates:
@@ -817,7 +818,7 @@ class ObjectDetector(Node):
                     grasp_width = np.abs(max_proj - min_proj) 
 
                 # Collision check: does grasp collide with table?
-                grasp_half = (grasp_width / 2.0 + 0.05) # add 3 cm margin
+                grasp_half = (0.15 / 2.0 + 0.03) # add 3 cm margin
                 pt_left = center - R_ortho[:, 0] * grasp_half
                 pt_right = center + R_ortho[:, 0] * grasp_half
 
@@ -833,6 +834,7 @@ class ObjectDetector(Node):
                 # Add grasp to list [x, y, z, roll, pitch, yaw]
                 grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
                 count += 1
+        """
 
         return grasps
 
