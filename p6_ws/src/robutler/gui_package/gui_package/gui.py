@@ -12,7 +12,8 @@ from playsound import playsound
 import os
 import threading
 import speech_recognition as sr
-import sounddevice
+import sounddevice # Import is required for sounddevice to work, although it is not used in the code
+import time
 
 
 class MinimalClientAsync(Node):
@@ -178,12 +179,13 @@ class Interface(ctk.CTkFrame):
     def _text_to_speech(self, text):
         #self.get_logger().info(f"Converting text to speech: {text}")
         try:
-            unique_filename = f"output_{os.getpid()}.mp3"
+            unique_filename = f"output_audio.mp3"
             tts = gTTS(text=text, lang='en')
             tts.save(unique_filename)
             # Set the device to play sound from
             os.system("pactl set-default-sink 0")  # Replace 0 with the index of your desired output device
             playsound(unique_filename)
+            time.sleep(0.5)
             os.remove(unique_filename)
         except Exception as e:
             print(f"Failed to convert text to speech: {e}")
