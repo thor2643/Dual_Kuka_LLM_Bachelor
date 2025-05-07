@@ -171,7 +171,8 @@ class LanggraphManager(LLMNode):
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
         self.initial_prompt = [
-            self.initial_prompt_Janise,
+            self.initial_prompt_Janise]
+        """
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                     name = "Socrates"),
@@ -182,7 +183,7 @@ class LanggraphManager(LLMNode):
                         tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
             AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user.",
                         name = "Socrates"),
-            AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
+            AIMessage(content = The robot arms can be moved to several predefined poses. Here are some of the poses:
 
                     1. **Home Position for Right Arm**:
                     - Coordinates: (0.1, 0.3, 0.3)
@@ -192,7 +193,7 @@ class LanggraphManager(LLMNode):
                     - Coordinates: (0.9, 0.3, 0.3)
                     - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
 
-                    Should you desire to move one of the arms to one of these positions, feel free to let me know.""",
+                    Should you desire to move one of the arms to one of these positions, feel free to let me know.,
                     name = "Janise"),
             HumanMessage(content = "Move the red cup to the left side of the table."),
             AIMessage(content = "I see a white table with a red cup on it. In order to move the red cup, its location must be known. Janise should consider calling the function \"find_object\" to get the location of the red cup.",
@@ -203,7 +204,7 @@ class LanggraphManager(LLMNode):
             ToolMessage(content={'cup 1': {'center_object': {'x': 0.616, 'y': 0.319, 'z': 0.045}, 'grasps': {}}}, 
                     name='find_object', id='8c73eb54-7f37-4f46-81d8-564123ee37b3', tool_call_id='call_GYSTkPcmHtckTbWL6bfegcPS'), 
             ]
-            
+        """
         
 
         
@@ -596,7 +597,7 @@ class LanggraphManager(LLMNode):
     
     def model_Socrates(self, state: MessagesState):
         # We append an image to the CoT message     
-        self.get_logger().info(f"The state is {state}")  
+        #self.get_logger().info(f"The state is {state}")  
 
         # Get image of cell (Either simulated or real)
         image = self.get_image()

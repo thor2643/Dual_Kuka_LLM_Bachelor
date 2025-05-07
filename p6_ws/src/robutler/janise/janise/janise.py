@@ -143,9 +143,9 @@ class LLMNode(Node):
         # Returns the resized image from the camera, either from simulation or the real one.
 
         if load_use_sim():
-            #original_image = cv2.imread("resized_image.jpg")
+            original_image = cv2.imread("resized_image.jpg")
             
-            for i in range(1):
+            for i in range(4):
                 request = GetSimCameraData.Request()
                 future = self.sim_cam_client.call_async(request)
 
@@ -755,6 +755,7 @@ class LLMNode(Node):
             return "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
+        pose[2] -= 0.02 # Move down 2 cm
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
