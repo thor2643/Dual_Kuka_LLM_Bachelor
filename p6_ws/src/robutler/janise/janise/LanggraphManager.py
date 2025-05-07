@@ -867,7 +867,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = False
+        sim = True
 
         if sim:
             response = self.sim_system(request, response)
