@@ -675,6 +675,8 @@ class LLMNode(Node):
                     roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
                     roll, pitch, yaw = [flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
+                    if pose[2] < 0:
+                        pose_new[2] = 0.003
 
                     if j == 0:
                         grasp_name = 'Top down grasp'
