@@ -317,17 +317,13 @@ class ObjectDetector(Node):
         #Apply Yolo World, data is stored in self.yolo_results
         self.apply_yolo_world(image, object, confi = 0.10, verbose=False) #TODO afjust conf here
 
-
         # If no objects are found with the specified class, try to find any object and return the class
         if len(self.yolo_results[0].boxes.data) == 0:
             self.get_logger().info(f'No {object} found\n')
             objects_found_list = self.apply_yolo_world(image, object, confi = 0.10, verbose=False, name_objects = True) #Adjust confi
             image = self.yolo_results[0].plot()
-
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
-
             response.object_count = 0
-
             for i, name in enumerate(objects_found_list):
                 obj = DetectedObject()
                 obj.name = name
@@ -383,7 +379,6 @@ class ObjectDetector(Node):
             # Visualize the mask
             overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
             self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(overlay))
-
                 
             #Apply the mask to the point cloud
             point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
@@ -395,14 +390,12 @@ class ObjectDetector(Node):
 
             # Find center of the object in 3D space
             x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
-
-            self.get_logger().info(f'Object bounding box: {x_min}, {y_min}, {x_max}, {y_max}\n')
-
             # Convert pixel coordinates to 3D coordinates
             cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
             if cart_point is None or len(cart_point) != 3:
-                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
-                    continue
+                self.get_logger().warn("Invalid cart_point, skipping transformation.")
+                continue
+                
             # Convert to homogeneous (4D)
             cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
             cart_point = self.transformation_matrix @ cart_point_hom 
@@ -437,7 +430,7 @@ class ObjectDetector(Node):
             x, y, z, roll, pitch, yaw, grasp_width = grasp
 
             if z < 0 or grasp_width >= 0.1525:
-                        continue
+                continue
             
             T_W_G = np.eye(4)
             T_W_G[:3, :3] = ROT.from_euler('xyz', [roll, pitch, yaw], degrees=True).as_matrix()
