@@ -113,10 +113,11 @@ class LanggraphManager(LLMNode):
             # Next, we pass in the function that will determine which node is called next.
             self.sim_should_continue,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["action", "sim_judge"],
+            ["action", END],
         )
 
         # ---- Right side of chart, this is called if janise did not make a tool call ----
+        """
         self.sim_workflow.add_conditional_edges(        
             "sim_judge",
             # The function that will determine which node is called next.
@@ -124,16 +125,17 @@ class LanggraphManager(LLMNode):
             # Path map - all the possible nodes this edge could go to
             ["action2", END],
         )
-        self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
-        self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
-        self.sim_workflow.add_edge("clear_history", "Socrates")
+        """
+        #self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
+        #self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
+        #self.sim_workflow.add_edge("clear_history", "Socrates")
 
         # ---- Left side of chart, this is called if janise made a tool call ----
-        self.sim_workflow.add_edge("action", "sim_subtask_judge")
-        self.sim_workflow.add_edge("sim_subtask_judge", "action3")
-        self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
-        self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
-        self.sim_workflow.add_edge("Socrates", "Janise")
+        self.sim_workflow.add_edge("action", "Socrates")
+        #self.sim_workflow.add_edge("sim_subtask_judge", "action3")
+        #self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
+        #self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
+        #self.sim_workflow.add_edge("Socrates", "Janise")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
@@ -408,7 +410,7 @@ class LanggraphManager(LLMNode):
         last_message = state["messages"][-1]
         # If there is no function call, then we finish
         if not last_message.tool_calls:
-            return "sim_judge"
+            return END
         # Otherwise if there is, we continue
         return "action"
     
