@@ -25,6 +25,7 @@ from utils.linear_alg_utils import (
 
 from IPython.display import Image, display
 from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeStyles
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 
 
 # ROS 2 libraries and Node structure
@@ -618,6 +619,9 @@ class LLMNode(Node):
                         'z': detected_obj.center_of_object.z
                     }
                 }
+            
+            return f"{object_name} could not be found. Instead YoloWorld found {response.object_count} objects. The possible objects are: {self.objects_on_table}"
+        
         # For case where object is found
         else:
             self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
@@ -671,9 +675,6 @@ class LLMNode(Node):
                     roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
                     roll, pitch, yaw = [flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
-                    if pose[2] < 0 or grasp.grasp_width >= 0.1525:
-                        self.get_logger().info(f'Grasp z value: {pose[2]}, grasp width: {grasp.grasp_width}')
-                        continue
 
                     if j == 0:
                         grasp_name = 'Top down grasp'
@@ -708,6 +709,10 @@ class LLMNode(Node):
         Returns:
             bool: True if the object was successfully picked up, False otherwise.
         """
+        if len(pose) != 6:
+            self.get_logger().error("Pose must be a list of 6 elements")
+            return "Pose must be a list of 6 elements: [x, y, z, roll, pitch, yaw]"
+        
         # First we calculate the approach pose
         T_approach = np.eye(4)
         T_approach[2, 3] = 0.05 # Place approach 5 cm along grasp z-axis
@@ -755,7 +760,7 @@ class LLMNode(Node):
             return "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
-        pose[2] -= 0.02 # Move down 2 cm
+        #pose[2] -= 0.02 # Move down 2 cm
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")

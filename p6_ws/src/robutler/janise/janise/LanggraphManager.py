@@ -69,7 +69,7 @@ class LanggraphManager(LLMNode):
 
         
     def _init_sim_workflow(self):
-        self.bound_model = self.model.bind_tools(self.tools)
+        self.bound_model = self.model.bind_tools(self.tools, parallel_tool_calls=False)
         self.judge_model = self.model.bind_tools(self.task_detector_tools, tool_choice="any")
         self.subtask_judge_model = self.model.bind_tools(self.all_tools,tool_choice="any")                                                       
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
@@ -168,12 +168,13 @@ class LanggraphManager(LLMNode):
         
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.sim_config = {"configurable": {"thread_id": "sim_1"}}
+        self.sim_config = {"configurable": {"thread_id": 1}}
 
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
-        self.initial_prompt = [
-            self.initial_prompt_Janise,
+        self.initial_prompt = [self.initial_prompt_Janise]
+
+        """
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
                     name = "Socrates"),
@@ -184,7 +185,7 @@ class LanggraphManager(LLMNode):
                         tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
             AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user.",
                         name = "Socrates"),
-            AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
+            AIMessage(content = 'The robot arms can be moved to several predefined poses. Here are some of the poses:
 
                     1. **Home Position for Right Arm**:
                     - Coordinates: (0.1, 0.3, 0.3)
@@ -194,7 +195,7 @@ class LanggraphManager(LLMNode):
                     - Coordinates: (0.9, 0.3, 0.3)
                     - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
 
-                    Should you desire to move one of the arms to one of these positions, feel free to let me know.""",
+                    Should you desire to move one of the arms to one of these positions, feel free to let me know.',
                     name = "Janise"),
              
             HumanMessage(content = "Move the red cup to the left side of the table."),
@@ -226,6 +227,7 @@ class LanggraphManager(LLMNode):
                     name = "Socrates"),
             AIMessage(content = "The red cup has been successfully moved to the left side of the table. If you need any further assistance, please let me know.")
             ]
+        """
             
         
         self.initial_prompt_old = [
@@ -617,7 +619,7 @@ class LanggraphManager(LLMNode):
     
     def model_Socrates(self, state: MessagesState):
         # We append an image to the CoT message     
-        self.get_logger().info(f"The state is {state}")  
+        #self.get_logger().info(f"The state is {state}")  
 
         # Get image of cell (Either simulated or real)
         image = self.get_image()
@@ -875,7 +877,7 @@ class LanggraphManager(LLMNode):
             response.message = "History cleared."
 
             # Log the conversation
-            self.save_snapshot()
+            #self.save_snapshot()
 
             # Update config
             current_id = int(self.sim_config["configurable"]["thread_id"])
