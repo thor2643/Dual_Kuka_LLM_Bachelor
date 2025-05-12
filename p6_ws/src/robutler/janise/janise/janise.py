@@ -614,9 +614,9 @@ class LLMNode(Node):
 
                 self.objects_on_table[object_name] = {
                     'center_object': {
-                        'x': detected_obj.center_of_object.x,
-                        'y': detected_obj.center_of_object.y,
-                        'z': detected_obj.center_of_object.z
+                        'x': round(detected_obj.center_of_object.x,3),
+                        'y': round(detected_obj.center_of_object.y,3),
+                        'z': round(detected_obj.center_of_object.z,3)
                     }
                 }
             
@@ -640,6 +640,9 @@ class LLMNode(Node):
                     'grasps': {}
                 }
 
+                # Debugging information
+                self.get_logger().info(f"Grasping poses: {detected_obj.grasps}")
+
                 for j, grasp in enumerate(detected_obj.grasps):
                     
                     ##### rotate the grasp 90 degrees around the z-axis of the grasp
@@ -650,6 +653,9 @@ class LLMNode(Node):
 
                     R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
                     pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
+
+                    self.get_logger().info(f"Pose: {pose}")
+
                     T_W_G = np.eye(4)
                     T_W_G[:3, :3] = R_W_G
                     T_W_G[:3, 3] = pose

@@ -242,10 +242,10 @@ class ObjectDetector(Node):
         u, v = np.meshgrid(np.arange(width), np.arange(height))
 
         # Get the depth in meters
-        if not load_use_sim:
-            z = self.depth_frame.astype(np.float32) / 1000.0  # Convert to meters
+        if load_use_sim:
+            z = self.depth_frame.astype(np.float32) / 1000 # Convert to meters
         else:
-            z = self.depth_frame.astype(np.float32)
+            z = self.depth_frame.astype(np.float32) / 1000
 
         # Replace 0.0 with np.nan to mark invalid pixels
         z[z == 0.0] = np.nan
@@ -1104,9 +1104,10 @@ class ObjectDetector(Node):
 
         # Calculate the x, y, z coordinates
         if load_use_sim():
-            z = self.depth_frame[pixel_y, pixel_x] 
+            z = self.depth_frame[pixel_y, pixel_x] / 1000
         else:
-            z = self.depth_frame[pixel_y, pixel_x] / 1000  # Convert to meters
+            self.get_logger().info(f"Converting depth to meters")
+            z = self.depth_frame[pixel_y, pixel_x] / 1000 # Convert to meters
 
         x = ((pixel_x - cx) * z / fx) 
         y = ((pixel_y - cy) * z / fy) 
