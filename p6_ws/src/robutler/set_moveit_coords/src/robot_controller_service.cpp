@@ -11,6 +11,8 @@
 //#include <moveit_visual_tools/moveit_visual_tools.h>
 #include <string>
 #include <sstream>
+#include <map>
+#include <cmath> 
 
 using namespace Eigen;
 
@@ -413,29 +415,53 @@ private:
     void handle_gripper_service(const std::shared_ptr<project_interfaces::srv::GripperMoveit::Request> request,
       const std::shared_ptr<project_interfaces::srv::GripperMoveit::Response> response) {
       // This service is to ensure that the grippers in rviz / moveit mirrors the state of the real grippers.
-      RCLCPP_INFO(this->get_logger(), "Received gripper command: %s", request->gripper_name.c_str());
+      RCLCPP_INFO(this->get_logger(), "Received gripper command for: %s, Width: %f", request->gripper_name.c_str(), request->width);
+     
+      if (request->gripper_name == "3f") {       
+        // The 3 joints of interest span form 0 to 65 degrees, and the width is between 0 to 167 mm. We scale the angle to the inverse of the width
+        
+        float start_angle = std::cos(25.0/180.0*3.14);
+        double angle = std::acos((request->width / 167) * start_angle + (1-start_angle)) - 25/180*3.14;
 
-      std::string gripper_goal;
+        RCLCPP_INFO(this->get_logger(), "Calculated start for 3f gripper: %f", start_angle);
+        RCLCPP_INFO(this->get_logger(), "Calculated ratio for 3f gripper: %f", ((request->width/ 167) * start_angle));
+        RCLCPP_INFO(this->get_logger(), "Calculated angle for 3f gripper: %f", angle);
+        
+        std::map<std::string, double> target_position;
+        target_position["a_3f_finger_1_joint_1"] = angle;
+        target_position["a_3f_finger_1_joint_3"] = -0.61;
+        target_position["a_3f_finger_2_joint_1"] = angle;
+        target_position["a_3f_finger_2_joint_3"] = -0.61;
+        target_position["a_3f_finger_middle_joint_1"] = angle;
+        target_position["a_3f_finger_middle_joint_3"] = -0.61;
 
-      // These poses are set in the SRDF.
-      if (request->width > 10) {
-        gripper_goal = "open";
-      } else {
-        gripper_goal = "closed";
-      }
+        // Loop through the joint names and set the target position
+        std::vector<std::string> gripper_joint_names = move_group_3f->getJoints();
+        for (size_t i = 0; i < gripper_joint_names.size(); ++i) {
+          if ( target_position.count(gripper_joint_names[i]) > 0 ){
+            move_group_3f->setJointValueTarget(gripper_joint_names[i], target_position[gripper_joint_names[i]]);
+          }
+        }
 
-      if (request->gripper_name == "3f") {
-        move_group_3f->setNamedTarget(gripper_goal);
+        move_group_3f->setStartStateToCurrentState();
         move_group_3f->move();
         response->success = true;
 
       } else if (request->gripper_name == "2f") {
-        move_group_2f->setNamedTarget(gripper_goal);
+      
+        // The main joint in the 2f gripper span form 0 to 45 degrees, and the width is between 0 to 85 mm. We scale the angle with the width
+        double angle = 45 * ((85-request->width) / 85) / 180.0 * 3.14;
+        
+        RCLCPP_INFO(this->get_logger(), "Gripper angle %f", angle);
+
+        move_group_2f->setJointValueTarget("left_2f_robotiq_85_left_knuckle_joint", angle);
+        move_group_2f->setStartStateToCurrentState();
+
         move_group_2f->move();
         response->success = true;
 
       } else {
-        RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified");
+        RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");
         response->success = false;
       }
     }
