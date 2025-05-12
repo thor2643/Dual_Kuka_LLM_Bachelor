@@ -42,8 +42,8 @@ class IsaacCameraBridge(Node):
 
         # Depth intrinsics:
         camera_info.k = [
-            652.79352, 0.0,   640.0,
-            0.0,    359.16418, 360.0,
+            634.08624, 0.0,   640.0,
+            0.0,    566.49001, 360.0,
             0.0,    0.0,   1.0
         ]
         
