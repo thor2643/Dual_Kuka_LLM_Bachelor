@@ -69,7 +69,7 @@ class LanggraphManager(LLMNode):
 
         
     def _init_sim_workflow(self):
-        self.bound_model = self.model.bind_tools(self.tools)
+        self.bound_model = self.model.bind_tools(self.tools, parallel_tool_calls=False)
         self.judge_model = self.model.bind_tools(self.task_detector_tools, tool_choice="any")
         self.subtask_judge_model = self.model.bind_tools(self.all_tools,tool_choice="any")                                                       
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
@@ -168,7 +168,7 @@ class LanggraphManager(LLMNode):
         
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.sim_config = {"configurable": {"thread_id": "sim_1"}}
+        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 50}
 
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
@@ -618,7 +618,7 @@ class LanggraphManager(LLMNode):
     
     def model_Socrates(self, state: MessagesState):
         # We append an image to the CoT message     
-        self.get_logger().info(f"The state is {state}")  
+        #self.get_logger().info(f"The state is {state}")  
 
         # Get image of cell (Either simulated or real)
         image = self.get_image()
@@ -877,7 +877,7 @@ class LanggraphManager(LLMNode):
             response.message = "History cleared."
 
             # Log the conversation
-            self.save_snapshot()
+            #self.save_snapshot()
 
             # Update config
             current_id = int(self.sim_config["configurable"]["thread_id"])
