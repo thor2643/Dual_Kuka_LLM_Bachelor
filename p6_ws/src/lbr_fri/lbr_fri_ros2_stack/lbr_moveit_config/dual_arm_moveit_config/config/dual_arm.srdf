@@ -134,6 +134,8 @@
         <joint name="left_A7" value="0"/>
     </group_state>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="palm_adapter_mounting_plate" link2="gripper_mounting_plate" reason="Adjacent"/>
+    <disable_collisions link1="palm_adapter_mounting_plate" link2="a_3f_palm" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_1" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_3" reason="Never"/>
