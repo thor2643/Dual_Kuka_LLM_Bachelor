@@ -434,9 +434,8 @@ private:
         target_position["a_3f_finger_2_joint_3"] = -0.61;
         target_position["a_3f_finger_middle_joint_1"] = angle;
         target_position["a_3f_finger_middle_joint_3"] = -0.61;
-        target_position["a_3f_palm_finger_1_joint"] = -9/180*3.14;
-        target_position["a_3f_palm_finger_2_joint"] = 9/180*3.14;
-
+        target_position["a_3f_palm_finger_1_joint"] = -0.139;
+        target_position["a_3f_palm_finger_2_joint"] = 0.139;
 
         // Loop through the joint names and set the target position
         std::vector<std::string> gripper_joint_names = move_group_3f->getJoints();
@@ -453,6 +452,10 @@ private:
       } else if (request->gripper_name == "2f") {
       
         // The main joint in the 2f gripper span form 0 to 45 degrees, and the width is between 0 to 85 mm. We scale the angle with the width
+        if (request->width < 15) {
+          request->width = 15;
+        }
+        
         double angle = 45 * ((85-request->width) / 85) / 180.0 * 3.14;
         
         RCLCPP_INFO(this->get_logger(), "Gripper angle %f", angle);
