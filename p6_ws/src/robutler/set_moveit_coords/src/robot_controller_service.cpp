@@ -434,6 +434,9 @@ private:
         target_position["a_3f_finger_2_joint_3"] = -0.61;
         target_position["a_3f_finger_middle_joint_1"] = angle;
         target_position["a_3f_finger_middle_joint_3"] = -0.61;
+        target_position["a_3f_palm_finger_1_joint"] = -9/180*3.14;
+        target_position["a_3f_palm_finger_2_joint"] = 9/180*3.14;
+
 
         // Loop through the joint names and set the target position
         std::vector<std::string> gripper_joint_names = move_group_3f->getJoints();

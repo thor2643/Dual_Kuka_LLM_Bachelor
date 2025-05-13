@@ -243,7 +243,7 @@ class ObjectDetector(Node):
 
         # Get the depth in meters
         if load_use_sim:
-            z = self.depth_frame.astype(np.float32) / 1000 # Convert to meters
+            z = self.depth_frame.astype(np.float32) # Convert to meters
         else:
             z = self.depth_frame.astype(np.float32) / 1000
 
@@ -1104,7 +1104,7 @@ class ObjectDetector(Node):
 
         # Calculate the x, y, z coordinates
         if load_use_sim():
-            z = self.depth_frame[pixel_y, pixel_x] / 1000
+            z = self.depth_frame[pixel_y, pixel_x]
         else:
             self.get_logger().info(f"Converting depth to meters")
             z = self.depth_frame[pixel_y, pixel_x] / 1000 # Convert to meters

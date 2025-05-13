@@ -9,7 +9,7 @@ def generate_launch_description():
         get_package_share_directory('lbr_description'),
         'urdf',
         'dual_arm',
-        'dual_arm.xacro' # Change back to 'dual_arm_sim.urdf' after test
+        'dual_arm_sim.xacro' # Change back to 'dual_arm_sim.urdf' after test
     )
 
     # Build the MoveIt configuration with the new URDF file
