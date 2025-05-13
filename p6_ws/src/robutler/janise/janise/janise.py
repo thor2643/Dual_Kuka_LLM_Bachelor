@@ -131,7 +131,7 @@ class LLMNode(Node):
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'},
+            'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
         }
 
         self.sim_tool_list = {}
@@ -146,7 +146,7 @@ class LLMNode(Node):
         if load_use_sim():
             original_image = cv2.imread("resized_image.jpg")
             
-            for i in range(1):
+            for i in range(4):
                 request = GetSimCameraData.Request()
                 future = self.sim_cam_client.call_async(request)
 
@@ -586,7 +586,7 @@ class LLMNode(Node):
             - Requires the object detection service to be available and responsive.
         """
         
-        self.get_logger().info(f"\Requesting the Object detector service to find grasps for: {object_name}\n")
+        # self.get_logger().info(f"\Requesting the Object detector service to find grasps for: {object_name}\n")
 
         # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
@@ -603,18 +603,21 @@ class LLMNode(Node):
 
         # Check if the response is valid or if it timeouted
         if response is None:
-            self.get_logger().error("Failed to retrieve object detection response")
-            return None
+            # self.get_logger().error("Failed to retrieve object detection response")
+            return "Failed to retrieve object detection response. Make sure the object detection service is running."
 
         self.get_logger().info(f"\nObjects found: {response.object_count}\n")
 
+        # Clear the previous objects
+        self.objects_on_table = {}
+
         # For case where no object is found
         if response.object_count == 0:
-            self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
+            # self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
             for i, detected_obj in enumerate(response.detected_objects):
-                object_name = detected_obj.name
+                #object_name = detected_obj.name
 
-                self.objects_on_table[object_name] = {
+                self.objects_on_table[detected_obj.name] = {
                     'center_object': {
                         'x': round(detected_obj.center_of_object.x,3),
                         'y': round(detected_obj.center_of_object.y,3),
@@ -626,9 +629,7 @@ class LLMNode(Node):
         
         # For case where object is found
         else:
-            self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
-
-            self.objects_on_table = {}  # Reset table
+            # self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
 
             for i, detected_obj in enumerate(response.detected_objects):
                 object_name = detected_obj.name
@@ -643,7 +644,7 @@ class LLMNode(Node):
                 }
 
                 # Debugging information
-                self.get_logger().info(f"Grasping poses: {detected_obj.grasps}")
+                # self.get_logger().info(f"Grasping poses: {detected_obj.grasps}")
 
                 for j, grasp in enumerate(detected_obj.grasps):
                     
@@ -656,7 +657,7 @@ class LLMNode(Node):
                     R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
                     pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
 
-                    self.get_logger().info(f"Pose: {pose}")
+                    # self.get_logger().info(f"Pose: {pose}")
 
                     T_W_G = np.eye(4)
                     T_W_G[:3, :3] = R_W_G
@@ -702,9 +703,9 @@ class LLMNode(Node):
                             'pitch': round(pitch,3),
                             'yaw': round(yaw,3)
                         },
-                        'width': 0 #round(grasp.grasp_width,3)
+                        'width': round(grasp.grasp_width,3)
                     }
-        print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
+        # print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 
         return self.objects_on_table
     
@@ -712,10 +713,16 @@ class LLMNode(Node):
     def pick_up_object(self, pose: list, arm: str, object_width: int=0) -> bool:
         """
         Picks up an object by planning and executing a trajectory and closing the gripper.
+        This function first opens the gripper, then plans a trajectory to an approach pose,
+        executes the trajectory, closes the gripper to pick up the object, and finally lifts the object 10 cm
+        to avoid collision when moving away. The function also handles the gripper width for the object.
         Args:
-            pose (list): Target pose for the robot arm.
+            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
+                         The first three numbers correspond to the x, y, z position in meters, and the last 
+                         three numbers represent the roll, pitch, and yaw angles in degrees.
             arm (str): Specifies which arm to use ('left' or 'right').
             object_width (int, optional): Width of the object to grip in millimeters. Defaults to 0 mm.
+            
         Returns:
             bool: True if the object was successfully picked up, False otherwise.
         """
@@ -781,12 +788,13 @@ class LLMNode(Node):
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
             return "Failed to execute grasp trajectory"
-        
+
         # Close the gripper
+        # As width estimation is not accurate, we set width to 0 to make sure object is grasped
         if arm == 'left':
-            gripper_response = self.manipulate_left_gripper(width=object_width)
+            gripper_response = self.manipulate_left_gripper(width=0)
         else:
-            gripper_response = self.manipulate_right_gripper(width=object_width)
+            gripper_response = self.manipulate_right_gripper(width=0)
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to close gripper")
@@ -876,6 +884,16 @@ class LLMNode(Node):
         if force < 15 or force > 60:
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
+        
+        # Adjust the gripper width to ensure secure grasping
+        """
+        if width < 10:
+            width = 0
+        elif width == 167:
+            pass
+        else:
+            width = width - 10
+        """
 
         # Rviz gripper 
         self._gripper_req.width = float(width)   
@@ -942,6 +960,16 @@ class LLMNode(Node):
         if force < 20 or force > 235:
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
+        
+        # Adjust the gripper width to ensure secure grasping
+        """
+        if width < 10:
+            width = 0
+        elif width == 167:
+            pass
+        else:
+            width = width - 10
+        """
 
         # Rviz gripper
         self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.

@@ -168,7 +168,7 @@ class LanggraphManager(LLMNode):
         
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 50}
+        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 100}
 
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
