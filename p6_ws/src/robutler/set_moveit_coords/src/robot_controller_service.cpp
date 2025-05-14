@@ -446,8 +446,19 @@ private:
         }
 
         move_group_3f->setStartStateToCurrentState();
-        move_group_3f->move();
-        response->success = true;
+        
+        // Perform the motion
+        moveit::planning_interface::MoveItErrorCode result = move_group_3f->move();
+
+        RCLCPP_INFO(this->get_logger(), "Move results: %d", result);
+
+        if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "3F gripper move successful.");
+          response->success = true;
+        } else {
+          RCLCPP_WARN(this->get_logger(), "3F gripper move failed with error code: %d", result.val);
+          response->success = false;
+        }
 
       } else if (request->gripper_name == "2f") {
       
@@ -459,12 +470,20 @@ private:
         double angle = 45 * ((85-request->width) / 85) / 180.0 * 3.14;
         
         RCLCPP_INFO(this->get_logger(), "Gripper angle %f", angle);
-
-        move_group_2f->setJointValueTarget("left_2f_robotiq_85_left_knuckle_joint", angle);
+        
+        const std::string joint_name = "left_2f_robotiq_85_left_knuckle_joint";
+        move_group_2f->setJointValueTarget(joint_name, angle);
         move_group_2f->setStartStateToCurrentState();
+        // Attempt to plan and move
+        moveit::planning_interface::MoveItErrorCode result = move_group_2f->move();
 
-        move_group_2f->move();
-        response->success = true;
+        if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "2F gripper move successful.");
+          response->success = true;
+        } else {
+          RCLCPP_WARN(this->get_logger(), "2F gripper move failed with error code: %d", result.val);
+          response->success = false;
+        }
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");

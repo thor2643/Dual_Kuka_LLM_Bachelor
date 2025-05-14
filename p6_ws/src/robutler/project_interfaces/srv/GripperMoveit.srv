@@ -2,3 +2,4 @@ float32 width
 string gripper_name
 ---
 bool success
+string log

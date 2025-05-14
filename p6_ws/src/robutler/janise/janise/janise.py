@@ -45,6 +45,7 @@ from project_interfaces.srv import GripperMoveit
 from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
 from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
+from robotiq_3f_gripper_ros2_interfaces.msg import Robotiq3FGripperInputRegisters
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
 from project_interfaces.srv import GetSimCameraData
@@ -69,6 +70,9 @@ class LLMNode(Node):
 
         self._2f_client = self.create_client(Robotiq2F85GripperCommand, 'gripper_2f_service', callback_group=client_cb_group)
         self._2f_req = Robotiq2F85GripperCommand.Request()
+        
+        self._3f_input_registers = Robotiq3FGripperInputRegisters()
+        self._3f_input_subscription = self.create_subscription(Robotiq3FGripperInputRegisters, "Robotiq3FGripper/InputRegisters", self.update_register, 10)
 
         # Moveit gripper client
         self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
@@ -193,6 +197,10 @@ class LLMNode(Node):
 
         except CvBridgeError as e:
             self.get_logger().error(f'Error converting color image: {e}')
+            
+    def update_register(self, msg):
+        self._3f_input_registers.g_sta = msg.g_sta
+    	
 
     # Implemented to handle nested callbacks
     # Principle taken from https://gist.github.com/driftregion/14f6da05a71a57ef0804b68e17b06de5
@@ -909,12 +917,22 @@ class LLMNode(Node):
         # Rviz gripper 
         self._gripper_req.width = float(width)   
         self._gripper_req.gripper_name = "3f"
-        future2 = self._gripper_client.call_async(self._gripper_req)
-
-        # Wait for the result
-        response2 = self.wait_future(future2, timeout=15)
 
         if load_use_sim():
+            future2 = self._gripper_client.call_async(self._gripper_req)
+            response2 = self.wait_future(future2, timeout=15)
+            if response2 is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+            elif width == 167:
+                self.get_logger().info("Gripper opened")
+                response2.log = "Gripper opened"
+                response2.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response2.success = False
             return response2
         else:
             self._3f_controller.output_registers.r_act = 1  # Active Gripper
@@ -930,11 +948,24 @@ class LLMNode(Node):
 
             response1 = self.wait_future(future1, timeout=15)
 
+            if self._3f_input_registers.g_sta == 1 or self._3f_input_registers.g_sta == 2:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response1.log = "Gripper succesfully grasped object"
+                response1.success = True
+            elif width == 167:
+                self.get_logger().info("Gripper opened")
+                response1.log = "Gripper opened"
+                response1.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response1.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response1.success = False
+
             return response1
 
 
     #@tool
-    def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=20) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
+    def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=70) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
         """
         Adjusts the left gripper's width, speed, and force to open, close, or position it at an intermediate state.
 
@@ -986,12 +1017,23 @@ class LLMNode(Node):
         self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
         self._gripper_req.gripper_name = "2f"
 
-        self.get_logger().info("Simulated gripper command sent")
-        future2 = self._gripper_client.call_async(self._gripper_req)
-        response2 = self.wait_future(future2, timeout=15)
-
         # Wait for the result
         if load_use_sim():
+            self.get_logger().info("Simulated gripper command sent")
+            future2 = self._gripper_client.call_async(self._gripper_req)
+            response2 = self.wait_future(future2, timeout=15)
+            if response2 is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+            elif width == 85:
+                self.get_logger().info("Gripper opened")
+                response2.log = "Gripper opened"
+                response2.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response2.success = False
             return response2
         else:
             self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
