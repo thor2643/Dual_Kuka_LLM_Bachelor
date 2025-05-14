@@ -27,9 +27,15 @@ class Robotiq2F85GripperService(Node):
         self.get_logger().info(f'Using gripper with following values:\n width: {width}\nspeed: {speed}\n force: {force}\n')
 
         self.gripper.go_to(opening=width, speed=speed, force=force)
+        status = self.gripper.read_status()
+        self.get_logger().info(f'Gripper status: {status.obj_detected}')
         sleep(1)
 
         response.success = True
+        if status.obj_detected:
+            response.log = 'An object was grasped.'
+        else:
+            response.log = 'No object was grasped.'
         return response
 
 

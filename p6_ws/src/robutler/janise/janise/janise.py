@@ -200,7 +200,6 @@ class LLMNode(Node):
             
     def update_register(self, msg):
         self._3f_input_registers.g_sta = msg.g_sta
-        self.get_logger().info(f"Gripper status: {self._3f_input_registers.g_sta}")
     	
 
     # Implemented to handle nested callbacks
@@ -928,6 +927,13 @@ class LLMNode(Node):
             future1 = self._3f_controller_cli.call_async(self._3f_controller)
 
             response1 = self.wait_future(future1, timeout=15)
+
+            if self._3f_input_registers.g_sta == 1 or self._3f_input_registers.g_sta == 2:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response1.log = "Gripper succesfully grasped object"
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response1.log = "Gripper failed to grasp object"
 
             return response1
 
