@@ -332,7 +332,7 @@ private:
 
       // move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
       move_group_interface->setPlanningTime(7.0);
-      move_group_interface->setPlannerId("TRRT"); // Other options in ompl_planning.yaml
+      move_group_interface->setPlannerId("RRTconnect"); // Other options in ompl_planning.yaml
       move_group_interface->setPoseTarget(target_pose);
   
       error_code = move_group_interface->plan(*plan);
