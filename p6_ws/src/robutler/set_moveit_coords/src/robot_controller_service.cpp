@@ -72,13 +72,14 @@ public:
 
     get_pose_service = this->create_service<project_interfaces::srv::GetCurrentPose>(
         "get_pose", std::bind(&RobotControllerService::handle_pose_request_service, this, std::placeholders::_1, std::placeholders::_2));
+    
+    gripper_service = this->create_service<project_interfaces::srv::GripperMoveit>(
+        "gripper_moveit", std::bind(&RobotControllerService::handle_gripper_service, this, std::placeholders::_1, std::placeholders::_2));
 
     joint_state_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
       "joint_states", 10, std::bind(&RobotControllerService::joint_state_callback, this, std::placeholders::_1));
 
-    gripper_service = this->create_service<project_interfaces::srv::GripperMoveit>(
-      "gripper_moveit", std::bind(&RobotControllerService::handle_gripper_service, this, std::placeholders::_1, std::placeholders::_2));
-
+  
     // Print the pose
     //RCLCPP_INFO(this->get_logger(), "End effector pose:\n%s", end_effector_state.matrix().format(Eigen::IOFormat()).c_str());
   }
@@ -110,15 +111,21 @@ private:
 
   std::vector<double> joint_values_right;
   std::vector<double> joint_values_left;
+  std::vector<double> _3f_joint_values_mock;
+  std::vector<double> _2f_joint_values_mock;
   
   void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
     {
         //current_joint_state = msg->position;
         joint_values_right.clear();
         joint_values_left.clear();
+        _3f_joint_values_mock.clear();
+        _2f_joint_values_mock.clear();
 
         joint_values_right.resize(7);
         joint_values_left.resize(7);
+        _3f_joint_values_mock.resize(10);
+        _2f_joint_values_mock.resize(1);
 
         for (size_t i = 0; i < msg->name.size(); ++i) {
             if (msg->name[i].find("right_") != std::string::npos) {
@@ -138,6 +145,19 @@ private:
               else if (msg->name[i] == "left_A5") joint_values_left[4] = msg->position[i];
               else if (msg->name[i] == "left_A6") joint_values_left[5] = msg->position[i];
               else if (msg->name[i] == "left_A7") joint_values_left[6] = msg->position[i];
+              else if (msg->name[i] == "left_2f_robotiq_85_left_knuckle_joint") _2f_joint_values_mock[0] = msg->position[i];
+            }
+            if (msg->name[i].find("a_") != std::string::npos) {
+              if (msg->name[i] == "a_3f_palm_finger_1_joint") _3f_joint_values_mock[0] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_middle_joint_3") _3f_joint_values_mock[1] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_2_joint_3") _3f_joint_values_mock[2] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_2_joint_1") _3f_joint_values_mock[3] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_middle_joint_1") _3f_joint_values_mock[4] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_2_joint_2") _3f_joint_values_mock[5] = msg->position[i];
+              else if (msg->name[i] == "a_3f_palm_finger_2_joint") _3f_joint_values_mock[6] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_3") _3f_joint_values_mock[7] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_1") _3f_joint_values_mock[8] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_middle_joint_2") _3f_joint_values_mock[9] = msg->position[i];
             }
         }
     }
@@ -178,11 +198,36 @@ private:
       return;
     }
 
+    // Workspace reachability check (XY distance from base of robot to target pose)
+    double base_x, base_y;
+    double min_reach_threshold = 0.3; // This value prevents the system from planning to locations where objects are too close to the base of the robot.
+    double max_reach_threshold = 0.8; // Increase this value to increase the radius that the manipulator can reach objects within.
+
+    if (request->arm == "right") {
+      base_x = 0.14518;
+      base_y = 0.79431;
+    } else {
+      base_x = 0.79518;
+      base_y = 0.79431;
+    }
+
+    double dx = request->position.x - base_x;
+    double dy = request->position.y - base_y;
+    double distance = std::sqrt(dx * dx + dy * dy);
+
+    if (distance < min_reach_threshold || distance > max_reach_threshold) {
+      RCLCPP_ERROR(this->get_logger(), "Target position is out of reach for %s arm (distance: %.3f m)", request->arm.c_str(), distance);
+      response->log = "Target position is out of reach for " + request->arm + " arm. Consider using the other arm.";
+      response->success = false;
+      return;
+    }
+
+
     // --- Constraint the planner so the end effector link (3f_tool0 and 2f_tool0) is always inside a box ---
     // Link to this constraint code: https://moveit.picknik.ai/main/doc/how_to_guides/using_ompl_constrained_planning/ompl_constrained_planning.html
     moveit_msgs::msg::PositionConstraint box_constraint;
     box_constraint.header.frame_id = move_group_interface->getPoseReferenceFrame(); // This is the link world, as set in the xacro.
-    box_constraint.link_name = move_group_interface->getEndEffectorLink(); // Find the end effector link for planner group, which is 3f_tool0 for right arm, and (2f_tool0?) for left arm
+    box_constraint.link_name = move_group_interface->getEndEffectorLink(); // Find the end effector link for planner group, which is 3f_tool0 for right arm, and 2f_tool0 for left arm
 
     // Create the box and set its dimensions
     shape_msgs::msg::SolidPrimitive box;
@@ -276,12 +321,18 @@ private:
     target_pose.position.y = request->position.y;
     target_pose.position.z = request->position.z;
 
+    // Planning parameters
+    move_group_interface->setNumPlanningAttempts(3);
+    move_group_interface->setMaxVelocityScalingFactor(0.05); // (% of the maximum speed)
+    move_group_interface->setMaxAccelerationScalingFactor(0.1); // (% of the maximum acceleration)
+    move_group_interface->setPathConstraints(constraints);
+    move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
+    
     // Cartesian path planning
     std::vector<geometry_msgs::msg::Pose> waypoints;
     waypoints.push_back(target_pose);
-
     double eef_step = 0.005;  // Step size for end-effector
-    double jump_threshold = 5.0; // If the jump is bigger than this, it will be considered invalid
+    double jump_threshold = 0.5; // If the jump is bigger than this, it will be considered invalid
     moveit_msgs::msg::RobotTrajectory trajectory;
 
     // Fraction is how big a precentage of the path that was successfully planned
@@ -293,35 +344,69 @@ private:
     );
 
     moveit::core::MoveItErrorCode error_code;
-    move_group_interface->setMaxVelocityScalingFactor(0.05); // Set the maximum velocity scaling factor (10% of the maximum speed)
-    if (fraction > 0.95) {
+
+    if (fraction == 1.0) {
       RCLCPP_INFO(this->get_logger(), "Cartesian path computed successfully");
       plan->trajectory_ = trajectory;
-    } else {
-      RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, uisng planner instead");
-
-      // Applying planner configurations and constraints
-      //move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
-      move_group_interface->setPlanningTime(40);
-      move_group_interface->setPlannerId("RRT"); // Other options in ompl_planning.yaml
-      move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
-      move_group_interface->setPathConstraints(constraints);
-      move_group_interface->setMaxAccelerationScalingFactor(0.1); // Set the maximum acceleration scaling factor (10% of the maximum acceleration)
-      move_group_interface->setPoseTarget(target_pose);
-  
-      error_code = move_group_interface->plan(*plan);
-    }
-
-    if (error_code == moveit::core::MoveItErrorCode::SUCCESS || fraction > 0.95) {
-      RCLCPP_INFO(this->get_logger(), "The trajectory has been planned succesfully");
       *plan_available = true;
-      response->log = "The trajectory has been planned succesfully";
+      response->log = "The trajectory has been planned succesfully (Cartesian path)";
       response->success = true;
+
     } else {
-      RCLCPP_ERROR(this->get_logger(), "Failed to plan to target pose");
-      response->log = "Failed to plan to target pose";
-      response->success = false;
+      RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, using OMPL planner instead");
+
+      move_group_interface->setPlanningTime(5);
+      move_group_interface->setPlannerId("RRTconnect"); // Other options in ompl_planning.yaml
+      move_group_interface->setPoseTarget(target_pose);
+
+      for (int i = 0; i < 3; ++i) {
+        error_code = move_group_interface->plan(*plan);
+
+        if (error_code == moveit::core::MoveItErrorCode::SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "The trajectory has been planned succesfully");
+          *plan_available = true;
+          response->log = "The trajectory has been planned succesfully";
+          response->success = true;
+          break;
+        }
+      
+        if (i == 2) {
+          RCLCPP_ERROR(this->get_logger(), "The planner was unable to find a valid trajectory after 3 attempts.");
+          response->success = false;
+
+          if (error_code == moveit::core::MoveItErrorCode::FAILURE){
+            RCLCPP_ERROR(this->get_logger(), "The planning failed due to an unspecified error.");
+            response->log = "The planning failed due to an unspecified error. It is likely that the other arm is in the way or that the target position is unreachable.";
+            
+          } else if (error_code == moveit::core::MoveItErrorCode::PLANNING_FAILED){
+            RCLCPP_ERROR(this->get_logger(), "The planner was unable to find a valid trajectory.");
+            response->log = "The planner was unable to find a valid trajectory.";
+          
+          } else if (error_code == moveit::core::MoveItErrorCode::MOTION_PLAN_INVALIDATED_BY_ENVIRONMENT_CHANGE){
+            RCLCPP_ERROR(this->get_logger(), "The motion plan was invalidated by an environment change");
+            response->log = "The motion plan was invalidated by an environment change";
+  
+          } else if (error_code == moveit::core::MoveItErrorCode::INVALID_MOTION_PLAN){
+            RCLCPP_ERROR(this->get_logger(), "INVALID_MOTION_PLAN, the motion plan collided with the environment");
+            response->log = "The planner was unable to find a valid trajectory after 3 attempts, since it collided with the environment.";
+
+          } else if (error_code == moveit::core::MoveItErrorCode::TIMED_OUT){
+            RCLCPP_ERROR(this->get_logger(), "The motion planner timed out.");
+            response->log = "The motion planner timed out, it is not possible to move to the desired position., it is likely that the other arm is in the way";
+            
+          } else {
+            RCLCPP_ERROR(this->get_logger(), "UNKNOWN PLANNER ERROR IN ROBOT CONTROLLER SERVICE");
+            response->log = "UNKNOWN PLANNER ERROR";
+          }
+
+        } else {
+          RCLCPP_INFO(this->get_logger(), "Retrying planning...");
+        }
+        
+      } 
+      
     }
+
   }
 
   // Callback to execute the planned trajectory
@@ -347,7 +432,7 @@ private:
       plan_available = &plan_available_left;
     } else {
       RCLCPP_ERROR(this->get_logger(), "Invalid arm specified");
-      response->log = "Invalid arm specified";
+      response->log = "Invalid arm specified. Use 'left' or 'right'.";
       response->success = false;
       return;
     }
@@ -420,12 +505,9 @@ private:
       if (request->gripper_name == "3f") {       
         // The 3 joints of interest span form 0 to 65 degrees, and the width is between 0 to 167 mm. We scale the angle to the inverse of the width
         
-        float start_angle = std::cos(25.0/180.0*3.14);
-        double angle = std::acos((request->width / 167) * start_angle + (1-start_angle)) - 25/180*3.14;
-
-        RCLCPP_INFO(this->get_logger(), "Calculated start for 3f gripper: %f", start_angle);
-        RCLCPP_INFO(this->get_logger(), "Calculated ratio for 3f gripper: %f", ((request->width/ 167) * start_angle));
-        RCLCPP_INFO(this->get_logger(), "Calculated angle for 3f gripper: %f", angle);
+        //float start_angle = std::cos(25.0/180.0*3.14);
+        //double angle = std::acos((request->width / 167) * start_angle + (1-start_angle)) - 25/180*3.14;
+        double angle = 65 * ((167-request->width) / 167) / 180.0 * 3.14;
         
         std::map<std::string, double> target_position;
         target_position["a_3f_finger_1_joint_1"] = angle;
@@ -446,16 +528,56 @@ private:
         }
 
         move_group_3f->setStartStateToCurrentState();
+        move_group_3f->move();
+
+        // Wait for the move to complete and joint values to be updated
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
+
+        static const std::unordered_map<std::string, size_t> gripper_3f_index_map = {
+          {"a_3f_palm_finger_1_joint",         0},
+          {"a_3f_finger_middle_joint_3",       1},
+          {"a_3f_finger_2_joint_3",            2},
+          {"a_3f_finger_2_joint_1",            3},
+          {"a_3f_finger_middle_joint_1",       4},
+          // index 5 is for a_3f_finger_2_joint_2 — not used in target_position
+          {"a_3f_palm_finger_2_joint",         6},
+          {"a_3f_finger_1_joint_3",            7},
+          {"a_3f_finger_1_joint_1",            8}
+          // index 9 is for a_3f_finger_middle_joint_2 — not used in target_position
+        };
         
-        // Perform the motion
-        moveit::planning_interface::MoveItErrorCode result = move_group_3f->move();
+        const double POSITION_TOLERANCE = 0.7581;
         response->success = true;
+        response->log = "3F gripper move succeeded and verified.";
+        
+        for (const auto& [joint_name, target] : target_position) {
+          auto it = gripper_3f_index_map.find(joint_name);
+          if (it != gripper_3f_index_map.end()) {
+            double actual = _3f_joint_values_mock[it->second];
+            double error = std::abs(actual - target);
+        
+            RCLCPP_INFO(this->get_logger(), "Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
+                        joint_name.c_str(), target, actual, error);
+            RCLCPP_INFO(this->get_logger(), "POSITION: %.4f, Error: %.4f", POSITION_TOLERANCE, error);
+        
+            if (error > POSITION_TOLERANCE) {
+              response->success = false;
+              response->log = "Gripper joint values out of tolerance.";
+              break;
+            }
+          } else {
+            RCLCPP_WARN(this->get_logger(), "Joint %s not in index map!", joint_name.c_str());
+            response->success = false;
+            response->log = "Gripper joint values could not be verified (missing joint).";
+            break;  // Conservative fallback
+          }
+        }
 
       } else if (request->gripper_name == "2f") {
       
         // The main joint in the 2f gripper span form 0 to 45 degrees, and the width is between 0 to 85 mm. We scale the angle with the width
-        if (request->width < 15) {
-          request->width = 15;
+        if (request->width < 10) {
+          request->width = 10;
         }
         
         double angle = 45 * ((85-request->width) / 85) / 180.0 * 3.14;
@@ -466,8 +588,42 @@ private:
         move_group_2f->setJointValueTarget(joint_name, angle);
         move_group_2f->setStartStateToCurrentState();
         // Attempt to plan and move
-        moveit::planning_interface::MoveItErrorCode result = move_group_2f->move();
-        response->success = true;
+        move_group_2f->move();
+
+        // Wait for the move to complete and joint values to be updated
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
+
+        static const std::unordered_map<std::string, size_t> gripper_2f_index_map = {
+          {"left_2f_robotiq_85_left_knuckle_joint", 0}
+        };
+        
+        const double POSITION_TOLERANCE = 0.6;
+        bool within_tolerance = true;
+        
+        auto it = gripper_2f_index_map.find(joint_name);
+        if (it != gripper_2f_index_map.end() && it->second < _2f_joint_values_mock.size()) {
+          double actual = _2f_joint_values_mock[it->second];
+          double error = std::abs(actual - angle);
+        
+          RCLCPP_INFO(this->get_logger(), "2F Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
+                      joint_name.c_str(), angle, actual, error);
+        
+          if (error > POSITION_TOLERANCE) {
+            within_tolerance = false;
+          }
+        } else {
+          RCLCPP_WARN(this->get_logger(), "2F joint %s not found in mock data!", joint_name.c_str());
+          within_tolerance = false;
+        }
+        
+        // Set response
+        if (within_tolerance) {
+          response->success = true;
+          response->log = "2F gripper move succeeded and verified.";
+        } else {
+          response->success = false;
+          response->log = "2F gripper did not reach desired joint position accurately.";
+        }
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");

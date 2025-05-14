@@ -135,7 +135,10 @@ class LLMNode(Node):
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-        }
+            'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+            'RECYCLE_DROP': {'x': '0.38', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+            'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        } #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
 
         self.sim_tool_list = {}
 
@@ -785,13 +788,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose_approach, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan approach trajectory")
-            return "Failed to plan approach trajectory"
+            return plan_response # Previously returned: "Failed to plan approach trajectory"
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute approach trajectory")
-            return "Failed to execute approach trajectory"
+            return execute_response # Previously returned: "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
         if arm == 'left':
@@ -799,13 +802,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
-            return "Failed to plan grasp trajectory"
+            return plan_response # Previously returned: "Failed to plan grasp trajectory"
         
         # Execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
-            return "Failed to execute grasp trajectory"
+            return execute_response # Previously returned: "Failed to execute grasp trajectory"
 
         # Close the gripper
         # As width estimation is not accurate, we set width to 0 to make sure object is grasped
@@ -822,13 +825,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose_depart, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
-            return "Failed to plan grasp trajectory"
+            return plan_response # Previously returned: "Failed to plan grasp trajectory"
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
-            return "Failed to execute grasp trajectory"
+            return execute_response # Previously returned: "Failed to execute grasp trajectory"
         
         return "Pick up function run successfully"
 
@@ -846,13 +849,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan trajectory")
-            return False
+            return plan_response
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute trajectory")
-            return False
+            return execute_response
         
         return True
 
@@ -920,6 +923,18 @@ class LLMNode(Node):
         if load_use_sim():
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
+            if response2.success is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+            elif width == 167:
+                self.get_logger().info("Gripper opened")
+                response2.log = "Gripper opened"
+                response2.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response2.success = False
             return response2
         else:
             self._3f_controller.output_registers.r_act = 1  # Active Gripper
@@ -1009,6 +1024,18 @@ class LLMNode(Node):
             self.get_logger().info("Simulated gripper command sent")
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
+            if response2.success is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+            elif width == 85:
+                self.get_logger().info("Gripper opened")
+                response2.log = "Gripper opened"
+                response2.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response2.success = False
             return response2
         else:
             self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
