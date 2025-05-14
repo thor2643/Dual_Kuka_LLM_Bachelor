@@ -276,10 +276,15 @@ private:
     target_pose.position.y = request->position.y;
     target_pose.position.z = request->position.z;
 
+    // Planning parameters
+    move_group_interface->setMaxVelocityScalingFactor(0.05); // (% of the maximum speed)
+    move_group_interface->setMaxAccelerationScalingFactor(0.1); // (% of the maximum acceleration)
+    move_group_interface->setPathConstraints(constraints);
+    move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
+    
     // Cartesian path planning
     std::vector<geometry_msgs::msg::Pose> waypoints;
     waypoints.push_back(target_pose);
-
     double eef_step = 0.005;  // Step size for end-effector
     double jump_threshold = 5.0; // If the jump is bigger than this, it will be considered invalid
     moveit_msgs::msg::RobotTrajectory trajectory;
@@ -293,26 +298,22 @@ private:
     );
 
     moveit::core::MoveItErrorCode error_code;
-    move_group_interface->setMaxVelocityScalingFactor(0.05); // Set the maximum velocity scaling factor (10% of the maximum speed)
-    if (fraction > 0.95) {
+
+    if (fraction > 1.0) {
       RCLCPP_INFO(this->get_logger(), "Cartesian path computed successfully");
       plan->trajectory_ = trajectory;
     } else {
-      RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, uisng planner instead");
+      RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, uisng OMPL planner instead");
 
-      // Applying planner configurations and constraints
-      //move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
-      move_group_interface->setPlanningTime(40);
-      move_group_interface->setPlannerId("RRT"); // Other options in ompl_planning.yaml
-      move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
-      move_group_interface->setPathConstraints(constraints);
-      move_group_interface->setMaxAccelerationScalingFactor(0.1); // Set the maximum acceleration scaling factor (10% of the maximum acceleration)
+      // move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
+      move_group_interface->setPlanningTime(7.0);
+      move_group_interface->setPlannerId("TRRT"); // Other options in ompl_planning.yaml
       move_group_interface->setPoseTarget(target_pose);
   
       error_code = move_group_interface->plan(*plan);
     }
 
-    if (error_code == moveit::core::MoveItErrorCode::SUCCESS || fraction > 0.95) {
+    if (error_code == moveit::core::MoveItErrorCode::SUCCESS || fraction > 1.0) {
       RCLCPP_INFO(this->get_logger(), "The trajectory has been planned succesfully");
       *plan_available = true;
       response->log = "The trajectory has been planned succesfully";

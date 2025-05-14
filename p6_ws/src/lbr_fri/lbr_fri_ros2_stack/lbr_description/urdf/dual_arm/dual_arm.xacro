@@ -946,15 +946,15 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	<mesh filename="package://lbr_description/meshes/table/collision/Side_box.stl" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://lbr_description/meshes/table/collision/Left_side_box.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
   <link name="right_box">
     <collision>
-      <origin rpy="0 0 0" xyz="-1.181 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-	<mesh filename="package://lbr_description/meshes/table/collision/Side_box.stl" scale="0.001 0.001 0.001"/>
+	<mesh filename="package://lbr_description/meshes/table/collision/Right_side_box.stl" scale="0.001 0.001 0.001"/>
       </geometry>
     </collision>
   </link>
