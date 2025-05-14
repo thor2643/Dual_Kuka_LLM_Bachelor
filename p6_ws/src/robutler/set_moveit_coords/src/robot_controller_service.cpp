@@ -450,6 +450,8 @@ private:
         // Perform the motion
         moveit::planning_interface::MoveItErrorCode result = move_group_3f->move();
 
+        RCLCPP_INFO(this->get_logger(), "Move results: %d", result);
+
         if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
           RCLCPP_INFO(this->get_logger(), "3F gripper move successful.");
           response->success = true;
