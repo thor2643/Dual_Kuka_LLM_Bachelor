@@ -911,7 +911,7 @@ class LLMNode(Node):
         if load_use_sim():
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
-            if response2 is False:
+            if response2.success is False:
                 self.get_logger().info("Gripper succesfully grasped object")
                 response2.log = "Gripper succesfully grasped object"
                 response2.success = True
@@ -1012,7 +1012,7 @@ class LLMNode(Node):
             self.get_logger().info("Simulated gripper command sent")
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
-            if response2 is False:
+            if response2.success is False:
                 self.get_logger().info("Gripper succesfully grasped object")
                 response2.log = "Gripper succesfully grasped object"
                 response2.success = True
