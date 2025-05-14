@@ -448,7 +448,7 @@ private:
         move_group_3f->setStartStateToCurrentState();
         
         // Perform the motion
-        moveit::planning_interface::MoveItErrorCode result = move_group_3f->move();
+        move_group_3f->move();
         response->success = true;
 
       } else if (request->gripper_name == "2f") {
@@ -466,7 +466,7 @@ private:
         move_group_2f->setJointValueTarget(joint_name, angle);
         move_group_2f->setStartStateToCurrentState();
         // Attempt to plan and move
-        moveit::planning_interface::MoveItErrorCode result = move_group_2f->move();
+        move_group_2f->move();
         response->success = true;
 
       } else {
