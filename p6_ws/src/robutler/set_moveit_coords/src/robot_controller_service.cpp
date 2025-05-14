@@ -456,22 +456,39 @@ private:
         const double tolerance = 1e-1;
         bool at_target = true;
 
+        RCLCPP_INFO(this->get_logger(), "Checking if joints reached target positions...");
+
         // Check if the current joint values are within the tolerance of the target position
         for (size_t i = 0; i < joint_names.size(); ++i) {
           const std::string& joint_name = joint_names[i];
+          double current_value = current_joint_values[i];
+      
+          RCLCPP_INFO(this->get_logger(), "Joint %s - Current value: %f", joint_name.c_str(), current_value);
+      
           if (target_position.count(joint_name) > 0) {
             double target_value = target_position[joint_name];
-            double current_value = current_joint_values[i];
-
-            if (std::abs(current_value - target_value) > tolerance) {
+      
+            RCLCPP_INFO(this->get_logger(), "Joint %s - Target value: %f", joint_name.c_str(), target_value);
+      
+            double error = std::abs(current_value - target_value);
+            RCLCPP_INFO(this->get_logger(), "Joint %s - Absolute error: %f", joint_name.c_str(), error);
+      
+            if (error > tolerance) {
               RCLCPP_WARN(this->get_logger(),
-                "Joint %s is not at target. Current: %f, Target: %f",
-                joint_name.c_str(), current_value, target_value);
+                "Joint %s is NOT at target. Current: %f, Target: %f, Error: %f",
+                joint_name.c_str(), current_value, target_value, error);
               at_target = false;
               break;
+            } else {
+              RCLCPP_INFO(this->get_logger(),
+                "Joint %s is within tolerance. Current: %f, Target: %f",
+                joint_name.c_str(), current_value, target_value);
             }
+          } else {
+            RCLCPP_INFO(this->get_logger(), "Joint %s is not in target_position map, skipping.", joint_name.c_str());
           }
         }
+      
         response->success = at_target;
 
       } else if (request->gripper_name == "2f") {
