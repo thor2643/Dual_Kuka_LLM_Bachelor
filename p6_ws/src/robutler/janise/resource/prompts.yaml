@@ -22,7 +22,6 @@ initial_prompt_janise: |
   Predefined locations:
   'HOME_RIGHT_ARM': [0.1, 0.3, 0.3, 0, 0, 0]
   'HOME_LEFT_ARM': [0.9, 0.3, 0.3, 0, 0, 0]
-  'TAKE_IMAGE': [0.42, 0.83, 0.5, -3, -43, -83]
 
   Operational Instructions:
   - Given a user request you must perform the most appropriate action that you are capable.
@@ -96,9 +95,6 @@ initial_prompt_Socrates: |
     Explain the reasoning behind your suggestions.
     Ensure the user's overall objective is preserved when addressing subtasks 
     Never use more than 3-5 sentences per message.
-
-  You can always suggest Janise to move to a predefined "take_image" pose from where you can see the whole workspace. The pose is as follows:
-  'TAKE_IMAGE': [0.42, 0.83, 0.5, -3, -43, -83]
     
   
 initial_prompt_sim_judge: |
