@@ -354,7 +354,7 @@ class ObjectDetector(Node):
         if len(self.yolo_results[0].boxes.data) == 0:
             cordinate_list = self.get_click_location(image)
             self.get_logger().info(f'Yolo did not find the object, User clicked instead.\n')
-            for cords in cordinate_list:  
+            for i, cords in enumerate(cordinate_list):  
                 x, y = cords[0], cords[1]
                 self.get_logger().info(f'SAM segmenting bounding box for object {object}.\n')
                 self.SAM_predict(image, points=[x,y], verbose=False) #updates sam_result_img and sam_masks
@@ -404,7 +404,7 @@ class ObjectDetector(Node):
                 
                 # Fill in the message
                 detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
-                detected_object.name = ( f"{object} {1}")
+                detected_object.name = ( f"{object} {i+1}")
                 detected_object.center_of_object
 
                 for grasp in grasps:
