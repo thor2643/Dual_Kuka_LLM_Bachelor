@@ -991,12 +991,11 @@ class LLMNode(Node):
         self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
         self._gripper_req.gripper_name = "2f"
 
-        self.get_logger().info("Simulated gripper command sent")
-        future2 = self._gripper_client.call_async(self._gripper_req)
-        response2 = self.wait_future(future2, timeout=15)
-
         # Wait for the result
         if load_use_sim():
+            self.get_logger().info("Simulated gripper command sent")
+            future2 = self._gripper_client.call_async(self._gripper_req)
+            response2 = self.wait_future(future2, timeout=15)
             return response2
         else:
             self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
