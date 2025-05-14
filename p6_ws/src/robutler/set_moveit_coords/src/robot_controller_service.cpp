@@ -336,7 +336,7 @@ private:
     } else {
       RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, using OMPL planner instead");
 
-      move_group_interface->setPlanningTime(10);
+      move_group_interface->setPlanningTime(5);
       move_group_interface->setPlannerId("RRTconnect"); // Other options in ompl_planning.yaml
       move_group_interface->setPoseTarget(target_pose);
 
@@ -357,12 +357,12 @@ private:
 
           if (error_code == moveit::core::MoveItErrorCode::FAILURE){
             RCLCPP_ERROR(this->get_logger(), "The planning failed due to an unspecified error.");
-            response->log = "The planning failed due to an unspecified error.";
+            response->log = "The planning failed due to an unspecified error. It is likely that the other arm is in the way or that the target position is unreachable.";
             
           } else if (error_code == moveit::core::MoveItErrorCode::PLANNING_FAILED){
             RCLCPP_ERROR(this->get_logger(), "The planner was unable to find a valid trajectory.");
             response->log = "The planner was unable to find a valid trajectory.";
-           
+          
           } else if (error_code == moveit::core::MoveItErrorCode::MOTION_PLAN_INVALIDATED_BY_ENVIRONMENT_CHANGE){
             RCLCPP_ERROR(this->get_logger(), "The motion plan was invalidated by an environment change");
             response->log = "The motion plan was invalidated by an environment change";
@@ -373,7 +373,7 @@ private:
 
           } else if (error_code == moveit::core::MoveItErrorCode::TIMED_OUT){
             RCLCPP_ERROR(this->get_logger(), "The motion planner timed out.");
-            response->log = "The motion planner timed out, it is not possible to move to the desired position.";
+            response->log = "The motion planner timed out, it is not possible to move to the desired position., it is likely that the other arm is in the way";
             
           } else {
             RCLCPP_ERROR(this->get_logger(), "UNKNOWN PLANNER ERROR IN ROBOT CONTROLLER SERVICE");
@@ -530,6 +530,7 @@ private:
         move_group_2f->setStartStateToCurrentState();
 
         move_group_2f->move();
+
         response->success = true;
 
       } else {
