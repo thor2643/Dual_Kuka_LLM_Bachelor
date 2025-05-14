@@ -34,8 +34,11 @@ class Robotiq2F85GripperService(Node):
         response.success = True
         if status.obj_detected:
             response.log = 'An object was grasped.'
+        elif width == 85:
+            response.log = 'Gripper is open.'
         else:
             response.log = 'No object was grasped.'
+            response.success = False
         return response
 
 

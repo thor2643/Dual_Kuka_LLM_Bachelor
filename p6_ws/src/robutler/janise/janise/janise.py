@@ -931,9 +931,15 @@ class LLMNode(Node):
             if self._3f_input_registers.g_sta == 1 or self._3f_input_registers.g_sta == 2:
                 self.get_logger().info("Gripper succesfully grasped object")
                 response1.log = "Gripper succesfully grasped object"
+                response1.success = True
+            elif width == 167:
+                self.get_logger().info("Gripper opened")
+                response1.log = "Gripper opened"
+                response1.success = True
             else:
                 self.get_logger().error("Gripper failed to grasp object")
                 response1.log = "Gripper failed to grasp object"
+                response1.success = False
 
             return response1
 
