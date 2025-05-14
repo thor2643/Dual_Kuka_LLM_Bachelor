@@ -255,7 +255,7 @@ class LanggraphManager(LLMNode):
         self.function_call_id = 1
 
         # Define model nodes
-        self.task_detector_model = self.model.bind_tools(self.task_detector_tools)
+        self.task_detector_model = self.model.bind_tools(self.task_detector_tools, tool_choice="required")
         self.correction_model = self.model.bind_tools(self.tools)
         self.plan_tool_call_model = self.model.bind_tools(self.tools, tool_choice="required")
 
@@ -562,6 +562,49 @@ class LanggraphManager(LLMNode):
     
     @traceable
     def call_success_detector(self, state: ToolExecutionState):
+        # Get image of cell (Either simulated or real)
+        image = self.get_image()
+
+        judge_tool_info = []
+
+        # Loop through the messages in reverse order to find the last AI message (This is beacuse janise can make multiple tool calls)
+        for i in range(1, len(state["messages"])):
+            if isinstance(state["messages"][-i], AIMessage): 
+                self.get_logger().info(f"Number of tool calls made by action model: {i-1}")
+
+                judge_tool_info.append(state["messages"][-i].tool_calls)
+                judge_tool_info.append(". Which resulted in: ")
+
+                # Add every tool call result to the tool_info list       
+                for j in range(i-1):
+                    judge_tool_info.append(state["messages"][-i+j+1])
+
+                break
+     
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"""The tools call(s) you must judge the success of are: {judge_tool_info}. Here is an image of the workspace which may be useful 
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        state_shortened = {"messages": [self.initial_prompt_success_detector]}
+        state_shortened["messages"].append(message)
+        
+        response = self.subtask_judge_model.invoke(state_shortened["messages"])
+        response.name = "sim_subtask_judge"
+
+        return {"messages": response}
+
+
+
+
+
+    """
         # We append the initial prompt to Janise
         state_shortened = {"messages": [self.initial_prompt_success_detector]}
 
@@ -583,6 +626,7 @@ class LanggraphManager(LLMNode):
         state["messages"].append(response)
 
         return state
+    """
     
     @traceable
     def call_error_corrector(self, state: ToolExecutionState):
