@@ -178,6 +178,30 @@ private:
       return;
     }
 
+    // Workspace reachability check (XY distance from base of robot to target pose)
+    double base_x, base_y;
+    double max_reach_threshold = 0.8; // Increase this value to increase the radius that the manipulator can reach objects within.
+
+    if (request->arm == "right") {
+      base_x = 0.14518;
+      base_y = 0.79431;
+    } else {
+      base_x = 0.79518;
+      base_y = 0.79431;
+    }
+
+    double dx = request->position.x - base_x;
+    double dy = request->position.y - base_y;
+    double distance = std::sqrt(dx * dx + dy * dy);
+
+    if (distance > max_reach_threshold) {
+      RCLCPP_ERROR(this->get_logger(), "Target position is out of reach for %s arm (distance: %.3f m)", request->arm.c_str(), distance);
+      response->log = "Target position is out of reach for " + request->arm + " arm. Consider using the other arm.";
+      response->success = false;
+      return;
+    }
+
+
     // --- Constraint the planner so the end effector link (3f_tool0 and 2f_tool0) is always inside a box ---
     // Link to this constraint code: https://moveit.picknik.ai/main/doc/how_to_guides/using_ompl_constrained_planning/ompl_constrained_planning.html
     moveit_msgs::msg::PositionConstraint box_constraint;
@@ -298,7 +322,7 @@ private:
       RCLCPP_INFO(this->get_logger(), "Cartesian path computed successfully");
       plan->trajectory_ = trajectory;
     } else {
-      RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, uisng planner instead");
+      RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, using planner instead");
 
       // Applying planner configurations and constraints
       //move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
@@ -347,7 +371,7 @@ private:
       plan_available = &plan_available_left;
     } else {
       RCLCPP_ERROR(this->get_logger(), "Invalid arm specified");
-      response->log = "Invalid arm specified";
+      response->log = "Invalid arm specified. Use 'left' or 'right'.";
       response->success = false;
       return;
     }
