@@ -363,7 +363,9 @@ class ObjectDetector(Node):
                 mask_binary = (self.sam_mask > 0).astype(np.uint8) #convert the mask to binary
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
 
-                if np.count_nonzero(mask_binary) < 4000:  # for example, if fewer than 20 pixels are lit
+                size_object = np.count_nonzero(mask_binary)
+
+                if size_object < 4000: # for example, if fewer than 20 pixels are lit
                     clustered = False
                 else:
                     clustered = True
@@ -406,6 +408,7 @@ class ObjectDetector(Node):
                 detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
                 detected_object.name = ( f"{object} {i+1}")
                 detected_object.center_of_object
+                detected_object.size_object = size_object
 
                 for grasp in grasps:
                     if not grasp or len(grasp) < 6:
@@ -434,7 +437,9 @@ class ObjectDetector(Node):
                 mask_binary = (self.sam_mask > 0).astype(np.uint8)
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
 
-                if np.count_nonzero(mask_binary) < 4000:  # for example, if fewer than 20 pixels are lit
+                size_object = np.count_nonzero(mask_binary)
+
+                if size_object < 4000:  # for example, if fewer than 20 pixels are lit
                     clustered = False
                 else:
                     clustered = True
@@ -476,6 +481,7 @@ class ObjectDetector(Node):
                 detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
                 detected_object.name = ( f"{object} {i+1}")
                 detected_object.center_of_object
+                detected_object.size_object = size_object
 
                 for grasp in grasps:
                     if not grasp or len(grasp) < 6:

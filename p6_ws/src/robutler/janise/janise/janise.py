@@ -644,11 +644,12 @@ class LLMNode(Node):
                 object_name = detected_obj.name
 
                 self.objects_on_table[object_name] = {
-                    'center_object': {
+                    'centre_object': {
                         'x': round(detected_obj.center_of_object.x,3),
                         'y': round(detected_obj.center_of_object.y,3),
                         'z': round(detected_obj.center_of_object.z,3)
                     },
+                    'size_object': {detected_obj.size_object},
                     'grasps': {}
                 }
 
@@ -702,7 +703,7 @@ class LLMNode(Node):
                         grasp_name = f'General grasp {j}'
 
                     self.objects_on_table[object_name]['grasps'][grasp_name] = {
-                        'center': {
+                        'centre': {
                             'x': round(pose_new[0],3),
                             'y': round(pose_new[1],3),
                             'z': round(pose_new[2],3)
@@ -711,8 +712,8 @@ class LLMNode(Node):
                             'roll': round(roll,3),
                             'pitch': round(pitch,3),
                             'yaw': round(yaw,3)
-                        },
-                        'width': round(grasp.grasp_width,3)
+                        }#,
+                        #'width': round(grasp.grasp_width,3)
                     }
         # print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 
