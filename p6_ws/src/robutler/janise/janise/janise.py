@@ -317,6 +317,14 @@ class LLMNode(Node):
                                     ])
                  
         else:
+            T_cam_world = np.array([
+                [-0.999997441,  0.000171622184, -0.00225565295,  0.526974339],
+                [ 0.00178189958,  0.674050369, -0.738683237,  0.992486794],
+                [ 0.00139364928, -0.738685367, -0.674048950,  0.636035468],
+                [ 0,                 0 ,             0 ,           1         ]
+                ])
+
+            """
             T_cam_gripper = np.array([
                     [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
                     [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
@@ -370,6 +378,7 @@ class LLMNode(Node):
             T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
 
         # Apply correction offsets ONLY in simulation mode
+        """
         """
         if load_use_sim():
             offset = np.eye(4)
