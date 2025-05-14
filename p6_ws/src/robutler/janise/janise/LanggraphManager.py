@@ -59,7 +59,7 @@ class LanggraphManager(LLMNode):
 
         # Initialise the model
         # Change this to the model you want to use. We might implement more
-        self.model = ChatOpenAI(model="gpt-4.1-mini")
+        self.model = ChatOpenAI(model="gpt-4o")
 
         # Initialise the simulation workflow
         self._init_sim_workflow()
@@ -69,7 +69,7 @@ class LanggraphManager(LLMNode):
 
         
     def _init_sim_workflow(self):
-        self.bound_model = self.model.bind_tools(self.tools)
+        self.bound_model = self.model.bind_tools(self.tools, parallel_tool_calls=False)
         self.judge_model = self.model.bind_tools(self.task_detector_tools, tool_choice="any")
         self.subtask_judge_model = self.model.bind_tools(self.all_tools,tool_choice="any")                                                       
         self.think_model = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
@@ -113,10 +113,11 @@ class LanggraphManager(LLMNode):
             # Next, we pass in the function that will determine which node is called next.
             self.sim_should_continue,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["action", "sim_judge"],
+            ["action", END],
         )
 
         # ---- Right side of chart, this is called if janise did not make a tool call ----
+        """
         self.sim_workflow.add_conditional_edges(        
             "sim_judge",
             # The function that will determine which node is called next.
@@ -124,16 +125,17 @@ class LanggraphManager(LLMNode):
             # Path map - all the possible nodes this edge could go to
             ["action2", END],
         )
-        self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
-        self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
-        self.sim_workflow.add_edge("clear_history", "Socrates")
+        """
+        #self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
+        #self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
+        #self.sim_workflow.add_edge("clear_history", "Socrates")
 
         # ---- Left side of chart, this is called if janise made a tool call ----
-        self.sim_workflow.add_edge("action", "sim_subtask_judge")
-        self.sim_workflow.add_edge("sim_subtask_judge", "action3")
-        self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
-        self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
-        self.sim_workflow.add_edge("Socrates", "Janise")
+        self.sim_workflow.add_edge("action", "Socrates")
+        #self.sim_workflow.add_edge("sim_subtask_judge", "action3")
+        #self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
+        #self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
+        #self.sim_workflow.add_edge("Socrates", "Janise")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
@@ -166,47 +168,66 @@ class LanggraphManager(LLMNode):
         
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.sim_config = {"configurable": {"thread_id": "sim_1"}}
+        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 100}
 
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
-        self.initial_prompt = [
-            self.initial_prompt_Janise]
+        self.initial_prompt = [self.initial_prompt_Janise]
         """
-            HumanMessage(content = "To which poses can the robot arm be moved?"),
-            AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
+        HumanMessage(content = "To which poses can the robot arm be moved?"),
+        AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
+                name = "Socrates"),
+        AIMessage(content = "",
+                tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
+                name = "Janise"),
+        ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'}",
+                    tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
+        AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user.",
                     name = "Socrates"),
-            AIMessage(content = "",
-                    tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
-                    name = "Janise"),
-            ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'}",
-                        tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
-            AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user.",
-                        name = "Socrates"),
-            AIMessage(content = The robot arms can be moved to several predefined poses. Here are some of the poses:
+        AIMessage(content = The robot arms can be moved to several predefined poses. Here are some of the poses:
 
-                    1. **Home Position for Right Arm**:
-                    - Coordinates: (0.1, 0.3, 0.3)
-                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+                1. **Home Position for Right Arm**:
+                - Coordinates: (0.1, 0.3, 0.3)
+                - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
 
-                    2. **Home Position for Left Arm**:
-                    - Coordinates: (0.9, 0.3, 0.3)
-                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
+                2. **Home Position for Left Arm**:
+                - Coordinates: (0.9, 0.3, 0.3)
+                - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
 
-                    Should you desire to move one of the arms to one of these positions, feel free to let me know.,
-                    name = "Janise"),
-            HumanMessage(content = "Move the red cup to the left side of the table."),
-            AIMessage(content = "I see a white table with a red cup on it. In order to move the red cup, its location must be known. Janise should consider calling the function \"find_object\" to get the location of the red cup.",
-                    name = "Socrates"),
-            AIMessage(content = "",
-                    additional_kwargs={'tool_calls': [{'id': 'call_GYSTkPcmHtckTbWL6bfegcPS', 'function': {'arguments': '{"object_name":"cup"}', 'name': 'find_object'}, 'type': 'function'}], 'refusal': None},
-                    name = "Janise"),
-            ToolMessage(content={'cup 1': {'center_object': {'x': 0.616, 'y': 0.319, 'z': 0.045}, 'grasps': {}}}, 
-                    name='find_object', id='8c73eb54-7f37-4f46-81d8-564123ee37b3', tool_call_id='call_GYSTkPcmHtckTbWL6bfegcPS'), 
-            ]
-        """
+                Should you desire to move one of the arms to one of these positions, feel free to let me know.,
+                name = "Janise"),
+            
+        HumanMessage(content = "Move the red cup to the left side of the table."),
+        AIMessage(content = "I see a white table with a red cup on it. In order to move the red cup, its location must be known. Janise should consider calling the function \"find_object\" to get the location of the red cup.",
+                name = "Socrates"),
+
+        AIMessage(content = "", additional_kwargs={'tool_calls': [{'id': 'call_GYSTkPcmHtckTbWL6bfegcPS', 'function': {'arguments': '{"object_name":"cup"}', 'name': 'find_object'}, 'type': 'function'}], 'refusal': None},
+                name = "Janise"),
+
+        ToolMessage(content={'cup 1': {'center_object': {'x': 0.616, 'y': 0.319, 'z': 0.045}, 'grasps': {}}}, 
+                name='find_object', id='8c73eb54-7f37-4f46-81d8-564123ee37b3', tool_call_id='call_GYSTkPcmHtckTbWL6bfegcPS'), 
+
+        AIMessage(content = "Since the position of the object was found, Janise sould call the function \"pick_up_object\", to pick up the red cup.",
+                name = "Socrates"),
         
+        AIMessage(content='',additional_kwargs={'tool_calls': [{'id': 'call_SwM9P6dfv9BYlIOoznJaDBgJ', 'function': {'arguments': '{"pose":[0.616,0.319,0.045,0,0,0,1],"arm":"right"}', 'name': 'pick_up_object'}, 'type': 'function'}], 'refusal': None}),
+        
+        ToolMessage(content='Pick up function run successfully', name='pick_up_object', id='d0b799b7-119b-4ad2-8a4b-1a873810068c', tool_call_id='call_SwM9P6dfv9BYlIOoznJaDBgJ'),
+        
+        AIMessage(content = "The red cup seems to be picked up successfully, so the cup can be transportated. Janise should now call the function \"move_to_pose\" to move the red cup to the left side of the table.",
+                name = "Socrates"),    
 
+        AIMessage(content = "", additional_kwargs={'tool_calls': [{'id': 'call_6m6ScCVHmsB9IOdaxDckPH01', 'function': {'arguments': '{"pose":[0.5,0.2,0.1,0,0,0,1],"arm":"right"}', 'name': 'move_to_pose'}, 'type': 'function'}], 'refusal': None},
+                name = "Janise"),
+        
+        ToolMessage(content='true', name='move_to_pose', id='a548a7af-8862-4eb4-b63e-5499cfbc5335', tool_call_id='call_6m6ScCVHmsB9IOdaxDckPH01'),
+        
+        AIMessage(content = "The tool call has returend true, and the red cup appears to still be in the gripper. Thus the original task 'Move the red cup to the left side of the table.' is fulfilled. Janise should now return this information to the user.",
+                name = "Socrates"),
+        AIMessage(content = "The red cup has been successfully moved to the left side of the table. If you need any further assistance, please let me know.")
+        ]
+        """
+            
         
         self.initial_prompt_old = [
             self.initial_prompt_Janise,
@@ -390,7 +411,7 @@ class LanggraphManager(LLMNode):
         last_message = state["messages"][-1]
         # If there is no function call, then we finish
         if not last_message.tool_calls:
-            return "sim_judge"
+            return END
         # Otherwise if there is, we continue
         return "action"
     
@@ -822,6 +843,7 @@ class LanggraphManager(LLMNode):
         # Convert to langgraph message format
         query = HumanMessage(self.user_prompt)
 
+
         for event in self.sim_workflow_manager.stream({"messages": [query]}, self.sim_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
             
@@ -855,7 +877,7 @@ class LanggraphManager(LLMNode):
             response.message = "History cleared."
 
             # Log the conversation
-            self.save_snapshot()
+            #self.save_snapshot()
 
             # Update config
             current_id = int(self.sim_config["configurable"]["thread_id"])

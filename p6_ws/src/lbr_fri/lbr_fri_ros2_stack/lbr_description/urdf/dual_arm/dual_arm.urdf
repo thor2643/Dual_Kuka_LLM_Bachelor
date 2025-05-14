@@ -1737,7 +1737,7 @@
       <material name="white"/>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.1 0"/>
+      <origin rpy="0 0 0" xyz="0 0.2 0"/>
       <geometry>
         <mesh filename="package://lbr_description/meshes/table/collision/Back_wall.stl" scale="0.001 0.001 0.001"/>
       </geometry>
@@ -1775,6 +1775,21 @@
       </geometry>
     </collision>
   </link>
+  <link name="palm_adapter_mounting_plate">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.01"/>
+      <geometry>
+        <mesh filename="package://lbr_description/meshes/a_3f_palm_adapter/a_3f_palm_adapter.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+      <material name="steel_satin"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://lbr_description/meshes/a_3f_palm_adapter/a_3f_palm_adapter.stl" scale="0.001 0.001 0.001"/>
+      </geometry>
+    </collision>
+  </link>
   <!-- Camera arm mount -->
   <link name="camera_arm_mount">
     <visual>
@@ -1809,7 +1824,7 @@
   <joint name="right_side_wall_joint" type="fixed">
     <parent link="world"/>
     <child link="right_side_wall"/>
-    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <origin rpy="0 0 0" xyz="-0.4 0 0"/>
   </joint>
   <joint name="back_wall_joint" type="fixed">
     <parent link="world"/>
@@ -1842,6 +1857,11 @@
   <!-- joint between right iiwa7 and 3f gripper-->
   <joint name="adapter_mount" type="fixed">
     <parent link="gripper_mounting_plate"/>
+    <child link="palm_adapter_mounting_plate"/>
+    <origin rpy="0 0 0" xyz="0 0 0.02"/>
+  </joint>
+  <joint name="plam_adapter_mount" type="fixed">
+    <parent link="palm_adapter_mounting_plate"/>
     <child link="a_3f_palm"/>
     <origin rpy="1.57079633 0 -1.57079633" xyz="0 0 0.0745"/>
   </joint>
@@ -1849,7 +1869,7 @@
   <joint name="a_3f_palm_tool0" type="fixed">
     <parent link="a_3f_palm"/>
     <child link="a_3f_tool0"/>
-    <origin rpy="0 -1.5707 1.5707" xyz="0.0 0.15 0"/>
+    <origin rpy="0 -1.5707 1.5707" xyz="0.0 0.173 0"/>
   </joint>
   <!-- JOINTS FOR LEFT ARM AND 2F GRIPPER -->
   <!-- joint between left arm and table -->
@@ -1875,6 +1895,6 @@
   <joint name="2f_ee_tool0" type="fixed">
     <parent link="camera_arm_mount"/>
     <child link="2f_tool0"/>
-    <origin rpy="0 3.14 0" xyz="0 0 0.165"/>
+    <origin rpy="0 3.14 0" xyz="0 0 0.195"/>
   </joint>
 </robot>

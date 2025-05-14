@@ -974,7 +974,22 @@
 	        <mesh filename="package://lbr_description/meshes/gripper_mounting_plate/gripper_mounting_plate.stl" scale="0.001 0.001 0.001"/>
 	    </geometry>
 	</collision>
-  </link>    
+  </link>  
+  <link name="palm_adapter_mounting_plate">
+	<visual>
+	    <origin xyz="0 0 0.01" rpy="0 0 0"/>
+	    <geometry>
+	        <mesh filename="package://lbr_description/meshes/a_3f_palm_adapter/a_3f_palm_adapter.stl" scale="0.001 0.001 0.001"/>
+	    </geometry>
+	    <material name="steel_satin"/>
+	</visual>
+	<collision>
+	    <origin xyz="0 0 0" rpy="0 0 0"/>
+	    <geometry>
+	        <mesh filename="package://lbr_description/meshes/a_3f_palm_adapter/a_3f_palm_adapter.stl" scale="0.001 0.001 0.001"/>
+	    </geometry>
+	</collision>
+  </link>     
   <!-- Camera arm mount -->
   <link name="camera_arm_mount">
 	<visual>
@@ -1046,8 +1061,13 @@
   <!-- joint between right iiwa7 and 3f gripper-->
   <joint name="adapter_mount" type="fixed">    
 	  <parent link="gripper_mounting_plate" />
+	  <child link="palm_adapter_mounting_plate" />
+	  <origin xyz="0 0 0.02" rpy="0 0 0"/>
+  </joint>
+  <joint name="plam_adapter_mount" type="fixed">    
+	  <parent link="palm_adapter_mounting_plate" />
 	  <child link="a_3f_palm" />
-	  <origin xyz="0 0 0.0945" rpy="1.57079633 0 -1.57079633"/>
+	  <origin xyz="0 0 0.0745" rpy="1.57079633 0 -1.57079633"/>
   </joint>
   <!-- joint between 3f gripper and 3f tool0-->
   <joint name="a_3f_palm_tool0" type="fixed">

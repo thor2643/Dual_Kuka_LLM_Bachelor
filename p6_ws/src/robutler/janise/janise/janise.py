@@ -25,6 +25,7 @@ from utils.linear_alg_utils import (
 
 from IPython.display import Image, display
 from langchain_core.runnables.graph import CurveStyle, MermaidDrawMethod, NodeStyles
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, ToolMessage
 
 
 # ROS 2 libraries and Node structure
@@ -44,6 +45,7 @@ from project_interfaces.srv import GripperMoveit
 from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
 from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
+from robotiq_3f_gripper_ros2_interfaces.msg import Robotiq3FGripperInputRegisters
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
 from project_interfaces.srv import GetSimCameraData
@@ -68,6 +70,9 @@ class LLMNode(Node):
 
         self._2f_client = self.create_client(Robotiq2F85GripperCommand, 'gripper_2f_service', callback_group=client_cb_group)
         self._2f_req = Robotiq2F85GripperCommand.Request()
+        
+        self._3f_input_registers = Robotiq3FGripperInputRegisters()
+        self._3f_input_subscription = self.create_subscription(Robotiq3FGripperInputRegisters, "Robotiq3FGripper/InputRegisters", self.update_register, 10)
 
         # Moveit gripper client
         self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
@@ -130,7 +135,7 @@ class LLMNode(Node):
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'},
+            'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
         }
 
         self.sim_tool_list = {}
@@ -158,6 +163,8 @@ class LLMNode(Node):
                     color_img_rgb = self.bridge.imgmsg_to_cv2(response.color_image, desired_encoding="rgb8")
                     self.color_img_sim = cv2.cvtColor(color_img_rgb, cv2.COLOR_RGB2BGR)
                     original_image = self.color_img_sim
+
+                    break
                 else:
                     if i == 4:
                         self.get_logger().error("Failed to retrieve image from simulated camera after multiple attempts")
@@ -190,6 +197,10 @@ class LLMNode(Node):
 
         except CvBridgeError as e:
             self.get_logger().error(f'Error converting color image: {e}')
+            
+    def update_register(self, msg):
+        self._3f_input_registers.g_sta = msg.g_sta
+    	
 
     # Implemented to handle nested callbacks
     # Principle taken from https://gist.github.com/driftregion/14f6da05a71a57ef0804b68e17b06de5
@@ -314,6 +325,14 @@ class LLMNode(Node):
                                     ])
                  
         else:
+            T_cam_world = np.array([
+                [-0.999997441,  0.000171622184, -0.00225565295,  0.526974339],
+                [ 0.00178189958,  0.674050369, -0.738683237,  0.992486794],
+                [ 0.00139364928, -0.738685367, -0.674048950,  0.636035468],
+                [ 0,                 0 ,             0 ,           1         ]
+                ])
+
+            """
             T_cam_gripper = np.array([
                     [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
                     [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
@@ -367,6 +386,7 @@ class LLMNode(Node):
             T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
 
         # Apply correction offsets ONLY in simulation mode
+        """
         """
         if load_use_sim():
             offset = np.eye(4)
@@ -583,7 +603,7 @@ class LLMNode(Node):
             - Requires the object detection service to be available and responsive.
         """
         
-        self.get_logger().info(f"\Requesting the Object detector service to find grasps for: {object_name}\n")
+        # self.get_logger().info(f"\Requesting the Object detector service to find grasps for: {object_name}\n")
 
         # Call the object detection service, with the object name and the transformation matrix
         self.detector_req.object_name = object_name
@@ -600,41 +620,49 @@ class LLMNode(Node):
 
         # Check if the response is valid or if it timeouted
         if response is None:
-            self.get_logger().error("Failed to retrieve object detection response")
-            return None
+            # self.get_logger().error("Failed to retrieve object detection response")
+            return "Failed to retrieve object detection response. Make sure the object detection service is running."
 
         self.get_logger().info(f"\nObjects found: {response.object_count}\n")
 
+        # Clear the previous objects
+        self.objects_on_table = {}
+
         # For case where no object is found
         if response.object_count == 0:
-            self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
+            # self.get_logger().info(f"\nNo objects found. The possible objects information are saved in the response.\n")
             for i, detected_obj in enumerate(response.detected_objects):
-                object_name = detected_obj.name
+                #object_name = detected_obj.name
 
-                self.objects_on_table[object_name] = {
-                    'center_object': {
-                        'x': detected_obj.center_of_object.x,
-                        'y': detected_obj.center_of_object.y,
-                        'z': detected_obj.center_of_object.z
-                    }
-                }
-        # For case where object is found
-        else:
-            self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
-
-            self.objects_on_table = {}  # Reset table
-
-            for i, detected_obj in enumerate(response.detected_objects):
-                object_name = detected_obj.name
-
-                self.objects_on_table[object_name] = {
+                self.objects_on_table[detected_obj.name] = {
                     'center_object': {
                         'x': round(detected_obj.center_of_object.x,3),
                         'y': round(detected_obj.center_of_object.y,3),
                         'z': round(detected_obj.center_of_object.z,3)
+                    }
+                }
+            
+            return f"{object_name} could not be found. Instead YoloWorld found {response.object_count} objects. The possible objects are: {self.objects_on_table}"
+        
+        # For case where object is found
+        else:
+            # self.get_logger().info(f"\nNumber of objects found: {response.object_count}")
+
+            for i, detected_obj in enumerate(response.detected_objects):
+                object_name = detected_obj.name
+
+                self.objects_on_table[object_name] = {
+                    'centre_object': {
+                        'x': round(detected_obj.center_of_object.x,3),
+                        'y': round(detected_obj.center_of_object.y,3),
+                        'z': round(detected_obj.center_of_object.z,3)
                     },
+                    'size_object': {detected_obj.size_object},
                     'grasps': {}
                 }
+
+                # Debugging information
+                # self.get_logger().info(f"Grasping poses: {detected_obj.grasps}")
 
                 for j, grasp in enumerate(detected_obj.grasps):
                     
@@ -646,6 +674,9 @@ class LLMNode(Node):
 
                     R_W_G = Rotation.from_euler('xyz', [grasp.orientation.x, grasp.orientation.y, grasp.orientation.z], degrees=True).as_matrix()
                     pose = np.array([grasp.position.x, grasp.position.y, grasp.position.z])
+
+                    # self.get_logger().info(f"Pose: {pose}")
+
                     T_W_G = np.eye(4)
                     T_W_G[:3, :3] = R_W_G
                     T_W_G[:3, 3] = pose
@@ -671,9 +702,8 @@ class LLMNode(Node):
                     roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
                     roll, pitch, yaw = [flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
-                    if pose[2] < 0 or grasp.grasp_width >= 0.1525:
-                        self.get_logger().info(f'Grasp z value: {pose[2]}, grasp width: {grasp.grasp_width}')
-                        continue
+                    if pose[2] < 0:
+                        pose_new[2] = 0.003
 
                     if j == 0:
                         grasp_name = 'Top down grasp'
@@ -681,7 +711,7 @@ class LLMNode(Node):
                         grasp_name = f'General grasp {j}'
 
                     self.objects_on_table[object_name]['grasps'][grasp_name] = {
-                        'center': {
+                        'centre': {
                             'x': round(pose_new[0],3),
                             'y': round(pose_new[1],3),
                             'z': round(pose_new[2],3)
@@ -690,10 +720,10 @@ class LLMNode(Node):
                             'roll': round(roll,3),
                             'pitch': round(pitch,3),
                             'yaw': round(yaw,3)
-                        },
-                        'width': 0 #round(grasp.grasp_width,3)
+                        }#,
+                        #'width': round(grasp.grasp_width,3)
                     }
-        print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
+        # print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
 
         return self.objects_on_table
     
@@ -701,13 +731,23 @@ class LLMNode(Node):
     def pick_up_object(self, pose: list, arm: str, object_width: int=0) -> bool:
         """
         Picks up an object by planning and executing a trajectory and closing the gripper.
+        This function first opens the gripper, then plans a trajectory to an approach pose,
+        executes the trajectory, closes the gripper to pick up the object, and finally lifts the object 10 cm
+        to avoid collision when moving away. The function also handles the gripper width for the object.
         Args:
-            pose (list): Target pose for the robot arm.
+            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
+                         The first three numbers correspond to the x, y, z position in meters, and the last 
+                         three numbers represent the roll, pitch, and yaw angles in degrees.
             arm (str): Specifies which arm to use ('left' or 'right').
             object_width (int, optional): Width of the object to grip in millimeters. Defaults to 0 mm.
+            
         Returns:
             bool: True if the object was successfully picked up, False otherwise.
         """
+        if len(pose) != 6:
+            self.get_logger().error("Pose must be a list of 6 elements")
+            return "Pose must be a list of 6 elements: [x, y, z, roll, pitch, yaw]"
+        
         # First we calculate the approach pose
         T_approach = np.eye(4)
         T_approach[2, 3] = 0.05 # Place approach 5 cm along grasp z-axis
@@ -755,7 +795,8 @@ class LLMNode(Node):
             return "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
-        #pose[2] -= 0.02 # Move down 2 cm
+        if arm == 'left':
+            pose[2] -= 0.02 # Move down 2 cm for the left gripper
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
@@ -766,12 +807,13 @@ class LLMNode(Node):
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
             return "Failed to execute grasp trajectory"
-        
+
         # Close the gripper
+        # As width estimation is not accurate, we set width to 0 to make sure object is grasped
         if arm == 'left':
-            gripper_response = self.manipulate_left_gripper(width=object_width)
+            gripper_response = self.manipulate_left_gripper(width=0)
         else:
-            gripper_response = self.manipulate_right_gripper(width=object_width)
+            gripper_response = self.manipulate_right_gripper(width=0)
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to close gripper")
@@ -861,16 +903,24 @@ class LLMNode(Node):
         if force < 15 or force > 60:
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
+        
+        # Adjust the gripper width to ensure secure grasping
+        """
+        if width < 10:
+            width = 0
+        elif width == 167:
+            pass
+        else:
+            width = width - 10
+        """
 
         # Rviz gripper 
         self._gripper_req.width = float(width)   
         self._gripper_req.gripper_name = "3f"
-        future2 = self._gripper_client.call_async(self._gripper_req)
-
-        # Wait for the result
-        response2 = self.wait_future(future2, timeout=15)
 
         if load_use_sim():
+            future2 = self._gripper_client.call_async(self._gripper_req)
+            response2 = self.wait_future(future2, timeout=15)
             return response2
         else:
             self._3f_controller.output_registers.r_act = 1  # Active Gripper
@@ -886,11 +936,24 @@ class LLMNode(Node):
 
             response1 = self.wait_future(future1, timeout=15)
 
+            if self._3f_input_registers.g_sta == 1 or self._3f_input_registers.g_sta == 2:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response1.log = "Gripper succesfully grasped object"
+                response1.success = True
+            elif width == 167:
+                self.get_logger().info("Gripper opened")
+                response1.log = "Gripper opened"
+                response1.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response1.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response1.success = False
+
             return response1
 
 
     #@tool
-    def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=20) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
+    def manipulate_left_gripper(self, width: int=85, speed: int=110, force: int=70) -> Robotiq2F85GripperCommand.Response:   # Defaults to open gripper with fast speed and minimum force
         """
         Adjusts the left gripper's width, speed, and force to open, close, or position it at an intermediate state.
 
@@ -927,17 +990,26 @@ class LLMNode(Node):
         if force < 20 or force > 235:
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
+        
+        # Adjust the gripper width to ensure secure grasping
+        """
+        if width < 10:
+            width = 0
+        elif width == 167:
+            pass
+        else:
+            width = width - 10
+        """
 
         # Rviz gripper
         self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
         self._gripper_req.gripper_name = "2f"
 
-        self.get_logger().info("Simulated gripper command sent")
-        future2 = self._gripper_client.call_async(self._gripper_req)
-        response2 = self.wait_future(future2, timeout=15)
-
         # Wait for the result
         if load_use_sim():
+            self.get_logger().info("Simulated gripper command sent")
+            future2 = self._gripper_client.call_async(self._gripper_req)
+            response2 = self.wait_future(future2, timeout=15)
             return response2
         else:
             self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.

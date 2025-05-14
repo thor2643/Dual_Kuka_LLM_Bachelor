@@ -191,7 +191,7 @@ class ObjectDetector(Node):
         #YOLO and SAM results
         self.yolo_results = None
         self.sam_result_img = None
-        self.sam_masks = None
+        self.sam_mask = None
 
         # Publish initial image to GUI
         self.retrieve_aligned_frames()
@@ -200,7 +200,7 @@ class ObjectDetector(Node):
 
 
     def retrieve_aligned_frames(self):
-        self.get_logger().error(f'{load_use_sim()}\n')
+        self.get_logger().error(f'load_use_sim = {load_use_sim()}\n')
         if load_use_sim():
             self.get_logger().info(f'Using sim camera\n')
             sim_camera = SimCamera()
@@ -242,10 +242,10 @@ class ObjectDetector(Node):
         u, v = np.meshgrid(np.arange(width), np.arange(height))
 
         # Get the depth in meters
-        if not load_use_sim:
-            z = self.depth_frame.astype(np.float32) / 1000.0  # Convert to meters
+        if load_use_sim():
+            z = self.depth_frame.astype(np.float32) # Convert to meters
         else:
-            z = self.depth_frame.astype(np.float32)
+            z = self.depth_frame.astype(np.float32) / 1000
 
         # Replace 0.0 with np.nan to mark invalid pixels
         z[z == 0.0] = np.nan
@@ -256,6 +256,37 @@ class ObjectDetector(Node):
 
         # Stack into a (H, W, 3) point cloud
         self.point_cloud = np.stack((x, y, z), axis=-1) # organized point cloud (H, W, 3)
+
+    def get_click_location(self, image):
+        coords = []
+        self.get_logger().info("Click on multiple objects (press 'q' to finish)...")
+
+        def click_event(event, x, y, flags, param):
+            if event == cv2.EVENT_LBUTTONDOWN:
+                coords.append((x, y))
+                self.get_logger().info(f"Clicked at: ({x}, {y})")
+
+        cv2.namedWindow("Click on objects (press 'q' to finish).")
+        cv2.setMouseCallback("Click on objects (press 'q' to finish).", click_event)
+
+        while True:
+            temp_img = image.copy()
+            # Optional: draw circles for all clicked points
+            for (x, y) in coords:
+                cv2.circle(temp_img, (x, y), 5, (0, 255, 0), -1)
+
+            cv2.imshow("Click on objects (press 'q' to finish).", temp_img)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        cv2.destroyAllWindows()
+
+        if not coords:
+            self.get_logger().warn("No points were selected.")
+
+        return coords
+
 
     def apply_yolo_world(self, img, object_name, confi, name_objects = False, verbose = False):
         model = YOLOWorld("yolov8l-world.pt")  # or select yolov8{s/m/l}-world.pt for different sizes
@@ -297,9 +328,8 @@ class ObjectDetector(Node):
         
         # Publish the image to the GUI
         #self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(self.sam_result_img))
-        
         # Convert all masks to NumPy and scale binary mask
-        self.sam_masks = (results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
+        self.sam_mask = (results[0].masks.data.cpu().numpy()*255).astype(np.uint8)
 
     
     #The callback function for the detector service for YOLO World
@@ -317,117 +347,157 @@ class ObjectDetector(Node):
         #Apply Yolo World, data is stored in self.yolo_results
         self.apply_yolo_world(image, object, confi = 0.10, verbose=False) #TODO afjust conf here
 
+        self.create_point_cloud()
+        all_grasps = []
 
         # If no objects are found with the specified class, try to find any object and return the class
         if len(self.yolo_results[0].boxes.data) == 0:
-            self.get_logger().info(f'No {object} found\n')
-            objects_found_list = self.apply_yolo_world(image, object, confi = 0.10, verbose=False, name_objects = True) #Adjust confi
-            image = self.yolo_results[0].plot()
+            cordinate_list = self.get_click_location(image)
+            self.get_logger().info(f'Yolo did not find the object, User clicked instead.\n')
+            for i, cords in enumerate(cordinate_list):  
+                x, y = cords[0], cords[1]
+                self.get_logger().info(f'SAM segmenting bounding box for object {object}.\n')
+                self.SAM_predict(image, points=[x,y], verbose=False) #updates sam_result_img and sam_masks
+                torch.cuda.empty_cache() # Clear GPU memory 
+                                    
+                mask_binary = (self.sam_mask > 0).astype(np.uint8) #convert the mask to binary
+                mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
 
-            self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image))
+                size_object = np.count_nonzero(mask_binary)
 
-            response.object_count = 0
+                if size_object < 4000: # for example, if fewer than 20 pixels are lit
+                    clustered = False
+                else:
+                    clustered = True
 
-            for i, name in enumerate(objects_found_list):
-                obj = DetectedObject()
-                obj.name = name
-                x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+                # Apply morphological operations to the mask 
+                if clustered: #Performs morphological operations on the mask
+                    # Create a kernel for the morphological operation
+                    kernel = np.ones((5, 5), np.uint8)  # Adjust the size of the kernel to control how much the mask shrinks
+                    # Perform closing (dilate then erode)
+                    mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
+                    # Step 2: Shrink the mask using erosion
+                    mask_binary = cv2.erode(mask_closed, kernel, iterations = 2)  # TODO was 4 before You can adjust iterations for more shrinking
+                
+                # Visualize the mask
+                overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
+                self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(overlay))
+                    
+                #Apply the mask to the point cloud
+                point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
+                grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
+                all_grasps.extend(grasps)
 
+                detected_object = DetectedObject()
+                detected_object.grasps = []
+
+                # Find center of the object in 3D space
+                x_min, y_min, x_max, y_max, _ , _ = x, y, x+2, y+2, 0 , 0
                 # Convert pixel coordinates to 3D coordinates
                 cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
-                # Sanity check: make sure it's 3D
                 if cart_point is None or len(cart_point) != 3:
                     self.get_logger().warn("Invalid cart_point, skipping transformation.")
                     continue
+                    
                 # Convert to homogeneous (4D)
                 cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
                 cart_point = self.transformation_matrix @ cart_point_hom 
                 cart_point = cart_point[:3]  # Drop homogeneous coordinate
-                # Fill in the message
-                obj.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
-                obj.grasps = []  # No grasps since no object mask was found
-                response.detected_objects.append(obj)
-            return response
-        
-        image_with_bbx = self.yolo_results[0].plot() 
-        self.get_logger().info(f'Found {len(self.yolo_results[0].boxes.data)} {object}\n')
-        self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_with_bbx))
-
-        self.create_point_cloud()
-        all_grasps = []
-
-        for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
-            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
-            self.get_logger().info(f'SAM segmenting bounding box for object {i+1}.\n')
-            self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
-            torch.cuda.empty_cache() # Clear GPU memory 
-            
-            #convert the mask to binary
-            mask_binary = (self.sam_masks > 0).astype(np.uint8)
-            mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
-
-            if np.count_nonzero(mask_binary) < 4000:  # for example, if fewer than 20 pixels are lit
-                clustered = False
-            else:
-                clustered = True
-
-            # Apply morphological operations to the mask 
-            if clustered: #Performs morphological operations on the mask
-                # Create a kernel for the morphological operation
-                kernel = np.ones((5, 5), np.uint8)  # Adjust the size of the kernel to control how much the mask shrinks
-                # Perform closing (dilate then erode)
-                mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
-                # Step 2: Shrink the mask using erosion
-                mask_binary = cv2.erode(mask_closed, kernel, iterations = 2)  # TODO was 4 before You can adjust iterations for more shrinking
-            
-            # Visualize the mask
-            overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
-            self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(overlay))
-
                 
-            #Apply the mask to the point cloud
-            point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
-            grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
-            all_grasps.extend(grasps)
+                # Fill in the message
+                detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
+                detected_object.name = ( f"{object} {i+1}")
+                detected_object.center_of_object
+                detected_object.size_object = size_object
 
-            detected_object = DetectedObject()
-            detected_object.grasps = []
+                for grasp in grasps:
+                    if not grasp or len(grasp) < 6:
+                        continue
 
-            # Find center of the object in 3D space
-            x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+                    grasp_msg = Grasp6D()
+                    # Fill position
+                    grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
+                    # Fill orientation
+                    grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
+                    # Fill width
+                    grasp_msg.grasp_width = grasp[6] #grasp width
+                    detected_object.grasps.append(grasp_msg) 
 
-            self.get_logger().info(f'Object bounding box: {x_min}, {y_min}, {x_max}, {y_max}\n')
+                response.detected_objects.append(detected_object)
+                response.object_count += 1
 
-            # Convert pixel coordinates to 3D coordinates
-            cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
-            if cart_point is None or len(cart_point) != 3:
-                    self.get_logger().warn("Invalid cart_point, skipping transformation.")
-                    continue
-            # Convert to homogeneous (4D)
-            cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
-            cart_point = self.transformation_matrix @ cart_point_hom 
-            cart_point = cart_point[:3]  # Drop homogeneous coordinate
+        else: 
+            for i in range(len(self.yolo_results[0].boxes.data)): # for each detected object it finds grasp poses
+                x_min, y_min, x_max, y_max, confif , _ = self.yolo_results[0].boxes.data[i]  #_, _ = confidence and class
+                self.get_logger().info(f'SAM segmenting bounding box for object {i+1}. conf: {round(confif.item(),2)}.\n')
+                self.SAM_predict(image, bboxes=[x_min, y_min, x_max, y_max], verbose=False) #updates sam_result_img and sam_masks
+                torch.cuda.empty_cache() # Clear GPU memory 
 
-            # Fill in the message
-            detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
-            detected_object.name = ( f"{object} {i+1}")
-            detected_object.center_of_object
+                #convert the mask to binary
+                mask_binary = (self.sam_mask > 0).astype(np.uint8)
+                mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
 
-            for grasp in grasps:
-                if not grasp or len(grasp) < 6:
-                    continue
+                size_object = np.count_nonzero(mask_binary)
 
-                grasp_msg = Grasp6D()
-                # Fill position
-                grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
-                # Fill orientation
-                grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
-                # Fill width
-                grasp_msg.grasp_width = grasp[6] #grasp width
-                detected_object.grasps.append(grasp_msg) 
+                if size_object < 4000:  # for example, if fewer than 20 pixels are lit
+                    clustered = False
+                else:
+                    clustered = True
 
-            response.detected_objects.append(detected_object)
-            response.object_count += 1
+                # Apply morphological operations to the mask 
+                if clustered: #Performs morphological operations on the mask
+                    # Create a kernel for the morphological operation
+                    kernel = np.ones((5, 5), np.uint8)  # Adjust the size of the kernel to control how much the mask shrinks
+                    # Perform closing (dilate then erode)
+                    mask_closed = cv2.morphologyEx(mask_binary, cv2.MORPH_CLOSE, kernel)
+                    # Step 2: Shrink the mask using erosion
+                    mask_binary = cv2.erode(mask_closed, kernel, iterations = 2)  # TODO was 4 before You can adjust iterations for more shrinking
+                
+                # Visualize the mask
+                overlay = cv2.addWeighted(self.color_frame, 0.7, cv2.cvtColor(mask_binary * 255, cv2.COLOR_GRAY2BGR), 0.3, 0)
+                self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(overlay))
+
+                #Apply the mask to the point cloud
+                point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
+                grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
+                all_grasps.extend(grasps)
+
+                detected_object = DetectedObject()
+                detected_object.grasps = []
+
+                # Find center of the object in 3D space
+                x_min, y_min, x_max, y_max, _ , _ = self.yolo_results[0].boxes.data[i]
+                # Convert pixel coordinates to 3D coordinates
+                cart_point = self.get_cartesian_coordinates(int((x_min + x_max) / 2), int((y_min + y_max) / 2))
+                if cart_point is None or len(cart_point) != 3:
+                        self.get_logger().warn("Invalid cart_point, skipping transformation.")
+                        continue
+                # Convert to homogeneous (4D)
+                cart_point_hom = np.append(cart_point, 1.0) # Make homogeneous
+                cart_point = self.transformation_matrix @ cart_point_hom 
+                cart_point = cart_point[:3]  # Drop homogeneous coordinate
+
+                # Fill in the message
+                detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
+                detected_object.name = ( f"{object} {i+1}")
+                detected_object.center_of_object
+                detected_object.size_object = size_object
+
+                for grasp in grasps:
+                    if not grasp or len(grasp) < 6:
+                        continue
+
+                    grasp_msg = Grasp6D()
+                    # Fill position
+                    grasp_msg.position = Point(x=grasp[0], y=grasp[1], z=grasp[2])
+                    # Fill orientation
+                    grasp_msg.orientation = Vector3(x=grasp[3], y=grasp[4], z=grasp[5])
+                    # Fill width
+                    grasp_msg.grasp_width = grasp[6] #grasp width
+                    detected_object.grasps.append(grasp_msg) 
+
+                response.detected_objects.append(detected_object)
+                response.object_count += 1
 
         # Visualize grasp lines on image
         image_copy = self.color_frame.copy()
@@ -437,7 +507,7 @@ class ObjectDetector(Node):
             x, y, z, roll, pitch, yaw, grasp_width = grasp
 
             if z < 0 or grasp_width >= 0.1525:
-                        continue
+                continue
             
             T_W_G = np.eye(4)
             T_W_G[:3, :3] = ROT.from_euler('xyz', [roll, pitch, yaw], degrees=True).as_matrix()
@@ -542,32 +612,6 @@ class ObjectDetector(Node):
         # Generate grasp candidates from the segmented surfaces. Outputs a list of grasps
         grasps = self.generate_grasp_candidates_from_groups(pcd, groups, num_candidates)
 
-
-        if False: # Set to True to visualize the point cloud and grasp poses
-            # Visualize the camera frame
-            camera_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01)
-
-            # Creating the grasp frames       
-            grasp_frames = []
-            for grasp in grasps:
-                x, y, z, roll, pitch, yaw = grasp
-
-                # Convert RPY to rotation matrix
-                rot = ROT.from_euler('xyz', [roll, pitch, yaw]).as_matrix()
-
-                # Create coordinate frame and apply transform
-                frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.025)
-                frame.rotate(rot, center=(0, 0, 0))
-                frame.translate([x, y, z])
-
-                grasp_frames.append(frame)
-
-            # Make point cloud blue
-            pcd.paint_uniform_color([0, 0, 1]) # blue
-
-            # you can visualise: camera_frame, pcd, grasp_frames, normals
-            o3d.visualization.draw_geometries([pcd,*grasp_frames], point_show_normal=False, window_name="Grasp Poses", width=800, height=600)
-        
         return grasps
 
     def filter_by_depth_jump_np(self, pc_np, z_jump_threshold=0.04): #4 cm
@@ -1025,69 +1069,11 @@ class ObjectDetector(Node):
             new_pcd.normals = o3d.utility.Vector3dVector(np.array(smoothed_normals))
 
         return new_pcd
-
-
-    def show_depth_map(self):
-        cv2.namedWindow("Depth Map", cv2.WINDOW_AUTOSIZE)
-
-        while True:
-            self.retrieve_aligned_frames()
-
-            # Convert the depth frame to a NumPy array
-            depth_image = np.asanyarray(self.depth_frame)
-
-            #depth_image = cv2.rotate(depth_image, cv2.ROTATE_180)
-
-            if True: #True: gets a tresholded colormap. False all depth data are used in normalisation
-                # Define the depth range (in millimeters) to display
-                min_depth = 0  # Minimum depth to display  0 m
-                max_depth = 3000  # Maximum depth to display 3m
-
-                # 1. Threshold the depth image to the specified range
-                # Set values outside the range to 0 (this can be chanced if needed).
-                depth_image = np.where((depth_image >= min_depth) & (depth_image <= max_depth),depth_image, 0)
-
-            # Normalize the depth image for display
-            depth_image = cv2.normalize(depth_image, None, 0, 255, cv2.NORM_MINMAX)
-            depth_image = np.uint8(depth_image)
-
-            # Apply a colormap to the depth image
-            depth_colormap = cv2.applyColorMap(depth_image, cv2.COLORMAP_JET)
-
-            # Show the depth map using OpenCV's imshow
-            cv2.imshow("Depth Map", depth_colormap)
-
-            # Break the loop when 'q' is pressed
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-    
-        cv2.destroyAllWindows()
         
-    def show_frame(self):
-        cv2.namedWindow("Image", cv2.WINDOW_AUTOSIZE)
-        cv2.namedWindow("Image", cv2.WINDOW_AUTOSIZE)
-        while True:
-            self.retrieve_aligned_frames()
-
-            # Convert the frame to a NumPy array for OpenCV
-            color_frame = self.get_color_image()
-
-            # Show the frame using OpenCV's imshow
-            cv2.imshow("Image", cv2.rotate(color_frame, cv2.ROTATE_180))
-
-            # Break the loop when 'q' is pressed
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-        cv2.destroyAllWindows()
 
     def get_color_image(self):
         return np.asanyarray(self.color_frame)
 
-    def show_image(self, image):
-        cv2.imshow("Image", image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
    
     def get_cartesian_coordinates(self, pixel_x, pixel_y):
         # The camera info message .K contains the camera intrinsics
@@ -1111,14 +1097,13 @@ class ObjectDetector(Node):
 
         # Calculate the x, y, z coordinates
         if load_use_sim():
-            z = self.depth_frame[pixel_y, pixel_x] 
+            z = self.depth_frame[pixel_y, pixel_x]
         else:
-            z = self.depth_frame[pixel_y, pixel_x] / 1000  # Convert to meters
+            self.get_logger().info(f"Converting depth to meters")
+            z = self.depth_frame[pixel_y, pixel_x] / 1000 # Convert to meters
 
         x = ((pixel_x - cx) * z / fx) 
         y = ((pixel_y - cy) * z / fy) 
-        
-
         return np.array([x, y, z])
         
     def show_cartesian_coordinates(self):
@@ -1147,46 +1132,6 @@ class ObjectDetector(Node):
 
         cv2.destroyAllWindows()
 
-
-
-    def get_user_input(self, prompt):
-        """
-        Use console input instead of GUI input for simplicity.
-        """
-        while True:
-            try:
-                user_input = int(input(prompt))
-                return user_input
-            except ValueError:
-                print("Invalid input. Please enter a number.")
-
-    def save_image(self, save_folder="captured_images"):
-        """
-        Captures and saves an image in a specified folder with an incremented filename.
-        """
-        # Ensure the save folder exists
-        if not os.path.exists(save_folder):
-            os.makedirs(save_folder)
-
-        # Retrieve the current frame
-        self.retrieve_aligned_frames()
-        image = self.get_color_image()
-
-        if image is None:
-            print("Failed to capture image from camera.")
-            return
-
-        # Find the next available file name
-        existing_files = [f for f in os.listdir(save_folder) if f.endswith(".jpg")]
-        next_index = len(existing_files) + 1
-        file_name = f"image_{next_index}.jpg"
-        file_path = os.path.join(save_folder, file_name)
-
-        # Save the image
-        cv2.imwrite(file_path, image)  # Rotate if needed
-        print(f"Image saved: {file_path}")
-
-
 def main(args=None):
     rclpy.init(args=args)
 
@@ -1197,7 +1142,6 @@ def main(args=None):
     rclpy.spin(detector) 
 
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()

@@ -40,14 +40,14 @@
         <joint name="a_3f_palm_finger_middle_joint"/>
     </group>
     <!--GROUP STATES: Purpose: Define a named state for a particular group, in terms of joint values. This is useful to define states like 'folded arms'-->
-    <group_state name="box" group="right_arm">
-        <joint name="right_A1" value="0.1914"/>
-        <joint name="right_A2" value="0.8445"/>
-        <joint name="right_A3" value="0.0479"/>
-        <joint name="right_A4" value="-1.2498"/>
-        <joint name="right_A5" value="-0.4785"/>
-        <joint name="right_A6" value="1.3174"/>
-        <joint name="right_A7" value="0"/>
+    <group_state name="home" group="right_arm">
+        <joint name="right_A1" value="1.53"/>
+        <joint name="right_A2" value="-0.47"/>
+        <joint name="right_A3" value="0.959"/>
+        <joint name="right_A4" value="1.343"/>
+        <joint name="right_A5" value="-0.383"/>
+        <joint name="right_A6" value="-1.518"/>
+        <joint name="right_A7" value="1.710"/>
     </group_state>
     <group_state name="box" group="left_arm">
         <joint name="left_A1" value="-0.4307"/>
@@ -59,22 +59,13 @@
         <joint name="left_A7" value="0"/>
     </group_state>
     <group_state name="take_image" group="left_arm">
-        <joint name="left_A1" value="1.8326"/>
-        <joint name="left_A2" value="-0.1222"/>
-        <joint name="left_A3" value="0.2618"/>
-        <joint name="left_A4" value="1.7802"/>
-        <joint name="left_A5" value="0.7505"/>
-        <joint name="left_A6" value="-1.5882"/>
-        <joint name="left_A7" value="-2.0595"/>
-    </group_state>
-    <group_state name="take_image2" group="left_arm">
-        <joint name="left_A1" value="1.7802"/>
-        <joint name="left_A2" value="-0.1222"/>
-        <joint name="left_A3" value="0.2094"/>
-        <joint name="left_A4" value="1.5009"/>
-        <joint name="left_A5" value="0.6109"/>
-        <joint name="left_A6" value="-1.8151"/>
-        <joint name="left_A7" value="-1.9897"/>
+        <joint name="left_A1" value="1.640"/>
+        <joint name="left_A2" value="-0.122"/>
+        <joint name="left_A3" value="0.08"/>
+        <joint name="left_A4" value="1.570"/>
+        <joint name="left_A5" value="0.610"/>
+        <joint name="left_A6" value="-1.902"/>
+        <joint name="left_A7" value="-2.216"/>
     </group_state>
     <group_state name="open" group="2f_gripper">
         <joint name="left_2f_robotiq_85_left_knuckle_joint" value="0"/>
@@ -143,6 +134,8 @@
         <joint name="left_A7" value="0"/>
     </group_state>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    <disable_collisions link1="palm_adapter_mounting_plate" link2="gripper_mounting_plate" reason="Adjacent"/>
+    <disable_collisions link1="palm_adapter_mounting_plate" link2="a_3f_palm" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_1" reason="Adjacent"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_2" reason="Never"/>
     <disable_collisions link1="a_3f_finger_1_link_0" link2="a_3f_finger_1_link_3" reason="Never"/>
