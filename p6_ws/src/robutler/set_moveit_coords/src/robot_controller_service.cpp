@@ -439,10 +439,6 @@ private:
 
         // Loop through the joint names and set the target position
         std::vector<std::string> gripper_joint_names = move_group_3f->getJoints();
-        for (const auto& joint_name : gripper_joint_names) {
-          RCLCPP_INFO(this->get_logger(), "%s", joint_name.c_str());
-        }
-
         for (size_t i = 0; i < gripper_joint_names.size(); ++i) {
           if ( target_position.count(gripper_joint_names[i]) > 0 ){
             move_group_3f->setJointValueTarget(gripper_joint_names[i], target_position[gripper_joint_names[i]]);
@@ -450,16 +446,17 @@ private:
         }
 
         move_group_3f->setStartStateToCurrentState();
-        move_group_3f->move();
-
-        // Retrieve the current joint values
-        std::vector<std::string> joint_names_two = move_group_3f->getJoints();
-
-        for (const auto& joint_name : joint_names_two) {
-          RCLCPP_INFO(this->get_logger(), "%s", joint_name.c_str());
-        }
         
-        response->success = true;
+        // Perform the motion
+        moveit::planning_interface::MoveItErrorCode result = move_group_3f->move();
+
+        if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "3F gripper move successful.");
+          response->success = true;
+        } else {
+          RCLCPP_WARN(this->get_logger(), "3F gripper move failed with error code: %d", result.val);
+          response->success = false;
+        }
 
       } else if (request->gripper_name == "2f") {
       
@@ -475,16 +472,16 @@ private:
         const std::string joint_name = "left_2f_robotiq_85_left_knuckle_joint";
         move_group_2f->setJointValueTarget(joint_name, angle);
         move_group_2f->setStartStateToCurrentState();
-        move_group_2f->move();
-        
-        // Verify if the joint reached the target
-        std::vector<std::string> joint_names = move_group_2f->getJoints();
+        // Attempt to plan and move
+        moveit::planning_interface::MoveItErrorCode result = move_group_2f->move();
 
-        for (const auto& joint_name : joint_names) {
-          RCLCPP_INFO(this->get_logger(), "%s", joint_name.c_str());
+        if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "2F gripper move successful.");
+          response->success = true;
+        } else {
+          RCLCPP_WARN(this->get_logger(), "2F gripper move failed with error code: %d", result.val);
+          response->success = false;
         }
-
-        response->success = true;
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");
