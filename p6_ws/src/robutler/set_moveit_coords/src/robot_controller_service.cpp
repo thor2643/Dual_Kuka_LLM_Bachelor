@@ -467,7 +467,8 @@ private:
         move_group_3f->setStartStateToCurrentState();
         move_group_3f->move();
 
-        rclcpp::spin_some(this->shared_from_this());
+        // Wait for the move to complete and joint values to be updated
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
 
         static const std::unordered_map<std::string, size_t> gripper_3f_index_map = {
           {"a_3f_palm_finger_1_joint",         0},
@@ -527,7 +528,44 @@ private:
         move_group_2f->setStartStateToCurrentState();
         // Attempt to plan and move
         move_group_2f->move();
-        response->success = true;
+
+        // Wait for the move to complete and joint values to be updated
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
+
+        static const std::unordered_map<std::string, size_t> gripper_2f_index_map = {
+          {"left_2f_robotiq_85_left_knuckle_joint", 0}
+        };
+        
+        const double POSITION_TOLERANCE = 0.02;
+        bool within_tolerance = true;
+        
+        // Compare actual to target
+        const std::string joint_name = "left_2f_robotiq_85_left_knuckle_joint";
+        
+        auto it = gripper_2f_index_map.find(joint_name);
+        if (it != gripper_2f_index_map.end() && it->second < _2f_joint_values_mock.size()) {
+          double actual = _2f_joint_values_mock[it->second];
+          double error = std::abs(actual - angle);
+        
+          RCLCPP_INFO(this->get_logger(), "2F Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
+                      joint_name.c_str(), angle, actual, error);
+        
+          if (error > POSITION_TOLERANCE) {
+            within_tolerance = false;
+          }
+        } else {
+          RCLCPP_WARN(this->get_logger(), "2F joint %s not found in mock data!", joint_name.c_str());
+          within_tolerance = false;
+        }
+        
+        // Set response
+        if (within_tolerance) {
+          response->success = true;
+          response->log = "2F gripper move succeeded and verified.";
+        } else {
+          response->success = false;
+          response->log = "2F gripper did not reach desired joint position accurately.";
+        }
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");
