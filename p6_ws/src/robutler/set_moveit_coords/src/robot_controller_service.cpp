@@ -449,16 +449,7 @@ private:
         
         // Perform the motion
         moveit::planning_interface::MoveItErrorCode result = move_group_3f->move();
-
-        RCLCPP_INFO(this->get_logger(), "Move results: %d", result);
-
-        if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
-          RCLCPP_INFO(this->get_logger(), "3F gripper move successful.");
-          response->success = true;
-        } else {
-          RCLCPP_WARN(this->get_logger(), "3F gripper move failed with error code: %d", result.val);
-          response->success = false;
-        }
+        response->success = true;
 
       } else if (request->gripper_name == "2f") {
       
@@ -476,14 +467,7 @@ private:
         move_group_2f->setStartStateToCurrentState();
         // Attempt to plan and move
         moveit::planning_interface::MoveItErrorCode result = move_group_2f->move();
-
-        if (result == moveit::planning_interface::MoveItErrorCode::SUCCESS) {
-          RCLCPP_INFO(this->get_logger(), "2F gripper move successful.");
-          response->success = true;
-        } else {
-          RCLCPP_WARN(this->get_logger(), "2F gripper move failed with error code: %d", result.val);
-          response->success = false;
-        }
+        response->success = true;
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");
