@@ -921,6 +921,18 @@ class LLMNode(Node):
         if load_use_sim():
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
+            if response2.success is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+            elif width == 167:
+                self.get_logger().info("Gripper opened")
+                response2.log = "Gripper opened"
+                response2.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response2.success = False
             return response2
         else:
             self._3f_controller.output_registers.r_act = 1  # Active Gripper
@@ -1010,6 +1022,18 @@ class LLMNode(Node):
             self.get_logger().info("Simulated gripper command sent")
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
+            if response2.success is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+            elif width == 85:
+                self.get_logger().info("Gripper opened")
+                response2.log = "Gripper opened"
+                response2.success = True
+            else:
+                self.get_logger().error("Gripper failed to grasp object")
+                response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
+                response2.success = False
             return response2
         else:
             self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.

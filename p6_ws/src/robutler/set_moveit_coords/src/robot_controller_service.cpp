@@ -110,15 +110,21 @@ private:
 
   std::vector<double> joint_values_right;
   std::vector<double> joint_values_left;
+  std::vector<double> _3f_joint_values_mock;
+  std::vector<double> _2f_joint_values_mock;
   
   void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
     {
         //current_joint_state = msg->position;
         joint_values_right.clear();
         joint_values_left.clear();
+        _3f_joint_values_mock.clear();
+        _2f_joint_values_mock.clear();
 
         joint_values_right.resize(7);
         joint_values_left.resize(7);
+        _3f_joint_values_mock.resize(10);
+        _2f_joint_values_mock.resize(1);
 
         for (size_t i = 0; i < msg->name.size(); ++i) {
             if (msg->name[i].find("right_") != std::string::npos) {
@@ -138,6 +144,19 @@ private:
               else if (msg->name[i] == "left_A5") joint_values_left[4] = msg->position[i];
               else if (msg->name[i] == "left_A6") joint_values_left[5] = msg->position[i];
               else if (msg->name[i] == "left_A7") joint_values_left[6] = msg->position[i];
+              else if (msg->name[i] == "left_2f_robotiq_85_left_knuckle_joint") _2f_joint_values_mock[0] = msg->position[i];
+            }
+            if (msg->name[i].find("a_") != std::string::npos) {
+              if (msg->name[i] == "a_3f_palm_finger_1_joint") _3f_joint_values_mock[0] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_middle_joint_3") _3f_joint_values_mock[1] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_2_joint_3") _3f_joint_values_mock[2] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_2_joint_1") _3f_joint_values_mock[3] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_middle_joint_1") _3f_joint_values_mock[4] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_2_joint_2") _3f_joint_values_mock[5] = msg->position[i];
+              else if (msg->name[i] == "a_3f_palm_finger_2_joint") _3f_joint_values_mock[6] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_3") _3f_joint_values_mock[7] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_1") _3f_joint_values_mock[8] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_middle_joint_2") _3f_joint_values_mock[9] = msg->position[i];
             }
         }
     }
@@ -420,12 +439,9 @@ private:
       if (request->gripper_name == "3f") {       
         // The 3 joints of interest span form 0 to 65 degrees, and the width is between 0 to 167 mm. We scale the angle to the inverse of the width
         
-        float start_angle = std::cos(25.0/180.0*3.14);
-        double angle = std::acos((request->width / 167) * start_angle + (1-start_angle)) - 25/180*3.14;
-
-        RCLCPP_INFO(this->get_logger(), "Calculated start for 3f gripper: %f", start_angle);
-        RCLCPP_INFO(this->get_logger(), "Calculated ratio for 3f gripper: %f", ((request->width/ 167) * start_angle));
-        RCLCPP_INFO(this->get_logger(), "Calculated angle for 3f gripper: %f", angle);
+        //float start_angle = std::cos(25.0/180.0*3.14);
+        //double angle = std::acos((request->width / 167) * start_angle + (1-start_angle)) - 25/180*3.14;
+        double angle = 65 * ((167-request->width) / 167) / 180.0 * 3.14;
         
         std::map<std::string, double> target_position;
         target_position["a_3f_finger_1_joint_1"] = angle;
@@ -446,16 +462,56 @@ private:
         }
 
         move_group_3f->setStartStateToCurrentState();
-        
-        // Perform the motion
         move_group_3f->move();
+
+        // Wait for the move to complete and joint values to be updated
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
+
+        static const std::unordered_map<std::string, size_t> gripper_3f_index_map = {
+          {"a_3f_palm_finger_1_joint",         0},
+          {"a_3f_finger_middle_joint_3",       1},
+          {"a_3f_finger_2_joint_3",            2},
+          {"a_3f_finger_2_joint_1",            3},
+          {"a_3f_finger_middle_joint_1",       4},
+          // index 5 is for a_3f_finger_2_joint_2 — not used in target_position
+          {"a_3f_palm_finger_2_joint",         6},
+          {"a_3f_finger_1_joint_3",            7},
+          {"a_3f_finger_1_joint_1",            8}
+          // index 9 is for a_3f_finger_middle_joint_2 — not used in target_position
+        };
+        
+        const double POSITION_TOLERANCE = 0.7581;
         response->success = true;
+        response->log = "3F gripper move succeeded and verified.";
+        
+        for (const auto& [joint_name, target] : target_position) {
+          auto it = gripper_3f_index_map.find(joint_name);
+          if (it != gripper_3f_index_map.end()) {
+            double actual = _3f_joint_values_mock[it->second];
+            double error = std::abs(actual - target);
+        
+            RCLCPP_INFO(this->get_logger(), "Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
+                        joint_name.c_str(), target, actual, error);
+            RCLCPP_INFO(this->get_logger(), "POSITION: %.4f, Error: %.4f", POSITION_TOLERANCE, error);
+        
+            if (error > POSITION_TOLERANCE) {
+              response->success = false;
+              response->log = "Gripper joint values out of tolerance.";
+              break;
+            }
+          } else {
+            RCLCPP_WARN(this->get_logger(), "Joint %s not in index map!", joint_name.c_str());
+            response->success = false;
+            response->log = "Gripper joint values could not be verified (missing joint).";
+            break;  // Conservative fallback
+          }
+        }
 
       } else if (request->gripper_name == "2f") {
       
         // The main joint in the 2f gripper span form 0 to 45 degrees, and the width is between 0 to 85 mm. We scale the angle with the width
-        if (request->width < 15) {
-          request->width = 15;
+        if (request->width < 10) {
+          request->width = 10;
         }
         
         double angle = 45 * ((85-request->width) / 85) / 180.0 * 3.14;
@@ -467,7 +523,41 @@ private:
         move_group_2f->setStartStateToCurrentState();
         // Attempt to plan and move
         move_group_2f->move();
-        response->success = true;
+
+        // Wait for the move to complete and joint values to be updated
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
+
+        static const std::unordered_map<std::string, size_t> gripper_2f_index_map = {
+          {"left_2f_robotiq_85_left_knuckle_joint", 0}
+        };
+        
+        const double POSITION_TOLERANCE = 0.6;
+        bool within_tolerance = true;
+        
+        auto it = gripper_2f_index_map.find(joint_name);
+        if (it != gripper_2f_index_map.end() && it->second < _2f_joint_values_mock.size()) {
+          double actual = _2f_joint_values_mock[it->second];
+          double error = std::abs(actual - angle);
+        
+          RCLCPP_INFO(this->get_logger(), "2F Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
+                      joint_name.c_str(), angle, actual, error);
+        
+          if (error > POSITION_TOLERANCE) {
+            within_tolerance = false;
+          }
+        } else {
+          RCLCPP_WARN(this->get_logger(), "2F joint %s not found in mock data!", joint_name.c_str());
+          within_tolerance = false;
+        }
+        
+        // Set response
+        if (within_tolerance) {
+          response->success = true;
+          response->log = "2F gripper move succeeded and verified.";
+        } else {
+          response->success = false;
+          response->log = "2F gripper did not reach desired joint position accurately.";
+        }
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");
