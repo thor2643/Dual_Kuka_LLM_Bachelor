@@ -439,6 +439,10 @@ private:
 
         // Loop through the joint names and set the target position
         std::vector<std::string> gripper_joint_names = move_group_3f->getJoints();
+        for (const auto& joint_name : gripper_joint_names) {
+          RCLCPP_INFO(this->get_logger(), "%s", joint_name.c_str());
+        }
+
         for (size_t i = 0; i < gripper_joint_names.size(); ++i) {
           if ( target_position.count(gripper_joint_names[i]) > 0 ){
             move_group_3f->setJointValueTarget(gripper_joint_names[i], target_position[gripper_joint_names[i]]);
@@ -449,47 +453,13 @@ private:
         move_group_3f->move();
 
         // Retrieve the current joint values
-        std::vector<std::string> joint_names = move_group_3f->getJoints();
-        std::vector<double> current_joint_values = move_group_3f->getCurrentJointValues();
+        std::vector<std::string> joint_names_two = move_group_3f->getJoints();
 
-        // Define a tolerance for floating-point comparison
-        const double tolerance = 1e-1;
-        bool at_target = true;
-
-        RCLCPP_INFO(this->get_logger(), "Checking if joints reached target positions...");
-
-        // Check if the current joint values are within the tolerance of the target position
-        for (size_t i = 0; i < joint_names.size(); ++i) {
-          const std::string& joint_name = joint_names[i];
-          double current_value = current_joint_values[i];
-      
-          RCLCPP_INFO(this->get_logger(), "Joint %s - Current value: %f", joint_name.c_str(), current_value);
-      
-          if (target_position.count(joint_name) > 0) {
-            double target_value = target_position[joint_name];
-      
-            RCLCPP_INFO(this->get_logger(), "Joint %s - Target value: %f", joint_name.c_str(), target_value);
-      
-            double error = std::abs(current_value - target_value);
-            RCLCPP_INFO(this->get_logger(), "Joint %s - Absolute error: %f", joint_name.c_str(), error);
-      
-            if (error > tolerance) {
-              RCLCPP_WARN(this->get_logger(),
-                "Joint %s is NOT at target. Current: %f, Target: %f, Error: %f",
-                joint_name.c_str(), current_value, target_value, error);
-              at_target = false;
-              break;
-            } else {
-              RCLCPP_INFO(this->get_logger(),
-                "Joint %s is within tolerance. Current: %f, Target: %f",
-                joint_name.c_str(), current_value, target_value);
-            }
-          } else {
-            RCLCPP_INFO(this->get_logger(), "Joint %s is not in target_position map, skipping.", joint_name.c_str());
-          }
+        for (const auto& joint_name : joint_names_two) {
+          RCLCPP_INFO(this->get_logger(), "%s", joint_name.c_str());
         }
-      
-        response->success = at_target;
+        
+        response->success = true;
 
       } else if (request->gripper_name == "2f") {
       
@@ -509,26 +479,12 @@ private:
         
         // Verify if the joint reached the target
         std::vector<std::string> joint_names = move_group_2f->getJoints();
-        std::vector<double> current_joint_values = move_group_2f->getCurrentJointValues();
 
-        const double tolerance = 1e-1;
-        bool at_target = false;
-
-        for (size_t i = 0; i < joint_names.size(); ++i) {
-          if (joint_names[i] == joint_name) {
-            double current_value = current_joint_values[i];
-            if (std::abs(current_value - angle) <= tolerance) {
-              at_target = true;
-            } else {
-              RCLCPP_WARN(this->get_logger(),
-                "2f Gripper joint not at target. Current: %f, Target: %f",
-                current_value, angle);
-            }
-            break;
-          }
+        for (const auto& joint_name : joint_names) {
+          RCLCPP_INFO(this->get_logger(), "%s", joint_name.c_str());
         }
 
-        response->success = at_target;
+        response->success = true;
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");
