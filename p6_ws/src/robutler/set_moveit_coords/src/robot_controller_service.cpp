@@ -324,7 +324,7 @@ private:
 
     moveit::core::MoveItErrorCode error_code;
 
-    if (fraction > 1.0) {
+    if (fraction == 1.0) {
       RCLCPP_INFO(this->get_logger(), "Cartesian path computed successfully");
       plan->trajectory_ = trajectory;
     } else {
@@ -338,7 +338,7 @@ private:
       error_code = move_group_interface->plan(*plan);
     }
 
-    if (error_code == moveit::core::MoveItErrorCode::SUCCESS || fraction > 1.0) {
+    if (error_code == moveit::core::MoveItErrorCode::SUCCESS || fraction == 1.0) {
       RCLCPP_INFO(this->get_logger(), "The trajectory has been planned succesfully");
       *plan_available = true;
       response->log = "The trajectory has been planned succesfully";

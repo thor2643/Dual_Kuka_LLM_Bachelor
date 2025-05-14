@@ -131,8 +131,10 @@ class LLMNode(Node):
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
-        }
+            'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+            'RECYCLE_DROP': {'x': '0.38', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+            'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        } #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
 
         self.sim_tool_list = {}
 
@@ -905,6 +907,7 @@ class LLMNode(Node):
         response2 = self.wait_future(future2, timeout=15)
 
         if load_use_sim():
+            self.get_logger().error(f"Output: {response2}")
             return response2
         else:
             self._3f_controller.output_registers.r_act = 1  # Active Gripper
@@ -982,6 +985,7 @@ class LLMNode(Node):
 
         # Wait for the result
         if load_use_sim():
+            self.get_logger().error(f"Output: {response2}")
             return response2
         else:
             self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.

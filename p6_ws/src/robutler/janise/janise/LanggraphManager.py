@@ -89,7 +89,7 @@ class LanggraphManager(LLMNode):
         self.sim_workflow.add_node("action", self.tool_node)
         self.sim_workflow.add_node("action2", self.task_detector_tool_node)
         self.sim_workflow.add_node("action3", self.task_detector_tool_node)
-        self.sim_workflow.add_node("Socrates", self.model_Socrates)
+        self.sim_workflow.add_node("Dimilee", self.model_Dimilee)
         self.sim_workflow.add_node("sim_judge", self.model_sim_judge)
         self.sim_workflow.add_node("sim_subtask_judge", self.model_sim_subtask_judge)
         self.sim_workflow.add_node("sim_error_explainer", self.model_sim_error_explainer)
@@ -101,8 +101,8 @@ class LanggraphManager(LLMNode):
         #self.sim_workflow.add_edge(START, "Janise")
         #self.sim_workflow.add_edge("Janise",END)
 
-        self.sim_workflow.add_edge(START, "Socrates")
-        self.sim_workflow.add_edge("Socrates", "Janise")
+        self.sim_workflow.add_edge(START, "Dimilee")
+        self.sim_workflow.add_edge("Dimilee", "Janise")
 
         # We now add a conditional edge
         # This means that the edge taken is determined by the function passed in
@@ -128,14 +128,14 @@ class LanggraphManager(LLMNode):
         """
         #self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
         #self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
-        #self.sim_workflow.add_edge("clear_history", "Socrates")
+        #self.sim_workflow.add_edge("clear_history", "Dimilee")
 
         # ---- Left side of chart, this is called if janise made a tool call ----
-        self.sim_workflow.add_edge("action", "Socrates")
+        self.sim_workflow.add_edge("action", "Dimilee")
         #self.sim_workflow.add_edge("sim_subtask_judge", "action3")
         #self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
-        #self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
-        #self.sim_workflow.add_edge("Socrates", "Janise")
+        #self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Dimilee")
+        #self.sim_workflow.add_edge("Dimilee", "Janise")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
@@ -176,14 +176,14 @@ class LanggraphManager(LLMNode):
         """
         HumanMessage(content = "To which poses can the robot arm be moved?"),
         AIMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
-                name = "Socrates"),
+                name = "Dimilee"),
         AIMessage(content = "",
                 tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
                 name = "Janise"),
         ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'TAKE_IMAGE': {'x': '0.43', 'y': '0.73', 'z': '0.43', 'roll': '-83', 'pitch': '48', 'yaw': '-180'}",
                     tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
         AIMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user.",
-                    name = "Socrates"),
+                    name = "Dimilee"),
         AIMessage(content = The robot arms can be moved to several predefined poses. Here are some of the poses:
 
                 1. **Home Position for Right Arm**:
@@ -199,7 +199,7 @@ class LanggraphManager(LLMNode):
             
         HumanMessage(content = "Move the red cup to the left side of the table."),
         AIMessage(content = "I see a white table with a red cup on it. In order to move the red cup, its location must be known. Janise should consider calling the function \"find_object\" to get the location of the red cup.",
-                name = "Socrates"),
+                name = "Dimilee"),
 
         AIMessage(content = "", additional_kwargs={'tool_calls': [{'id': 'call_GYSTkPcmHtckTbWL6bfegcPS', 'function': {'arguments': '{"object_name":"cup"}', 'name': 'find_object'}, 'type': 'function'}], 'refusal': None},
                 name = "Janise"),
@@ -208,14 +208,14 @@ class LanggraphManager(LLMNode):
                 name='find_object', id='8c73eb54-7f37-4f46-81d8-564123ee37b3', tool_call_id='call_GYSTkPcmHtckTbWL6bfegcPS'), 
 
         AIMessage(content = "Since the position of the object was found, Janise sould call the function \"pick_up_object\", to pick up the red cup.",
-                name = "Socrates"),
+                name = "Dimilee"),
         
         AIMessage(content='',additional_kwargs={'tool_calls': [{'id': 'call_SwM9P6dfv9BYlIOoznJaDBgJ', 'function': {'arguments': '{"pose":[0.616,0.319,0.045,0,0,0,1],"arm":"right"}', 'name': 'pick_up_object'}, 'type': 'function'}], 'refusal': None}),
         
         ToolMessage(content='Pick up function run successfully', name='pick_up_object', id='d0b799b7-119b-4ad2-8a4b-1a873810068c', tool_call_id='call_SwM9P6dfv9BYlIOoznJaDBgJ'),
         
         AIMessage(content = "The red cup seems to be picked up successfully, so the cup can be transportated. Janise should now call the function \"move_to_pose\" to move the red cup to the left side of the table.",
-                name = "Socrates"),    
+                name = "Dimilee"),    
 
         AIMessage(content = "", additional_kwargs={'tool_calls': [{'id': 'call_6m6ScCVHmsB9IOdaxDckPH01', 'function': {'arguments': '{"pose":[0.5,0.2,0.1,0,0,0,1],"arm":"right"}', 'name': 'move_to_pose'}, 'type': 'function'}], 'refusal': None},
                 name = "Janise"),
@@ -223,7 +223,7 @@ class LanggraphManager(LLMNode):
         ToolMessage(content='true', name='move_to_pose', id='a548a7af-8862-4eb4-b63e-5499cfbc5335', tool_call_id='call_6m6ScCVHmsB9IOdaxDckPH01'),
         
         AIMessage(content = "The tool call has returend true, and the red cup appears to still be in the gripper. Thus the original task 'Move the red cup to the left side of the table.' is fulfilled. Janise should now return this information to the user.",
-                name = "Socrates"),
+                name = "Dimilee"),
         AIMessage(content = "The red cup has been successfully moved to the left side of the table. If you need any further assistance, please let me know.")
         ]
         """
@@ -233,7 +233,7 @@ class LanggraphManager(LLMNode):
             self.initial_prompt_Janise,
             HumanMessage(content = "To which poses can the robot arm be moved?"),
             HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
-                    name = "Socrates"),
+                    name = "Dimilee"),
             AIMessage(content = "",
                     tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
                     name = "Janise"),
@@ -254,14 +254,14 @@ class LanggraphManager(LLMNode):
                     name = "Janise"),
             HumanMessage(content = "What objects can you find?"),
             HumanMessage(content = "To answer this Janise should consider the available functions. The function \"get_available_objects\" returns predefined objects that can be detcted. This seems like an appropriate function to call.",
-                    name = "Socrates"),
+                    name = "Dimilee"),
             AIMessage(content = "",
                     tool_calls = [{"name": "get_available_objects", "args": {}, "id": "call_KZ4pgcOBYotzY1QERRB0OiFn"}],
                     name = "Janise"),
             ToolMessage(content = "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
                         tool_call_id = "call_KZ4pgcOBYotzY1QERRB0OiFn"),
             HumanMessage(content = "The returned objects are the predefined objects that can be detected. Janise should now return this information to the user.",
-                    name = "Socrates"),
+                    name = "Dimilee"),
             AIMessage(content = """I am able to locate the following objects within the workspace:
 
                     - Red Brick
@@ -278,7 +278,7 @@ class LanggraphManager(LLMNode):
                     name = "Janise")
             ]
         
-        self.initial_prompt_Socrates = SystemMessage(content = self.prompts["initial_prompt_Socrates"])
+        self.initial_prompt_Dimilee = SystemMessage(content = self.prompts["initial_prompt_Dimilee"])
         
         self.initial_prompt_sim_judge = SystemMessage(content = self.prompts["initial_prompt_sim_judge"])
         
@@ -616,7 +616,7 @@ class LanggraphManager(LLMNode):
         response.name = "Janise"
         return {"messages": response}
     
-    def model_Socrates(self, state: MessagesState):
+    def model_Dimilee(self, state: MessagesState):
         # We append an image to the CoT message     
         #self.get_logger().info(f"The state is {state}")  
 
@@ -635,7 +635,7 @@ class LanggraphManager(LLMNode):
         )
 
         # We must replace the system message for Janise with the system message for Sokrates
-        state["messages"][0] = self.initial_prompt_Socrates
+        state["messages"][0] = self.initial_prompt_Dimilee
         state["messages"].append(message)
 
         # But it cannot analyze the image and the chat history at the same time
@@ -646,7 +646,7 @@ class LanggraphManager(LLMNode):
 
         # Convert to Human message, such that Janise does not think she answered herself.
         #response_human = HumanMessage(content=response_2.text())
-        response.name = "Socrates"
+        response.name = "Dimilee"
 
         # We return a list, because this will get added to the existing list
         return {"messages": response}
