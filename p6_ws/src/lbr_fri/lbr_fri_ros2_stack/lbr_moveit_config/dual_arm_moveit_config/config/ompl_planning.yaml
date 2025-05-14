@@ -6,10 +6,15 @@ jiggle_fraction: 0.05  # How much the FixStartStateCollision is allowed to jiggl
 request_adapters: >-
     default_planner_request_adapters/FixStartStateCollision
     default_planner_request_adapters/FixStartStatePathConstraints
-    default_planner_request_adapters/AddTimeOptimalParameterization
-    default_planner_request_adapters/FixStartStateBounds
-    default_planner_request_adapters/ResolveConstraintFrames
-    default_planner_request_adapters/FixWorkspaceBounds
+    default_planner_request_adapters/AddTimeOptimalParameterization 
+    default_planner_request_adapters/FixStartStateBounds 
+
+# FixPathConstraint: If the endeffector is outside the moveit constraints, this will move to the closest point inside the constraints. 
+# Add: Turns the path into a trejatory (Based on the limmits in joint_state.yaml i believe)
+# Fix: When the joint state is outside the limmits.
+
+#    default_planner_request_adapters/FixWorkspaceBounds
+#    default_planner_request_adapters/ResolveConstraintFrames
 
 #workspace_parameters:  // Unsure if this does anything
 #  workspace_min_x: -0.1
@@ -25,9 +30,9 @@ planner_configs:
     
     # Parameters for the RRTstar planner
     range: 0.1 # The maximum distance the planner will extend in the tree, in meters i think.
-    goal_bias: 0.05 # The probability of sampling the goal state in the planner. Right now, the goal state is sampled with a probability of 0.3.
+    goal_bias: 0.05 # The probability of sampling the goal state in the planner. Right now, the goal state is sampled with a probability of 0.5.
     delay_collision_checking: 1 # If set to true (1), collision checking is delayed until a solution path is found.
-    termination_condition: CostConvergence[10,.1]  # Termination condition for the planner. The planner will stop when the last 100 solutions have improved by less than 0.0001.
+    termination_condition: CostConvergence[5,.1]  # Termination condition for the planner. The planner will stop when the last 100 solutions have improved by less than 0.0001.
 
   RRTconnect: 
     type: geometric::RRTConnect
@@ -38,7 +43,7 @@ planner_configs:
 
   TRRT:
     type: geometric::TRRT
-    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    range: 0.01  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
     goal_bias: 0.05  # When close to goal select goal, with this probability? default: 0.05
     max_states_failed: 10  # when to start increasing temp. default: 10
     temp_change_factor: 2.0  # how much to increase or decrease temp. default: 2.0
@@ -48,28 +53,37 @@ planner_configs:
     frountierNodeRatio: 0.1  # 1/10, or 1 nonfrontier for every 10 frontier. default: 0.1
     k_constant: 0.0  # value used to normalize expresssion. default: 0.0 set in setup()
   
+  LBKPIECE:
+    type: geometric::LBKPIECE
+    range: 0.0  # Max motion added to tree. ==> maxDistance_ default: 0.0, if 0.0, set on setup()
+    border_fraction: 0.9  # Fraction of time focused on boarder default: 0.9
+    min_valid_path_fraction: 0.5  # Accept partially valid moves above fraction. default: 0.5
+  
   # Potential other planners can be found in opml_planners.yaml (A document with same name), RRTstar parameters found in moveit docs. 
 
 right_arm:
 # Planner constraints
-  enforce_constrained_state_space: true # Tell the planner that the state space is constrained, as defined in constraints.yaml. We can also set constraints using the cpp interface, as we have doen in robot controller.
+  enforce_constrained_state_space: false # Tell the planner that the state space is constrained, as defined in constraints.yaml. We can also set constraints using the cpp interface, as we have doen in robot controller.
   projection_evaluator: joints(right_A2,right_A2)  # Which joints the projection should be done on (The projector is used to calculate the manipulator configuration space, by specefying the first two joints only, this is speed up)
   
   planner_configs:
-    - RRT 
+  #  - RRT 
     - TRRT
-    #- RRTstar  
-    
-    #- RRTConnect     
+    - RRTstar  
+    - RRTconnect   
+    - LBKPIECE 
 
 left_arm:
 # Planner constraints
-  enforce_constrained_state_space: true # Tell the planner that the state space is constrained, as defined in constraints.yaml. We can also set constraints using the cpp interface, as we have doen in robot controller.
+  enforce_constrained_state_space: false # Tell the planner that the state space is constrained, as defined in constraints.yaml. We can also set constraints using the cpp interface, as we have doen in robot controller.
   projection_evaluator: joints(left_A2,left_A2)  # Which joints the projection should be done on (The projector is used to calculate the manipulator configuration space, by specefying the first two joints only, this is speed up)
   
   planner_configs:
-    - RRT 
+  #  - RRT 
     - TRRT
+    - RRTstar 
+    - RRTconnect  
+    - LBKPIECE
   
 
 #3f_gripper:

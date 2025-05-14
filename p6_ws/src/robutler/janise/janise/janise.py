@@ -786,13 +786,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose_approach, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan approach trajectory")
-            return "Failed to plan approach trajectory"
+            return plan_response # Previously returned: "Failed to plan approach trajectory"
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute approach trajectory")
-            return "Failed to execute approach trajectory"
+            return execute_response # Previously returned: "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
         if arm == 'left':
@@ -800,13 +800,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
-            return "Failed to plan grasp trajectory"
+            return plan_response # Previously returned: "Failed to plan grasp trajectory"
         
         # Execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
-            return "Failed to execute grasp trajectory"
+            return execute_response # Previously returned: "Failed to execute grasp trajectory"
 
         # Close the gripper
         # As width estimation is not accurate, we set width to 0 to make sure object is grasped
@@ -823,13 +823,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose_depart, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
-            return "Failed to plan grasp trajectory"
+            return plan_response # Previously returned: "Failed to plan grasp trajectory"
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
-            return "Failed to execute grasp trajectory"
+            return execute_response # Previously returned: "Failed to execute grasp trajectory"
         
         return "Pick up function run successfully"
 
@@ -847,13 +847,13 @@ class LLMNode(Node):
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan trajectory")
-            return False
+            return plan_response
         
         # The execute the planned trajectory
         execute_response = self.execute_planned_trajectory(arm)
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute trajectory")
-            return False
+            return execute_response
         
         return True
 
