@@ -72,13 +72,14 @@ public:
 
     get_pose_service = this->create_service<project_interfaces::srv::GetCurrentPose>(
         "get_pose", std::bind(&RobotControllerService::handle_pose_request_service, this, std::placeholders::_1, std::placeholders::_2));
+    
+    gripper_service = this->create_service<project_interfaces::srv::GripperMoveit>(
+        "gripper_moveit", std::bind(&RobotControllerService::handle_gripper_service, this, std::placeholders::_1, std::placeholders::_2));
 
     joint_state_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
       "joint_states", 10, std::bind(&RobotControllerService::joint_state_callback, this, std::placeholders::_1));
 
-    gripper_service = this->create_service<project_interfaces::srv::GripperMoveit>(
-      "gripper_moveit", std::bind(&RobotControllerService::handle_gripper_service, this, std::placeholders::_1, std::placeholders::_2));
-
+  
     // Print the pose
     //RCLCPP_INFO(this->get_logger(), "End effector pose:\n%s", end_effector_state.matrix().format(Eigen::IOFormat()).c_str());
   }
@@ -207,7 +208,7 @@ private:
     // Link to this constraint code: https://moveit.picknik.ai/main/doc/how_to_guides/using_ompl_constrained_planning/ompl_constrained_planning.html
     moveit_msgs::msg::PositionConstraint box_constraint;
     box_constraint.header.frame_id = move_group_interface->getPoseReferenceFrame(); // This is the link world, as set in the xacro.
-    box_constraint.link_name = move_group_interface->getEndEffectorLink(); // Find the end effector link for planner group, which is 3f_tool0 for right arm, and (2f_tool0?) for left arm
+    box_constraint.link_name = move_group_interface->getEndEffectorLink(); // Find the end effector link for planner group, which is 3f_tool0 for right arm, and 2f_tool0 for left arm
 
     // Create the box and set its dimensions
     shape_msgs::msg::SolidPrimitive box;
@@ -302,6 +303,7 @@ private:
     target_pose.position.z = request->position.z;
 
     // Planning parameters
+    move_group_interface->setNumPlanningAttempts(3);
     move_group_interface->setMaxVelocityScalingFactor(0.05); // (% of the maximum speed)
     move_group_interface->setMaxAccelerationScalingFactor(0.1); // (% of the maximum acceleration)
     move_group_interface->setPathConstraints(constraints);
@@ -324,30 +326,68 @@ private:
 
     moveit::core::MoveItErrorCode error_code;
 
-    if (fraction > 1.0) {
+    if (fraction == 1.0) {
       RCLCPP_INFO(this->get_logger(), "Cartesian path computed successfully");
       plan->trajectory_ = trajectory;
+      *plan_available = true;
+      response->log = "The trajectory has been planned succesfully (Cartesian path)";
+      response->success = true;
+
     } else {
       RCLCPP_ERROR(this->get_logger(), "Failed to compute Cartesian path, using OMPL planner instead");
 
-      // move_group_interface.setEndEffectorLink("3f_tool"); // Do not set this, depends on the arm
-      move_group_interface->setPlanningTime(7.0);
+      move_group_interface->setPlanningTime(10);
       move_group_interface->setPlannerId("RRTconnect"); // Other options in ompl_planning.yaml
       move_group_interface->setPoseTarget(target_pose);
+
+      for (int i = 0; i < 3; ++i) {
+        error_code = move_group_interface->plan(*plan);
+
+        if (error_code == moveit::core::MoveItErrorCode::SUCCESS) {
+          RCLCPP_INFO(this->get_logger(), "The trajectory has been planned succesfully");
+          *plan_available = true;
+          response->log = "The trajectory has been planned succesfully";
+          response->success = true;
+          break;
+        }
+      
+        if (i == 2) {
+          RCLCPP_ERROR(this->get_logger(), "The planner was unable to find a valid trajectory after 3 attempts.");
+          response->success = false;
+
+          if (error_code == moveit::core::MoveItErrorCode::FAILURE){
+            RCLCPP_ERROR(this->get_logger(), "The planning failed due to an unspecified error.");
+            response->log = "The planning failed due to an unspecified error.";
+            
+          } else if (error_code == moveit::core::MoveItErrorCode::PLANNING_FAILED){
+            RCLCPP_ERROR(this->get_logger(), "The planner was unable to find a valid trajectory.");
+            response->log = "The planner was unable to find a valid trajectory.";
+           
+          } else if (error_code == moveit::core::MoveItErrorCode::MOTION_PLAN_INVALIDATED_BY_ENVIRONMENT_CHANGE){
+            RCLCPP_ERROR(this->get_logger(), "The motion plan was invalidated by an environment change");
+            response->log = "The motion plan was invalidated by an environment change";
   
-      error_code = move_group_interface->plan(*plan);
+          } else if (error_code == moveit::core::MoveItErrorCode::INVALID_MOTION_PLAN){
+            RCLCPP_ERROR(this->get_logger(), "INVALID_MOTION_PLAN, the motion plan collided with the environment");
+            response->log = "The planner was unable to find a valid trajectory after 3 attempts, since it collided with the environment.";
+
+          } else if (error_code == moveit::core::MoveItErrorCode::TIMED_OUT){
+            RCLCPP_ERROR(this->get_logger(), "The motion planner timed out.");
+            response->log = "The motion planner timed out, it is not possible to move to the desired position.";
+            
+          } else {
+            RCLCPP_ERROR(this->get_logger(), "UNKNOWN PLANNER ERROR IN ROBOT CONTROLLER SERVICE");
+            response->log = "UNKNOWN PLANNER ERROR";
+          }
+
+        } else {
+          RCLCPP_INFO(this->get_logger(), "Retrying planning...");
+        }
+        
+      } 
+      
     }
 
-    if (error_code == moveit::core::MoveItErrorCode::SUCCESS || fraction > 1.0) {
-      RCLCPP_INFO(this->get_logger(), "The trajectory has been planned succesfully");
-      *plan_available = true;
-      response->log = "The trajectory has been planned succesfully";
-      response->success = true;
-    } else {
-      RCLCPP_ERROR(this->get_logger(), "Failed to plan to target pose");
-      response->log = "Failed to plan to target pose";
-      response->success = false;
-    }
   }
 
   // Callback to execute the planned trajectory

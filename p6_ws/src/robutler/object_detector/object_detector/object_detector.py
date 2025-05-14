@@ -242,7 +242,7 @@ class ObjectDetector(Node):
         u, v = np.meshgrid(np.arange(width), np.arange(height))
 
         # Get the depth in meters
-        if load_use_sim:
+        if load_use_sim():
             z = self.depth_frame.astype(np.float32) # Convert to meters
         else:
             z = self.depth_frame.astype(np.float32) / 1000
