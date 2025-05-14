@@ -180,6 +180,7 @@ private:
 
     // Workspace reachability check (XY distance from base of robot to target pose)
     double base_x, base_y;
+    double min_reach_threshold = 0.3; // This value prevents the system from planning to locations where objects are too close to the base of the robot.
     double max_reach_threshold = 0.8; // Increase this value to increase the radius that the manipulator can reach objects within.
 
     if (request->arm == "right") {
@@ -194,7 +195,7 @@ private:
     double dy = request->position.y - base_y;
     double distance = std::sqrt(dx * dx + dy * dy);
 
-    if (distance > max_reach_threshold) {
+    if (distance < min_reach_threshold || distance > max_reach_threshold) {
       RCLCPP_ERROR(this->get_logger(), "Target position is out of reach for %s arm (distance: %.3f m)", request->arm.c_str(), distance);
       response->log = "Target position is out of reach for " + request->arm + " arm. Consider using the other arm.";
       response->success = false;
