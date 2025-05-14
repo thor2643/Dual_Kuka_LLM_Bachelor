@@ -447,7 +447,32 @@ private:
 
         move_group_3f->setStartStateToCurrentState();
         move_group_3f->move();
-        response->success = true;
+
+        // Retrieve the current joint values
+        std::vector<std::string> joint_names = move_group_3f->getJoints();
+        std::vector<double> current_joint_values = move_group_3f->getCurrentJointValues();
+
+        // Define a tolerance for floating-point comparison
+        const double tolerance = 1e-1;
+        bool at_target = true;
+
+        // Check if the current joint values are within the tolerance of the target position
+        for (size_t i = 0; i < joint_names.size(); ++i) {
+          const std::string& joint_name = joint_names[i];
+          if (target_position.count(joint_name) > 0) {
+            double target_value = target_position[joint_name];
+            double current_value = current_joint_values[i];
+
+            if (std::abs(current_value - target_value) > tolerance) {
+              RCLCPP_WARN(this->get_logger(),
+                "Joint %s is not at target. Current: %f, Target: %f",
+                joint_name.c_str(), current_value, target_value);
+              at_target = false;
+              break;
+            }
+          }
+        }
+        response->success = at_target;
 
       } else if (request->gripper_name == "2f") {
       
@@ -459,12 +484,34 @@ private:
         double angle = 45 * ((85-request->width) / 85) / 180.0 * 3.14;
         
         RCLCPP_INFO(this->get_logger(), "Gripper angle %f", angle);
-
-        move_group_2f->setJointValueTarget("left_2f_robotiq_85_left_knuckle_joint", angle);
+        
+        const std::string joint_name = "left_2f_robotiq_85_left_knuckle_joint";
+        move_group_2f->setJointValueTarget(joint_name, angle);
         move_group_2f->setStartStateToCurrentState();
-
         move_group_2f->move();
-        response->success = true;
+        
+        // Verify if the joint reached the target
+        std::vector<std::string> joint_names = move_group_2f->getJoints();
+        std::vector<double> current_joint_values = move_group_2f->getCurrentJointValues();
+
+        const double tolerance = 1e-1;
+        bool at_target = false;
+
+        for (size_t i = 0; i < joint_names.size(); ++i) {
+          if (joint_names[i] == joint_name) {
+            double current_value = current_joint_values[i];
+            if (std::abs(current_value - angle) <= tolerance) {
+              at_target = true;
+            } else {
+              RCLCPP_WARN(this->get_logger(),
+                "2f Gripper joint not at target. Current: %f, Target: %f",
+                current_value, angle);
+            }
+            break;
+          }
+        }
+
+        response->success = at_target;
 
       } else {
         RCLCPP_ERROR(this->get_logger(), "Invalid gripper specified in robot_controller_service");
