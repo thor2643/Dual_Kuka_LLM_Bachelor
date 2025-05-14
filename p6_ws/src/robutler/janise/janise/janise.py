@@ -45,6 +45,7 @@ from project_interfaces.srv import GripperMoveit
 from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
 from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
+from robotiq_3f_gripper_ros2_interfaces.msg import Robotiq3FGripperInputRegisters
 from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
 from project_interfaces.srv import GetSimCameraData
@@ -69,6 +70,9 @@ class LLMNode(Node):
 
         self._2f_client = self.create_client(Robotiq2F85GripperCommand, 'gripper_2f_service', callback_group=client_cb_group)
         self._2f_req = Robotiq2F85GripperCommand.Request()
+        
+        self._3f_input_registers = Robotiq3FGripperInputRegisters()
+        self._3f_input_subscription = self.create_subscription(Robotiq3FGripperInputRegisters, "Robotiq3FGripper/InputRegisters", self.update_register, 10)
 
         # Moveit gripper client
         self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
@@ -193,6 +197,11 @@ class LLMNode(Node):
 
         except CvBridgeError as e:
             self.get_logger().error(f'Error converting color image: {e}')
+            
+    def update_register(self, msg):
+        self._3f_input_registers.g_sta = msg.g_sta
+        self.get_logger().info(f"Gripper status: {self._3f_input_registers.g_sta}")
+    	
 
     # Implemented to handle nested callbacks
     # Principle taken from https://gist.github.com/driftregion/14f6da05a71a57ef0804b68e17b06de5
