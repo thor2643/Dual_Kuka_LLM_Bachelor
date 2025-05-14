@@ -89,11 +89,13 @@ class LanggraphManager(LLMNode):
         self.sim_workflow.add_node("action", self.tool_node)
         self.sim_workflow.add_node("action2", self.task_detector_tool_node)
         self.sim_workflow.add_node("action3", self.task_detector_tool_node)
+        
         self.sim_workflow.add_node("Socrates", self.model_Socrates)
         self.sim_workflow.add_node("sim_judge", self.model_sim_judge)
         self.sim_workflow.add_node("sim_subtask_judge", self.model_sim_subtask_judge)
         self.sim_workflow.add_node("sim_error_explainer", self.model_sim_error_explainer)
         self.sim_workflow.add_node("clear_history", self.clear_history)
+        self.sim_workflow.add_node("clear_old_history", self.clear_old_history)
         self.sim_workflow.add_node("sim_subtask_judge_task_success", self.sim_subtask_judge_task_success)
 
         # Set the entrypoint as `Janise`
@@ -131,11 +133,14 @@ class LanggraphManager(LLMNode):
         #self.sim_workflow.add_edge("clear_history", "Socrates")
 
         # ---- Left side of chart, this is called if janise made a tool call ----
-        self.sim_workflow.add_edge("action", "Socrates")
+        self.sim_workflow.add_edge("action", "clear_old_history")
+        self.sim_workflow.add_edge("clear_old_history", "Socrates")
         #self.sim_workflow.add_edge("sim_subtask_judge", "action3")
         #self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
         #self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
         #self.sim_workflow.add_edge("Socrates", "Janise")
+
+
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
@@ -453,6 +458,32 @@ class LanggraphManager(LLMNode):
         self.get_logger().error("Clearing history")
         messages = state["messages"]
         return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt)+1:-1]]}
+    
+    def clear_old_history(self, state: MessagesState):
+        """ Removes all but: Initial prompt, user query prompt, messages by the error explainer and the latest 10 prompts """
+        messages = state["messages"]
+        remove_list = []
+        save_amount = 10
+        remove_begin = False
+
+        self.get_logger().info("Messages:")
+        for i, message in enumerate(messages, start=1):
+            self.get_logger().info(f"{i}: {message}\n")
+
+        if len(messages) > save_amount+2:
+            self.get_logger().info("Clearing old history")
+                
+            for i in range(0, len(messages) - (len(self.initial_prompt))):
+
+                if messages[-i].name != "Error_Corrector" and remove_begin: 
+                    remove_list.append(messages[-i].id)
+                    self.get_logger().info(f"Removeing message {messages[-i].content}")
+                    self.get_logger().info(f"Number message {len(messages)-i}")
+
+                if isinstance(messages[-i], AIMessage) and remove_begin == False and i >= save_amount: 
+                    remove_begin = True
+
+        return {"messages": [RemoveMessage(id=m_id) for m_id in remove_list]}
 
     def sim_subtask_judge_task_success(self, state: MessagesState):
         """Used after the subtask judge to ignore or save previous tool call"""

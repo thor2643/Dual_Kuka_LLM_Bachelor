@@ -313,7 +313,7 @@ private:
     std::vector<geometry_msgs::msg::Pose> waypoints;
     waypoints.push_back(target_pose);
     double eef_step = 0.005;  // Step size for end-effector
-    double jump_threshold = 5.0; // If the jump is bigger than this, it will be considered invalid
+    double jump_threshold = 0.5; // If the jump is bigger than this, it will be considered invalid
     moveit_msgs::msg::RobotTrajectory trajectory;
 
     // Fraction is how big a precentage of the path that was successfully planned
@@ -513,6 +513,7 @@ private:
 
         move_group_3f->setStartStateToCurrentState();
         move_group_3f->move();
+        
         response->success = true;
 
       } else if (request->gripper_name == "2f") {
