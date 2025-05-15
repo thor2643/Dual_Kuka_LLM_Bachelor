@@ -21,9 +21,6 @@ initial_prompt_janise: |
   Predefined locations:
   'HOME_RIGHT_ARM': [0.1, 0.3, 0.3, 0, 0, 0]
   'HOME_LEFT_ARM': [0.9, 0.3, 0.3, 0, 0, 0]
-  'ORGANIC_DROP': [0.49, 0.25, 0.3, 0, 0, 90]
-  'RECYCLE_DROP': [0.38, 0.25, 0.3, 0, 0, 90]
-  'WASTE_DROP': [0.60, 0.25, 0.3, 0, 0, 90]
 
   Operational Instructions:
   - Given a user request you must perform the most appropriate action that you are capable of.

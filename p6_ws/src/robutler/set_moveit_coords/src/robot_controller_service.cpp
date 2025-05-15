@@ -8,11 +8,14 @@
 #include "project_interfaces/srv/execute_move_command.hpp"
 #include "project_interfaces/srv/get_current_pose.hpp"
 #include "project_interfaces/srv/gripper_moveit.hpp"
+
 //#include <moveit_visual_tools/moveit_visual_tools.h>
 #include <string>
 #include <sstream>
 #include <map>
-#include <cmath> 
+#include <cmath>  
+#include <fstream>
+#include <nlohmann/json.hpp> 
 
 using namespace Eigen;
 
@@ -323,8 +326,9 @@ private:
 
     // Planning parameters
     move_group_interface->setNumPlanningAttempts(3);
-    move_group_interface->setMaxVelocityScalingFactor(0.05); // (% of the maximum speed)
-    move_group_interface->setMaxAccelerationScalingFactor(0.1); // (% of the maximum acceleration)
+    
+    move_group_interface->setMaxVelocityScalingFactor(0.1); // (% of the maximum speed)
+    move_group_interface->setMaxAccelerationScalingFactor(0.3); // (% of the maximum acceleration)
     move_group_interface->setPathConstraints(constraints);
     move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
     
@@ -332,7 +336,7 @@ private:
     std::vector<geometry_msgs::msg::Pose> waypoints;
     waypoints.push_back(target_pose);
     double eef_step = 0.005;  // Step size for end-effector
-    double jump_threshold = 0.5; // If the jump is bigger than this, it will be considered invalid
+    double jump_threshold = 5; // If the jump is bigger than this, it will be considered invalid
     moveit_msgs::msg::RobotTrajectory trajectory;
 
     // Fraction is how big a precentage of the path that was successfully planned
@@ -496,6 +500,15 @@ private:
     }
     }
     */
+
+    
+    //void load_use_sim() {
+
+    //  std::string file_path = 'config.json';
+     
+    //}
+    
+    
 
     void handle_gripper_service(const std::shared_ptr<project_interfaces::srv::GripperMoveit::Request> request,
       const std::shared_ptr<project_interfaces::srv::GripperMoveit::Response> response) {

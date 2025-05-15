@@ -59,7 +59,7 @@ class LanggraphManager(LLMNode):
 
         # Initialise the model
         # Change this to the model you want to use. We might implement more
-        self.model = ChatOpenAI(model="gpt-4o")
+        self.model = ChatOpenAI(model="gpt-4.1")
 
         # Initialise the simulation workflow
         self._init_sim_workflow()
@@ -173,7 +173,7 @@ class LanggraphManager(LLMNode):
         
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 100}
+        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 300}
 
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
@@ -466,9 +466,9 @@ class LanggraphManager(LLMNode):
         save_amount = 10
         remove_begin = False
 
-        self.get_logger().info("Messages:")
-        for i, message in enumerate(messages, start=1):
-            self.get_logger().info(f"{i}: {message}\n")
+        #self.get_logger().info("Messages:")
+        #for i, message in enumerate(messages, start=1):
+        #    self.get_logger().info(f"{i}: {message}\n")
 
         if len(messages) > save_amount+2:
             self.get_logger().info("Clearing old history")
@@ -477,8 +477,8 @@ class LanggraphManager(LLMNode):
 
                 if messages[-i].name != "Error_Corrector" and remove_begin: 
                     remove_list.append(messages[-i].id)
-                    self.get_logger().info(f"Removeing message {messages[-i].content}")
-                    self.get_logger().info(f"Number message {len(messages)-i}")
+                    #self.get_logger().info(f"Removeing message {messages[-i].content}")
+                    #self.get_logger().info(f"Number message {len(messages)-i}")
 
                 if isinstance(messages[-i], AIMessage) and remove_begin == False and i >= save_amount: 
                     remove_begin = True

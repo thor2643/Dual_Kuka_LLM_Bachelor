@@ -135,10 +135,12 @@ class LLMNode(Node):
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
-            'RECYCLE_DROP': {'x': '0.38', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
-            'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
-        } #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
+        } 
+        
+        #'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        #'RECYCLE_DROP': {'x': '0.38', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        #'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
 
         self.sim_tool_list = {}
 
@@ -782,7 +784,7 @@ class LLMNode(Node):
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to open gripper")
-            return "Failed to open gripper"
+            return gripper_response # Previously returned: "Failed to open gripper"
         
         # Now plan the movement to the approach pose
         plan_response = self.plan_robot_trajectory(pose_approach, arm)
@@ -819,7 +821,7 @@ class LLMNode(Node):
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to close gripper")
-            return "Failed to close gripper"
+            return gripper_response # Previously returned: "Failed to close gripper"
         
         # At last lift the object to avoid collision when moving away
         plan_response = self.plan_robot_trajectory(pose_depart, arm)
