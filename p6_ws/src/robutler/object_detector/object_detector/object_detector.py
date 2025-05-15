@@ -257,17 +257,17 @@ class ObjectDetector(Node):
         # Stack into a (H, W, 3) point cloud
         self.point_cloud = np.stack((x, y, z), axis=-1) # organized point cloud (H, W, 3)
 
-    def get_click_location(self, image):
+    def get_click_location(self, image, object_name):
         coords = []
-        self.get_logger().info("Click on multiple objects (press 'q' to finish)...")
+        self.get_logger().info(f"Click on object/objects: ({object_name}) (press 'q' to finish)...")
 
         def click_event(event, x, y, flags, param):
             if event == cv2.EVENT_LBUTTONDOWN:
                 coords.append((x, y))
                 self.get_logger().info(f"Clicked at: ({x}, {y})")
 
-        cv2.namedWindow("Click on objects (press 'q' to finish).")
-        cv2.setMouseCallback("Click on objects (press 'q' to finish).", click_event)
+        cv2.namedWindow(f"Click on object/objects: {object_name} (press 'q' to finish).")
+        cv2.setMouseCallback(f"Click on object/objects: {object_name} (press 'q' to finish).", click_event)
 
         while True:
             temp_img = image.copy()
@@ -275,7 +275,7 @@ class ObjectDetector(Node):
             for (x, y) in coords:
                 cv2.circle(temp_img, (x, y), 5, (0, 255, 0), -1)
 
-            cv2.imshow("Click on objects (press 'q' to finish).", temp_img)
+            cv2.imshow(f"Click on object/objects: {object_name} (press 'q' to finish).", temp_img)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -352,11 +352,11 @@ class ObjectDetector(Node):
 
         # If no objects are found with the specified class, try to find any object and return the class
         if len(self.yolo_results[0].boxes.data) == 0:
-            cordinate_list = self.get_click_location(image)
+            cordinate_list = self.get_click_location(image, object)
             self.get_logger().info(f'Yolo did not find the object, User clicked instead.\n')
             for i, cords in enumerate(cordinate_list):  
                 x, y = cords[0], cords[1]
-                self.get_logger().info(f'SAM segmenting bounding box for object {object}.\n')
+                self.get_logger().info(f'SAM segmenting bounding box for object: {object}.\n')
                 self.SAM_predict(image, points=[x,y], verbose=False) #updates sam_result_img and sam_masks
                 torch.cuda.empty_cache() # Clear GPU memory 
                                     
