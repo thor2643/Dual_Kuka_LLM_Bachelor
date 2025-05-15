@@ -260,7 +260,7 @@ class LanggraphManager(LLMNode):
         self.plan_tool_call_model = self.model.bind_tools(self.tools, tool_choice="required")
 
         self.real_workflow = StateGraph(ToolExecutionState)
-        self.real_config = {"configurable": {"thread_id": "real_1"}}
+        self.real_config = {"configurable": {"thread_id": "real_1"}, 'recursion_limit': 300}
         self.real_memory = MemorySaver()
 
         self.real_workflow.add_node("init_real", self.init_real_execution)
@@ -944,7 +944,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = True
+        sim = False
 
         if sim:
             response = self.sim_system(request, response)
