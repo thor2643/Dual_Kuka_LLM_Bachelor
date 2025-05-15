@@ -426,12 +426,12 @@ class LanggraphManager(LLMNode):
         """ Removes all but: Initial prompt, user query prompt, messages by the error explainer and the latest 10 prompts """
         messages = state["messages"]
         remove_list = []
-        save_amount = 10
+        save_amount = 30
         remove_begin = False
 
-        self.get_logger().info("Messages:")
-        for i, message in enumerate(messages, start=1):
-            self.get_logger().info(f"{i}: {message}\n")
+        #self.get_logger().info("Messages:")
+        #for i, message in enumerate(messages, start=1):
+            #self.get_logger().info(f"{i}: {message}\n")
 
         if len(messages) > save_amount+2:
             self.get_logger().info("Clearing old history")
@@ -944,7 +944,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = False
+        sim = True
 
         if sim:
             response = self.sim_system(request, response)
