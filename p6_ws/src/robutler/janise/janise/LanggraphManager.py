@@ -115,11 +115,11 @@ class LanggraphManager(LLMNode):
             # Next, we pass in the function that will determine which node is called next.
             self.sim_should_continue,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["action", END],
+            ["action", "sim_judge"],
         )
 
         # ---- Right side of chart, this is called if janise did not make a tool call ----
-        """
+        
         self.sim_workflow.add_conditional_edges(        
             "sim_judge",
             # The function that will determine which node is called next.
@@ -127,20 +127,18 @@ class LanggraphManager(LLMNode):
             # Path map - all the possible nodes this edge could go to
             ["action2", END],
         )
-        """
-        #self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
-        #self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
-        #self.sim_workflow.add_edge("clear_history", "Socrates")
+        
+        self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
+        self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
+        self.sim_workflow.add_edge("clear_history", "Socrates")
 
-        # ---- Left side of chart, this is called if janise made a tool call ----
+        # ---- Left side of chart, this is called if janise made a tool call ---- 
         self.sim_workflow.add_edge("action", "clear_old_history")
-        self.sim_workflow.add_edge("clear_old_history", "Socrates")
-        #self.sim_workflow.add_edge("sim_subtask_judge", "action3")
-        #self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
-        #self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
-        #self.sim_workflow.add_edge("Socrates", "Janise")
-
-
+        self.sim_workflow.add_edge("clear_old_history", "sim_subtask_judge")
+        self.sim_workflow.add_edge("sim_subtask_judge", "action3")
+        self.sim_workflow.add_edge("action3", "sim_subtask_judge_task_success")
+        self.sim_workflow.add_edge("sim_subtask_judge_task_success", "Socrates")
+        self.sim_workflow.add_edge("Socrates", "Janise")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
@@ -173,7 +171,7 @@ class LanggraphManager(LLMNode):
         
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 100}
+        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 500}
 
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
@@ -416,7 +414,7 @@ class LanggraphManager(LLMNode):
         last_message = state["messages"][-1]
         # If there is no function call, then we finish
         if not last_message.tool_calls:
-            return END
+            return "sim_judge" # We need to check if the task was successful or not.
         # Otherwise if there is, we continue
         return "action"
     
@@ -457,6 +455,7 @@ class LanggraphManager(LLMNode):
         """ Removes all but: initial prompts, user query prompt, and the latest message by the error explainer. """
         self.get_logger().error("Clearing history")
         messages = state["messages"]
+        self.sim_tool_list = {}
         return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt)+1:-1]]}
     
     def clear_old_history(self, state: MessagesState):
@@ -466,9 +465,9 @@ class LanggraphManager(LLMNode):
         save_amount = 10
         remove_begin = False
 
-        self.get_logger().info("Messages:")
-        for i, message in enumerate(messages, start=1):
-            self.get_logger().info(f"{i}: {message}\n")
+        #self.get_logger().info("Messages:")
+        #for i, message in enumerate(messages, start=1):
+        #    self.get_logger().info(f"{i}: {message}\n")
 
         if len(messages) > save_amount+2:
             self.get_logger().info("Clearing old history")
@@ -477,8 +476,8 @@ class LanggraphManager(LLMNode):
 
                 if messages[-i].name != "Error_Corrector" and remove_begin: 
                     remove_list.append(messages[-i].id)
-                    self.get_logger().info(f"Removeing message {messages[-i].content}")
-                    self.get_logger().info(f"Number message {len(messages)-i}")
+                #    self.get_logger().info(f"Removeing message {messages[-i].content}")
+                #    self.get_logger().info(f"Number message {len(messages)-i}")
 
                 if isinstance(messages[-i], AIMessage) and remove_begin == False and i >= save_amount: 
                     remove_begin = True
@@ -878,15 +877,40 @@ class LanggraphManager(LLMNode):
         for event in self.sim_workflow_manager.stream({"messages": [query]}, self.sim_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
             
-        # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #          
+        # ------------- Now the right tool calls have been generrated, so we save it to a json ------------- #  
+
+        # Add user qury to front of the the tool list
+        self.sim_tool_list = {
+            "Task": self.user_prompt,
+            **self.sim_tool_list
+        }
         
         # Write the tool calls to the JSON file
         try:
             with open(self.tool_calls_path, 'w') as file:
                 json.dump(self.sim_tool_list, file, indent=4)
-                self.get_logger().info(f"Tool list written to {self.tool_calls_path}")
+                self.get_logger().info(f"Tool list written to: {self.tool_calls_path}")
+                
+                #response.message = "Tool list generated successfully."
+                response.message = """
+                I'm blue
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                I'm blue
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                Da ba dee da ba di
+                """
 
-                response.message = "Tool list generated successfully."
         except Exception as e:
             self.get_logger().error(f"Failed to write tool list to {self.tool_calls_path}: {e}")
             response.message = "Tool list generation failed."
