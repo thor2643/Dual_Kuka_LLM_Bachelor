@@ -8,6 +8,7 @@
 #include "project_interfaces/srv/execute_move_command.hpp"
 #include "project_interfaces/srv/get_current_pose.hpp"
 #include "project_interfaces/srv/gripper_moveit.hpp"
+
 //#include <moveit_visual_tools/moveit_visual_tools.h>
 #include <string>
 #include <sstream>
@@ -347,6 +348,7 @@ private:
     waypoints.push_back(target_pose);
     double eef_step = 0.005;  // Step size for end-effector
     double jump_threshold = 5; // If the jump is bigger than this, it will be considered invalid
+    
     moveit_msgs::msg::RobotTrajectory trajectory;
 
     // Fraction is how big a precentage of the path that was successfully planned
@@ -510,6 +512,15 @@ private:
     }
     }
     */
+
+    
+    //void load_use_sim() {
+
+    //  std::string file_path = 'config.json';
+     
+    //}
+    
+    
 
     void handle_gripper_service(const std::shared_ptr<project_interfaces::srv::GripperMoveit::Request> request,
       const std::shared_ptr<project_interfaces::srv::GripperMoveit::Response> response) {

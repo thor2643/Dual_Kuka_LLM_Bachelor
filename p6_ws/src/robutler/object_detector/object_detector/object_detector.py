@@ -257,17 +257,17 @@ class ObjectDetector(Node):
         # Stack into a (H, W, 3) point cloud
         self.point_cloud = np.stack((x, y, z), axis=-1) # organized point cloud (H, W, 3)
 
-    def get_click_location(self, image):
+    def get_click_location(self, image, object_name):
         coords = []
-        self.get_logger().info("Click on multiple objects (press 'q' to finish)...")
+        self.get_logger().info(f"Click on object/objects: ({object_name}) (press 'q' to finish)...")
 
         def click_event(event, x, y, flags, param):
             if event == cv2.EVENT_LBUTTONDOWN:
                 coords.append((x, y))
                 self.get_logger().info(f"Clicked at: ({x}, {y})")
 
-        cv2.namedWindow("Click on objects (press 'q' to finish).")
-        cv2.setMouseCallback("Click on objects (press 'q' to finish).", click_event)
+        cv2.namedWindow(f"Click on object/objects: {object_name} (press 'q' to finish).")
+        cv2.setMouseCallback(f"Click on object/objects: {object_name} (press 'q' to finish).", click_event)
 
         while True:
             temp_img = image.copy()
@@ -275,7 +275,7 @@ class ObjectDetector(Node):
             for (x, y) in coords:
                 cv2.circle(temp_img, (x, y), 5, (0, 255, 0), -1)
 
-            cv2.imshow("Click on objects (press 'q' to finish).", temp_img)
+            cv2.imshow(f"Click on object/objects: {object_name} (press 'q' to finish).", temp_img)
 
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -352,11 +352,11 @@ class ObjectDetector(Node):
 
         # If no objects are found with the specified class, try to find any object and return the class
         if len(self.yolo_results[0].boxes.data) == 0:
-            cordinate_list = self.get_click_location(image)
+            cordinate_list = self.get_click_location(image, object)
             self.get_logger().info(f'Yolo did not find the object, User clicked instead.\n')
             for i, cords in enumerate(cordinate_list):  
                 x, y = cords[0], cords[1]
-                self.get_logger().info(f'SAM segmenting bounding box for object {object}.\n')
+                self.get_logger().info(f'SAM segmenting bounding box for object: {object}.\n')
                 self.SAM_predict(image, points=[x,y], verbose=False) #updates sam_result_img and sam_masks
                 torch.cuda.empty_cache() # Clear GPU memory 
                                     
@@ -803,95 +803,6 @@ class ObjectDetector(Node):
                 top_grasp = self.generate_top_down_grasp(pcd)
                 grasps.append(top_grasp) 
                 self.get_logger().info(f"Top-down grasp found using old top_grasp algorithm")
-
-        """ #General grasp disabeled
-        if np.max(points[:, 2]) > 0.10: # if the object is close to table
-            for group in groups:
-                if count >= num_candidates:
-                    break
-
-                surface_points = points[group]
-                surface_normals = normals[group]
-
-                # Estimate approach vector (mean normal)
-                approach = -np.mean(surface_normals, axis=0)
-                approach /= np.linalg.norm(approach)
-
-                # PCA on surface points
-                pca = PCA(n_components=3)
-                pca.fit(surface_points)
-                
-                # shift grasp center to grasp higher on the object to avoid colliding with the table
-                if max(surface_points[:, 2]) - min(surface_points[:, 2]) > 0.03: # if the object is not flat eg. z variation > 3 cm
-                    pc1 = pca.components_[0] # PCA component 1 (longer in-plane axis)
-                    if np.dot(pc1,[0,0,1]) < 0: # If the PCA component is pointing downwards
-                        pc1 = -pc1
-                    grasp_height = 0.25 # Controls how far from top to grasp [%]
-                    projections = surface_points @ pc1
-                    proj_min = np.min(projections)
-                    proj_max = np.max(projections)
-                    target_proj = proj_max - grasp_height * (proj_max - proj_min)
-                    mean_point = surface_points.mean(axis=0)
-                    center = mean_point + pc1 * (target_proj - np.dot(mean_point, pc1))
-                else:
-                    center = surface_points.mean(axis=0) # Center of the surface
-
-                # Opening direction = PCA component 1 (shorter in-plane axis)
-                x_axis = pca.components_[1]
-                y_axis = np.cross(approach, x_axis)
-
-                # Re-orthonormalize
-                R_matrix = np.stack([x_axis, y_axis, approach], axis=1)
-                U, _, Vt = np.linalg.svd(R_matrix)
-                R_ortho = U @ Vt
-
-                # added untwist: takes dot product between x-axis of frame and world x-axis. x-axis must always point in positive world y direction
-                x_world = np.array([1, 0, 0])
-                x_grasp = R_ortho[:, 0]  # X-axis of the grasp frame
-
-                if np.dot(x_world, x_grasp) < 0: #dot=-1 oppisite direction, dot=1 same direction, dot=0 orthogonal
-                    R_ortho[:, 0] *= -1  # Flip X
-                    R_ortho[:, 1] *= -1  # Flip Y, Z stays the same
-
-                # Convert to roll-pitch-yaw
-                rpy = ROT.from_matrix(R_ortho).as_euler('xyz', degrees=True)
-
-                # calculate the grasp width based on the x-axis and the plane it spans and the original point cloud
-                plane_normal = approach
-                plane_point = center
-
-                #  Filter points near the x-y plane (with threshold)
-                distances_to_plane = np.abs((original_points - plane_point) @ plane_normal)
-                on_plane_mask = distances_to_plane < 0.005  # 0.5 cm
-                plane_points = original_points[on_plane_mask]
-
-                if len(plane_points) < 2:
-                    grasp_width = 0.15  # Not enough data so max width
-                else:
-                    # Project points onto x-axis to get scalar positions along grasp width direction
-                    projections = (plane_points - center) @ x_axis
-                    min_proj = np.min(projections)
-                    max_proj = np.max(projections)
-                    grasp_width = np.abs(max_proj - min_proj) 
-
-                # Collision check: does grasp collide with table?
-                grasp_half = (0.15 / 2.0 + 0.03) # add 3 cm margin
-                pt_left = center - R_ortho[:, 0] * grasp_half
-                pt_right = center + R_ortho[:, 0] * grasp_half
-
-                if pt_left[2] < 0 or pt_right[2] < 0: # Must be above the table
-                    # Grasp would penetrate the table → skip this one
-                    self.get_logger().info(f"The found grasp would penetrate the table: {pt_left[2]}, {pt_right[2]}, trying to find grasp again")
-                    continue
-
-                if  grasp_width >= 0.15: # Grasp width too high
-                    # Grasp width too big for grippers. Skip this one
-                    continue
-
-                # Add grasp to list [x, y, z, roll, pitch, yaw]
-                grasps.append([float(center[0]), float(center[1]), float(center[2]), float(rpy[0]), float(rpy[1]), float(rpy[2]), float(grasp_width)])
-                count += 1
-        """
 
         return grasps
 

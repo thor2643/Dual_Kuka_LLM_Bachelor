@@ -135,10 +135,12 @@ class LLMNode(Node):
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
-            'RECYCLE_DROP': {'x': '0.38', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
-            'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
-        } #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
+        } 
+        
+        #'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        #'RECYCLE_DROP': {'x': '0.38', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        #'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
+        #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
 
         self.sim_tool_list = {}
 
@@ -307,17 +309,6 @@ class LLMNode(Node):
     def get_cam2world_transform(self):
         """Get the transformation matrix from camera to gripper coordinates."""        
         if load_use_sim():           
-            # Works with topdown
-            """
-            T_cam_world = np.array([
-                                    [-1.0, 0, 0, 0.425],
-                                    [0, 1, 0, 0.640],
-                                    [0, 0, -1, 1],
-                                    [0.0, 0.0, 0.0, 1.0]
-                                ])
-
-            """
-
             # Works with 45 degree angle
             T_cam_world = np.array([
                                         [-1.0, -0.0,  0.0,  0.425],
@@ -334,67 +325,6 @@ class LLMNode(Node):
                 [ 0,                 0 ,             0 ,           1         ]
                 ])
 
-            """
-            T_cam_gripper = np.array([
-                    [-0.0687947, -0.99762731, -0.00265413, 0.09516971],
-                    [-0.99743676, 0.06883355, -0.01954097, 0.03406203],
-                    [0.0196773, 0.00130301, -0.99980553, 0.15210002],
-                    [0.0, 0.0, 0.0, 1.0]
-                ])
-
-
-            # Get gripper pose (try a few times if not successful)
-            for i in range(5):
-                try:
-                    transform_3: TransformStamped = self.tf_buffer.lookup_transform(
-                        "world", "2f_tool0", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=2.0))
-
-                    # Assuming transform_3 is your TransformStamped object
-                    quaternion = [
-                        transform_3.transform.rotation.w,
-                        transform_3.transform.rotation.x,
-                        transform_3.transform.rotation.y,
-                        transform_3.transform.rotation.z,
-                    ]
-
-                    # Convert quaternion to Euler angles
-                    roll, pitch, yaw = quat_to_euler(*quaternion)
-
-                    t_gripper_moveit =  [
-                        transform_3.transform.translation.x,
-                        transform_3.transform.translation.y,
-                        transform_3.transform.translation.z
-                    ]
-
-                    R_gripper_moveit = Rotation.from_euler("xyz", [roll, pitch, yaw], degrees=True).as_matrix()
-                    T_gripper_moveit = T_mat_from_Rotm_tvec(R_gripper_moveit, t_gripper_moveit)
-
-                    break
-
-                except tf2_ros.LookupException:
-                    if i < 4:
-                        self.get_logger().info("Retrying...")
-                        #rclpy.spin_once(self, timeout_sec=0.1)
-                    else:
-                        self.get_logger().error("Failed to get gripper pose after multiple attempts")
-
-            T_moveit_world = np.array([
-                [0.99993911, 0.01089142, -0.00177746, 0.02532091],
-                [-0.01089373, 0.99993982, -0.00129526, 0.03899785],
-                [0.00176324, 0.00131455, 0.99999758, -0.80131387],
-                [0., 0., 0., 1.]
-            ])
-
-            T_cam_world = T_moveit_world @ T_gripper_moveit @ T_cam_gripper 
-
-        # Apply correction offsets ONLY in simulation mode
-        """
-        """
-        if load_use_sim():
-            offset = np.eye(4)
-            offset[:3, 3] = [-0.05, -0.20, 0.10]  # Apply offsets: subtract where sim overshoots
-            T_cam_world = offset @ T_cam_world
-        """
         return T_cam_world
         
     #@tool
@@ -782,7 +712,7 @@ class LLMNode(Node):
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to open gripper")
-            return "Failed to open gripper"
+            return gripper_response # Previously returned: "Failed to open gripper"
         
         # Now plan the movement to the approach pose
         plan_response = self.plan_robot_trajectory(pose_approach, arm)
@@ -797,8 +727,14 @@ class LLMNode(Node):
             return execute_response # Previously returned: "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
-        if arm == 'left':
-            pose[2] -= 0.02 # Move down 2 cm for the left gripper
+        if load_use_sim():
+            if pose[2] >= 0.03:  # if center point is more than 3 cm above the table
+                pose[2] -= 0.02  # Move down 2 cm for both grippers
+            elif pose[2] < 0.03:
+                pose[2] -= 0.015
+            elif pose[2] < 0.02:
+                pose[2] = 0.08
+
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
             self.get_logger().error("Failed to plan grasp trajectory")
@@ -819,7 +755,7 @@ class LLMNode(Node):
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to close gripper")
-            return "Failed to close gripper"
+            return gripper_response # Previously returned: "Failed to close gripper"
         
         # At last lift the object to avoid collision when moving away
         plan_response = self.plan_robot_trajectory(pose_depart, arm)
@@ -1004,16 +940,6 @@ class LLMNode(Node):
         if force < 20 or force > 235:
             self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
-        
-        # Adjust the gripper width to ensure secure grasping
-        """
-        if width < 10:
-            width = 0
-        elif width == 167:
-            pass
-        else:
-            width = width - 10
-        """
 
         # Rviz gripper
         self._gripper_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.

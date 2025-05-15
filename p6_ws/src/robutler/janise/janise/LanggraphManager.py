@@ -3,6 +3,7 @@ import yaml
 import json
 import os
 import cv2
+import copy
 
 # Internal modules
 from utils.graph_states import ToolExecutionState
@@ -59,7 +60,7 @@ class LanggraphManager(LLMNode):
 
         # Initialise the model
         # Change this to the model you want to use. We might implement more
-        self.model = ChatOpenAI(model="gpt-4o")
+        self.model = ChatOpenAI(model="gpt-4.1") 
 
         # Initialise the simulation workflow
         self._init_sim_workflow()
@@ -230,57 +231,7 @@ class LanggraphManager(LLMNode):
         AIMessage(content = "The red cup has been successfully moved to the left side of the table. If you need any further assistance, please let me know.")
         ]
         """
-            
-        
-        self.initial_prompt_old = [
-            self.initial_prompt_Janise,
-            HumanMessage(content = "To which poses can the robot arm be moved?"),
-            HumanMessage(content = "The robot arms can be moved to any positions within the workspace. However, there is a function available that provides predefined poses and locations. Janise should consider calling that.",
-                    name = "Socrates"),
-            AIMessage(content = "",
-                    tool_calls = [{"name": "get_predefined_locations_and_poses", "args": {}, "id": "call_pTZTKZcHPTOPxDn3qnViIWWu"}],
-                    name = "Janise"),
-            ToolMessage(content = "{'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}, 'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': '0.3', 'roll': '0', 'pitch': '0', 'yaw': '0'}",
-                        tool_call_id = "call_pTZTKZcHPTOPxDn3qnViIWWu"),
-            HumanMessage(content = "The function returns valid predefined poses for the robot arms. As this was all that was requested, Janise should now return this information to the user."),
-            AIMessage(content = """The robot arms can be moved to several predefined poses. Here are some of the poses:
-
-                    1. **Home Position for Right Arm**:
-                    - Coordinates: (0.1, 0.3, 0.3)
-                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
-
-                    2. **Home Position for Left Arm**:
-                    - Coordinates: (0.9, 0.3, 0.3)
-                    - Orientation: roll 0\u00b0, pitch 0\u00b0, yaw 0\u00b0
-
-                    Should you desire to move one of the arms to one of these positions, feel free to let me know.""",
-                    name = "Janise"),
-            HumanMessage(content = "What objects can you find?"),
-            HumanMessage(content = "To answer this Janise should consider the available functions. The function \"get_available_objects\" returns predefined objects that can be detcted. This seems like an appropriate function to call.",
-                    name = "Socrates"),
-            AIMessage(content = "",
-                    tool_calls = [{"name": "get_available_objects", "args": {}, "id": "call_KZ4pgcOBYotzY1QERRB0OiFn"}],
-                    name = "Janise"),
-            ToolMessage(content = "['red_brick', 'green_brick', 'yellow_brick', 'orange_brick', 'blue_brick', 'pink_brick', 'light_blue_brick', 'light_green_brick', 'purple_brick']",
-                        tool_call_id = "call_KZ4pgcOBYotzY1QERRB0OiFn"),
-            HumanMessage(content = "The returned objects are the predefined objects that can be detected. Janise should now return this information to the user.",
-                    name = "Socrates"),
-            AIMessage(content = """I am able to locate the following objects within the workspace:
-
-                    - Red Brick
-                    - Green Brick
-                    - Yellow Brick
-                    - Orange Brick
-                    - Blue Brick
-                    - Pink Brick
-                    - Light Blue Brick
-                    - Light Green Brick
-                    - Purple Brick
-
-                    If you need assistance with any of these objects, please let me know.""",
-                    name = "Janise")
-            ]
-        
+    
         self.initial_prompt_Socrates = SystemMessage(content = self.prompts["initial_prompt_Socrates"])
         
         self.initial_prompt_sim_judge = SystemMessage(content = self.prompts["initial_prompt_sim_judge"])
@@ -302,12 +253,12 @@ class LanggraphManager(LLMNode):
         self.function_call_id = 1
 
         # Define model nodes
-        self.task_detector_model = self.model.bind_tools(self.task_detector_tools)
+        self.task_detector_model = self.model.bind_tools(self.task_detector_tools, tool_choice="required")
         self.correction_model = self.model.bind_tools(self.tools)
-        self.plan_tool_call_model = self.model.bind_tools(self.tools)
+        self.plan_tool_call_model = self.model.bind_tools(self.tools, tool_choice="required")
 
         self.real_workflow = StateGraph(ToolExecutionState)
-        self.real_config = {"configurable": {"thread_id": "real_1"}}
+        self.real_config = {"configurable": {"thread_id": "real_1"}, 'recursion_limit': 300}
         self.real_memory = MemorySaver()
 
         self.real_workflow.add_node("init_real", self.init_real_execution)
@@ -332,7 +283,7 @@ class LanggraphManager(LLMNode):
             # Next, we pass in the function that will determine which node is called next.
             self.check_successful_task,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["error_corrector", "execute_tool", END],
+            ["error_corrector", "plan_tool_call", END],
         )
 
         #TODO: Add a condition to check if the task was successful
@@ -403,10 +354,22 @@ class LanggraphManager(LLMNode):
 
                     Always provide reasoning for your decision before calling the tool.
 
-                    Remember to format the tool calls appropriately.
-                """        
+                    Output ONLY valid JSON in the following format:
+
+                    ```json
+                    [
+                        {{
+                            "name": "find_object",
+                            "args": {{"object_name": "bottle"}},
+                            "id": "call_001",
+                            "type": "tool_call"
+                        }}
+                    ]
+
+                """    
+                # Use the correct API structure to call the respective tool.    
         )
-        
+
         # If a tool is to be called, the action node is called otherwise the Janise node is called
 
     def sim_should_continue(self, state: MessagesState):
@@ -462,12 +425,13 @@ class LanggraphManager(LLMNode):
         """ Removes all but: Initial prompt, user query prompt, messages by the error explainer and the latest 10 prompts """
         messages = state["messages"]
         remove_list = []
-        save_amount = 10
+        save_amount = 30
         remove_begin = False
 
         #self.get_logger().info("Messages:")
         #for i, message in enumerate(messages, start=1):
         #    self.get_logger().info(f"{i}: {message}\n")
+    
 
         if len(messages) > save_amount+2:
             self.get_logger().info("Clearing old history")
@@ -476,8 +440,8 @@ class LanggraphManager(LLMNode):
 
                 if messages[-i].name != "Error_Corrector" and remove_begin: 
                     remove_list.append(messages[-i].id)
-                #    self.get_logger().info(f"Removeing message {messages[-i].content}")
-                #    self.get_logger().info(f"Number message {len(messages)-i}")
+                    #self.get_logger().info(f"Removeing message {messages[-i].content}")
+                    #self.get_logger().info(f"Number message {len(messages)-i}")
 
                 if isinstance(messages[-i], AIMessage) and remove_begin == False and i >= save_amount: 
                     remove_begin = True
@@ -567,12 +531,9 @@ class LanggraphManager(LLMNode):
             executed_tool_AI = state["messages"][-4] # The AI message before the tool call
             executed_tool_message = state["messages"][-3] # The tool message
 
-            print(executed_tool_message)
-            function_name = executed_tool_AI.tool_calls[0].name
-            function_args = executed_tool_AI.tool_calls[0].args
+            function_name = executed_tool_AI.tool_calls[0]['name']
+            function_args = executed_tool_AI.tool_calls[0]['args']
             function_returns = executed_tool_message.content
-
-            self.get_logger().info(f"Executed tool: {function_name}")
 
             # Format the tool message to the desired structure
             tool_message = {
@@ -580,13 +541,19 @@ class LanggraphManager(LLMNode):
                     "args": function_args,
                     "return_values": function_returns
                 }
+            
+            if "real_tools_results" not in state:
+                print("No real tools results in state")
+                state["real_tools_results"] = {}
+            
+            state['real_tools_results'][f"function_call_{self.function_call_id}"] = tool_message
 
-            state["real_tools_results"][f"function_call_{self.function_call_id}"] = tool_message
+            self.function_call_id += 1
 
-            self.real_workflow_manager.update_state(self.real_config, {"real_tool_calls": state["real_tools_results"]})
+            self.real_workflow_manager.update_state(self.real_config, {"real_tools_results": state["real_tools_results"]})
 
             if tools_available:
-                return "execute_tool"
+                return "plan_tool_call" # We need to plan the next tool call
             else: 
                 return END
  
@@ -595,6 +562,49 @@ class LanggraphManager(LLMNode):
     
     @traceable
     def call_success_detector(self, state: ToolExecutionState):
+        # Get image of cell (Either simulated or real)
+        image = self.get_image()
+
+        judge_tool_info = []
+
+        # Loop through the messages in reverse order to find the last AI message (This is beacuse janise can make multiple tool calls)
+        for i in range(1, len(state["messages"])):
+            if isinstance(state["messages"][-i], AIMessage): 
+                self.get_logger().info(f"Number of tool calls made by action model: {i-1}")
+
+                judge_tool_info.append(state["messages"][-i].tool_calls)
+                judge_tool_info.append(". Which resulted in: ")
+
+                # Add every tool call result to the tool_info list       
+                for j in range(i-1):
+                    judge_tool_info.append(state["messages"][-i+j+1])
+
+                break
+     
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": f"""The tools call(s) you must judge the success of are: {judge_tool_info}. Here is an image of the workspace which may be useful 
+                """},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
+        )
+
+        state_shortened = {"messages": [self.initial_prompt_success_detector]}
+        state_shortened["messages"].append(message)
+        
+        response = self.subtask_judge_model.invoke(state_shortened["messages"])
+        response.name = "sim_subtask_judge"
+
+        return {"messages": response}
+
+
+
+
+
+    """
         # We append the initial prompt to Janise
         state_shortened = {"messages": [self.initial_prompt_success_detector]}
 
@@ -616,6 +626,7 @@ class LanggraphManager(LLMNode):
         state["messages"].append(response)
 
         return state
+    """
     
     @traceable
     def call_error_corrector(self, state: ToolExecutionState):
@@ -789,7 +800,8 @@ class LanggraphManager(LLMNode):
                 tool_calls = json.load(file)
 
             state["tool_list"] = tool_calls
-            state["tools_left"] = tool_calls
+            state["tools_left"] = copy.deepcopy(tool_calls)  # Independent copy for modification
+            state["real_tools_results"] = {}
             self.get_logger().info(f"Tool calls loaded from {tool_calls_path}")
 
         except FileNotFoundError:
@@ -809,8 +821,19 @@ class LanggraphManager(LLMNode):
         tool_call_key = list(state["tools_left"].keys())[0]
         current_tool_call = state["tools_left"][tool_call_key]
 
+        print(state["tool_list"].items())
+
         # Extract all key-value pairs from the dictionary before the tool_call_key
-        tool_call_dict = {k: v for k, v in state["tool_list"].items() if list(state["tool_list"].keys()).index(k) < list(state["tool_list"].keys()).index(tool_call_key)}
+        tool_call_dict = {}
+        for k, v in state["tool_list"].items():
+            print(f"Key: {k}, Value: {v}")
+            if k == tool_call_key:
+                # Stop extracting when we reach the tool_call_key
+                print(f"Reached tool call key: {tool_call_key}")
+                break
+            tool_call_dict[k] = v
+
+        print(f"Tool call dict: {tool_call_dict}")
 
         # Convert the extracted dictionary to a string
         simulated_tool_calls = json.dumps(tool_call_dict, indent=4)
@@ -820,16 +843,13 @@ class LanggraphManager(LLMNode):
         else:
             real_tool_calls = "None called yet"
 
-        self.get_logger().info(f"Simulated tool calls: {simulated_tool_calls}")
-        self.get_logger().info(f"Real tool calls: {real_tool_calls}")
-
         # Create a new message with the tool call details
         formatted_prompt = self.plan_tool_call_prompt.format(
                                                             current_function=current_tool_call,
                                                             sim_tool_calls=simulated_tool_calls,
                                                             real_tool_calls=real_tool_calls
                                                         )
-        
+    
         self.get_logger().info(f"Formatted prompt: {formatted_prompt}")
 
         message = SystemMessage(
@@ -845,6 +865,9 @@ class LanggraphManager(LLMNode):
         # Append the response to the message state
         state["messages"].append(response)
 
+        state["tools_left"].pop(tool_call_key)  # Remove the tool call from the list of tools left
+
+
         return state
     
     def real_system(self, request, response):
@@ -855,6 +878,8 @@ class LanggraphManager(LLMNode):
         """
         # Check if the function call was successful and correct if necessary
         state = ToolExecutionState()
+
+        print("The state is", state)
         #state["messages"] = [self.initial_prompt]
         for event in self.real_workflow_manager.stream(state, self.real_config, stream_mode="values"):
             event["messages"][-1].pretty_print()
@@ -944,7 +969,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = True
+        sim = False
 
         if sim:
             response = self.sim_system(request, response)
@@ -976,5 +1001,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-   
-        
