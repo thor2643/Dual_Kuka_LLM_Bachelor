@@ -686,7 +686,7 @@ class LanggraphManager(LLMNode):
         state["messages"].pop()
 
         # Convert to Human message, such that Janise does not think she answered herself.
-        #response_human = HumanMessage(content=response_2.text())
+        response = HumanMessage(content=response.text())
         response.name = "Socrates"
 
         # We return a list, because this will get added to the existing list
