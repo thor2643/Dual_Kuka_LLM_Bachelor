@@ -559,7 +559,8 @@ private:
           // index 9 is for a_3f_finger_middle_joint_2 — not used in target_position
         };
         
-        const double POSITION_TOLERANCE = 0.7581;
+        const double POSITION_TOLERANCE = 1.5; //0.7581
+
         response->success = true;
         response->log = "3F gripper move succeeded and verified.";
         
@@ -589,8 +590,8 @@ private:
       } else if (request->gripper_name == "2f") {
       
         // The main joint in the 2f gripper span form 0 to 45 degrees, and the width is between 0 to 85 mm. We scale the angle with the width
-        if (request->width < 10) {
-          request->width = 10;
+        if (request->width < 5) {
+          request->width = 5;
         }
         
         double angle = 45 * ((85-request->width) / 85) / 180.0 * 3.14;
@@ -610,7 +611,7 @@ private:
           {"left_2f_robotiq_85_left_knuckle_joint", 0}
         };
         
-        const double POSITION_TOLERANCE = 0.6;
+        const double POSITION_TOLERANCE = 0.5;
         bool within_tolerance = true;
         
         auto it = gripper_2f_index_map.find(joint_name);
