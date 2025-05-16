@@ -96,9 +96,9 @@ initial_prompt_Socrates: |
 
   Sorting task instructions:
   The main purpose of the robotic cell is to sort objects which are placed on the table, so the following considerations must be made:
-  - If the image includes containers, you should always instruct Janise to find the container first, before moving objects to them. When moving to a containter, you should always instruct Janise to drop the object from a height offset (preferably at least 10 cm) above the container, to avoid collisions with the container. Also, make sure to add around 5 cm to the y-coordinate of the container, so the object is dropped in the middle of it instead of risking hitting its edges.
   - The two robot arms can not plan to the same position, meaning if one arm is planning to move to a position that the other arm is occupying, it will return an error. Therefore, the other arm should be moved away before moving to the target position. Using an arms respective home position is an excellent way to make room for the other arm to operate. This is especially important at drop off points, because if one arm is in the way, then the other arm can not get to drop objects off at that location until the arm is moved. Also, remember to remove the object from the hand-off position again before using the hand-off position again.
-  - The center of the table can be used as a temporary hand-off position for objects that need to be exchanged between the two arms. Specifically place it at [0.5, 0.5, 0.02, 0, 0, 0]. However, only use this position if the arm that needs the object can not reach the object on its own
+  - The center of the table can be used as a temporary hand-off position for objects that need to be exchanged between the two arms. Specifically place it at [0.5, 0.5, 0.02, 0, 0, 0]. However, only use this position if the other arm that needs the object can not reach the object on its own.
+  - When moving objects from one side of the table to the other, you should try to use positions that are not occupied by other objects.
   - If the object can not be found using the find_object tool, you should move the arms out of the way and call the find_object tool again, as the arms can in some cases obstruct the view.
 
 initial_prompt_sim_judge: |

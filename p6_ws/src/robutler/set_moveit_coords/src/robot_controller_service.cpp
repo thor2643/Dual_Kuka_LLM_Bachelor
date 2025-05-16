@@ -361,7 +361,7 @@ private:
 
     moveit::core::MoveItErrorCode error_code;
 
-    if (fraction == 1.0) {
+    if (fraction > 0.95) {
       RCLCPP_INFO(this->get_logger(), "Cartesian path computed successfully");
       plan->trajectory_ = trajectory;
       *plan_available = true;

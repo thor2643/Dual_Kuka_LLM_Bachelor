@@ -7,6 +7,7 @@ import copy
 
 # Internal modules
 from utils.graph_states import ToolExecutionState
+from utils.mode_switch import load_use_sim
 from janise.janise import LLMNode
 
 # Langchain imports
@@ -120,16 +121,17 @@ class LanggraphManager(LLMNode):
         )
 
         # ---- Right side of chart, this is called if janise did not make a tool call ----
+        self.sim_workflow.add_edge("sim_judge", "action2")
         
         self.sim_workflow.add_conditional_edges(        
-            "sim_judge",
+            "action2",
             # The function that will determine which node is called next.
             self.sim_judge_task_success,
             # Path map - all the possible nodes this edge could go to
-            ["action2", END],
+            ["sim_error_explainer", END],
         )
         
-        self.sim_workflow.add_edge("action2","sim_error_explainer")  # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
+        # The judge made a tool call, we need activate the call before proceeding, even though we do not need the result, then proceed to the explainer.
         self.sim_workflow.add_edge("sim_error_explainer", "clear_history")
         self.sim_workflow.add_edge("clear_history", "Socrates")
 
@@ -384,11 +386,11 @@ class LanggraphManager(LLMNode):
     def sim_judge_task_success(self, state: MessagesState):
         """Used by the judge to either end simulation task or continue"""
 
-        tool = state["messages"][-1].tool_calls
+        tool = state["messages"][-2].tool_calls
         tool_name = tool[0]["name"]
 
         if tool_name == "detected_failure":
-            return "action2" #We need to actiave the tool calls before proceeding
+            return "sim_error_explainer" #We need to actiave the tool calls before proceeding
         elif tool_name == "detected_success":
             #TODO:SWITCH TO REAL SYSTEM
             return END # The system worked and we can move to the real system.
@@ -969,7 +971,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = False
+        sim = True #load_use_sim()
 
         if sim:
             response = self.sim_system(request, response)

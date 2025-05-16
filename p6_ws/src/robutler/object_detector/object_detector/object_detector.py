@@ -345,7 +345,7 @@ class ObjectDetector(Node):
         image = self.get_color_image()
 
         #Apply Yolo World, data is stored in self.yolo_results
-        self.apply_yolo_world(image, object, confi = 0.25, verbose=False) #TODO afjust conf here
+        self.apply_yolo_world(image, object, confi = 0.15, verbose=False) #TODO afjust conf here
 
         self.create_point_cloud()
         all_grasps = []
