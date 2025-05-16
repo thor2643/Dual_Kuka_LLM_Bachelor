@@ -166,6 +166,7 @@ private:
               else if (msg->name[i] == "a_3f_finger_1_joint_3") _3f_joint_values_mock[7] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_1_joint_1") _3f_joint_values_mock[8] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_middle_joint_2") _3f_joint_values_mock[9] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_2") _3f_joint_values_mock[7] = msg->position[i];
             }
         }
     }
@@ -527,7 +528,7 @@ private:
       // This service is to ensure that the grippers in rviz / moveit mirrors the state of the real grippers.
       RCLCPP_INFO(this->get_logger(), "Received gripper command for: %s, Width: %f", request->gripper_name.c_str(), request->width);
 
-      moveit::planning_interface::MoveGroupInterface::Plan *gripper_plan;
+      //moveit::planning_interface::MoveGroupInterface::Plan *gripper_plan;
      
       if (request->gripper_name == "3f") {   
         // The width is between 0 to 167 mm.
@@ -567,6 +568,7 @@ private:
         move_group_3f->setStartStateToCurrentState();
         move_group_3f->setMaxVelocityScalingFactor(0.5); // 50% of the max velocity
 
+        /*
         bool success_plan = false;
         // Save the plan for future use 
         if (request->width < 80) {
@@ -585,7 +587,9 @@ private:
         }
         
         move_group_2f->execute(*gripper_plan);
-        
+        */
+        move_group_3f->move();
+
         // Wait for the move to complete and joint values to be updated
         rclcpp::sleep_for(std::chrono::milliseconds(100));
 
@@ -599,10 +603,11 @@ private:
           {"a_3f_palm_finger_2_joint",         6},
           {"a_3f_finger_1_joint_3",            7},
           {"a_3f_finger_1_joint_1",            8},
-          {"a_3f_finger_middle_joint_2",       9} 
+          {"a_3f_finger_middle_joint_2",       9},
+          {"a_3f_finger_2_joint_2",            10},
         };
         
-        const double POSITION_TOLERANCE = 0.7581;
+        const double POSITION_TOLERANCE = 0.4;
         response->success = true;
         response->log = "3F gripper move succeeded and verified.";
         
@@ -645,6 +650,7 @@ private:
         move_group_2f->setStartStateToCurrentState();
         move_group_2f->setMaxVelocityScalingFactor(0.5); // 50% of the max velocity
 
+        /*
         bool success_plan = false;
         // Save the plan for future use 
         if (request->width < 40) {
@@ -661,6 +667,8 @@ private:
           return;
         }
         move_group_2f->execute(*gripper_plan);
+        */
+        move_group_2f->move();
         
         // Wait for the move to complete and joint values to be updated
         rclcpp::sleep_for(std::chrono::milliseconds(100));
