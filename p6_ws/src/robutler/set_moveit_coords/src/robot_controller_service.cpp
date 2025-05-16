@@ -166,6 +166,7 @@ private:
               else if (msg->name[i] == "a_3f_finger_1_joint_3") _3f_joint_values_mock[7] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_1_joint_1") _3f_joint_values_mock[8] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_middle_joint_2") _3f_joint_values_mock[9] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_2") _3f_joint_values_mock[7] = msg->position[i];
             }
         }
     }
@@ -526,23 +527,34 @@ private:
       const std::shared_ptr<project_interfaces::srv::GripperMoveit::Response> response) {
       // This service is to ensure that the grippers in rviz / moveit mirrors the state of the real grippers.
       RCLCPP_INFO(this->get_logger(), "Received gripper command for: %s, Width: %f", request->gripper_name.c_str(), request->width);
-      RCLCPP_INFO(this->get_logger(), "Load use sim: %d", load_use_sim());
 
       //moveit::planning_interface::MoveGroupInterface::Plan *gripper_plan;
      
       if (request->gripper_name == "3f") {   
-        // The 3 joints of interest span form 0 to 65 degrees, and the width is between 0 to 167 mm. We scale the angle to the inverse of the width
-        //float start_angle = std::cos(25.0/180.0*3.14);
-        //double angle = std::acos((request->width / 167) * start_angle + (1-start_angle)) - 25/180*3.14;
-        double angle = 65 * ((167-request->width) / 167) / 180.0 * 3.14;
+        // The width is between 0 to 167 mm.
+        // The first 3 joints span form 0 to 65 degrees 
+        // The second 3 joints span form 0 to 17 degrees.
+        // The last 3 joints span form 0 to -55 degrees
+        
+        double angle_1 = 65 * ((167-request->width) / 167) / 180.0 * 3.14;
+        double angle_2 = 17 * ((167-request->width) / 167) / 180.0 * 3.14;
+        double angle_3 = -55 * ((167-request->width) / 167) / 180.0 * 3.14;
         
         std::map<std::string, double> target_position;
-        target_position["a_3f_finger_1_joint_1"] = angle;
-        target_position["a_3f_finger_1_joint_3"] = -0.61;
-        target_position["a_3f_finger_2_joint_1"] = angle;
-        target_position["a_3f_finger_2_joint_3"] = -0.61;
-        target_position["a_3f_finger_middle_joint_1"] = angle;
-        target_position["a_3f_finger_middle_joint_3"] = -0.61;
+        //Finger 1
+        target_position["a_3f_finger_1_joint_1"] = angle_1;
+        target_position["a_3f_finger_1_joint_2"] = angle_2;
+        target_position["a_3f_finger_1_joint_3"] = angle_3;
+        //Finger 2
+        target_position["a_3f_finger_2_joint_1"] = angle_1;
+        target_position["a_3f_finger_2_joint_2"] = angle_2;
+        target_position["a_3f_finger_2_joint_3"] = angle_3;
+        //Finger 3
+        target_position["a_3f_finger_middle_joint_1"] = angle_1;
+        target_position["a_3f_finger_middle_joint_2"] = angle_2;
+        target_position["a_3f_finger_middle_joint_3"] = angle_3;
+
+        // To make a pinch
         target_position["a_3f_palm_finger_1_joint"] = -0.139;
         target_position["a_3f_palm_finger_2_joint"] = 0.139;
 
@@ -554,16 +566,28 @@ private:
           }
         }
         move_group_3f->setStartStateToCurrentState();
+        move_group_3f->setMaxVelocityScalingFactor(0.5); // 50% of the max velocity
 
         /*
-        if (request->width < 60) {
-          *gripper_plan = &plan_3f_closed;
+        bool success_plan = false;
+        // Save the plan for future use 
+        if (request->width < 80) {
+          gripper_plan = &plan_3f_closed;
         } else {
-          *gripper_plan = &plan_3f_open;
+          gripper_plan = &plan_3f_open;
         }
-        bool success = (move_group_3f->plan(*gripper_plan) == moveit::core::MoveItErrorCode::SUCCESS);'
-        */
+        if(gripper_plan == nullptr) {
+          success_plan = (move_group_3f->plan(*gripper_plan) == moveit::core::MoveItErrorCode::SUCCESS);
+        }
         
+        if(!success_plan && gripper_plan == nullptr){
+          response->success = false;
+          response->log = "The gripper failed to plan.";
+          return;
+        }
+        
+        move_group_2f->execute(*gripper_plan);
+        */
         move_group_3f->move();
 
         // Wait for the move to complete and joint values to be updated
@@ -575,15 +599,15 @@ private:
           {"a_3f_finger_2_joint_3",            2},
           {"a_3f_finger_2_joint_1",            3},
           {"a_3f_finger_middle_joint_1",       4},
-          // index 5 is for a_3f_finger_2_joint_2 — not used in target_position
+          {"a_3f_finger_1_joint_2",            5},
           {"a_3f_palm_finger_2_joint",         6},
           {"a_3f_finger_1_joint_3",            7},
-          {"a_3f_finger_1_joint_1",            8}
-          // index 9 is for a_3f_finger_middle_joint_2 — not used in target_position
+          {"a_3f_finger_1_joint_1",            8},
+          {"a_3f_finger_middle_joint_2",       9},
+          {"a_3f_finger_2_joint_2",            10},
         };
         
-        const double POSITION_TOLERANCE = 1.5; //0.7581
-
+        const double POSITION_TOLERANCE = 0.4;
         response->success = true;
         response->log = "3F gripper move succeeded and verified.";
         
@@ -624,9 +648,28 @@ private:
         const std::string joint_name = "left_2f_robotiq_85_left_knuckle_joint";
         move_group_2f->setJointValueTarget(joint_name, angle);
         move_group_2f->setStartStateToCurrentState();
-        // Attempt to plan and move
-        move_group_2f->move();
+        move_group_2f->setMaxVelocityScalingFactor(0.5); // 50% of the max velocity
 
+        /*
+        bool success_plan = false;
+        // Save the plan for future use 
+        if (request->width < 40) {
+          gripper_plan = &plan_2f_closed;
+        } else {
+          gripper_plan = &plan_2f_open;
+        }
+        if(gripper_plan == nullptr) {
+          success_plan = (move_group_2f->plan(*gripper_plan) == moveit::core::MoveItErrorCode::SUCCESS);
+        }
+        if(!success_plan && gripper_plan == nullptr){
+          response->success = false;
+          response->log = "The gripper failed to plan.";
+          return;
+        }
+        move_group_2f->execute(*gripper_plan);
+        */
+        move_group_2f->move();
+        
         // Wait for the move to complete and joint values to be updated
         rclcpp::sleep_for(std::chrono::milliseconds(100));
 

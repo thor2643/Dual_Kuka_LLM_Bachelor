@@ -418,7 +418,10 @@ class LanggraphManager(LLMNode):
     
     def clear_history(self, state: MessagesState):
         """ Removes all but: initial prompts, user query prompt, and the latest message by the error explainer. """
-        self.get_logger().error("Clearing history")
+        self.get_logger().error("Clearing history, please reset the environment")
+        
+        input("Press Enter to continue...")
+
         messages = state["messages"]
         self.sim_tool_list = {}
         return {"messages": [RemoveMessage(id=m.id) for m in messages[len(self.initial_prompt)+1:-1]]}
@@ -481,7 +484,7 @@ class LanggraphManager(LLMNode):
                         self.sim_tool_list[function_nr] ={
                             "function_name": tool_message[j]["name"],
                             "args": tool_message[j]["args"],
-                            "return_values": json.dumps(tool_result)
+                            "return_values": tool_result
                         } 
 
                         #self.get_logger().info(f"Tool call {str(self.sim_tool_list)} added to the list of tool calls")
