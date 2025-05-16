@@ -363,9 +363,9 @@ class ObjectDetector(Node):
                 mask_binary = (self.sam_mask > 0).astype(np.uint8) #convert the mask to binary
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
 
-                size_object = np.count_nonzero(mask_binary)
+                size_pixel = np.count_nonzero(mask_binary)
 
-                if size_object < 4000: # for example, if fewer than 20 pixels are lit
+                if size_pixel < 4000: # for example, if fewer than 20 pixels are lit
                     clustered = False
                 else:
                     clustered = True
@@ -385,6 +385,9 @@ class ObjectDetector(Node):
                     
                 #Apply the mask to the point cloud
                 point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
+                z_values = point_cloud_masked[mask_binary > 0, 2]
+                mean_depth = np.mean(z_values[(z_values > 0) & (~np.isnan(z_values))])
+                size_object = size_pixel * (mean_depth**2/(self.camera_info[0]*self.camera_info[4]))
                 grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
                 all_grasps.extend(grasps)
 
@@ -408,7 +411,7 @@ class ObjectDetector(Node):
                 detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
                 detected_object.name = ( f"{object} {i+1}")
                 detected_object.center_of_object
-                detected_object.size_object = size_object
+                detected_object.size_area = size_object
 
                 for grasp in grasps:
                     if not grasp or len(grasp) < 6:
@@ -437,9 +440,9 @@ class ObjectDetector(Node):
                 mask_binary = (self.sam_mask > 0).astype(np.uint8)
                 mask_binary = np.squeeze(mask_binary)  # From shape (1, H, W) → (H, W)
 
-                size_object = np.count_nonzero(mask_binary)
+                size_pixel = np.count_nonzero(mask_binary)
 
-                if size_object < 4000:  # for example, if fewer than 20 pixels are lit
+                if size_pixel < 4000:  # for example, if fewer than 20 pixels are lit
                     clustered = False
                 else:
                     clustered = True
@@ -459,6 +462,9 @@ class ObjectDetector(Node):
 
                 #Apply the mask to the point cloud
                 point_cloud_masked = self.point_cloud * mask_binary[..., np.newaxis]
+                z_values = point_cloud_masked[mask_binary > 0, 2]
+                mean_depth = np.mean(z_values[(z_values > 0) & (~np.isnan(z_values))])
+                size_object = size_pixel * (mean_depth**2/(self.camera_info[0]*self.camera_info[4]))
                 grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
                 all_grasps.extend(grasps)
 
@@ -481,7 +487,7 @@ class ObjectDetector(Node):
                 detected_object.center_of_object = Point(x=cart_point[0], y=cart_point[1], z=cart_point[2])
                 detected_object.name = ( f"{object} {i+1}")
                 detected_object.center_of_object
-                detected_object.size_object = size_object
+                detected_object.size_area = size_object
 
                 for grasp in grasps:
                     if not grasp or len(grasp) < 6:
