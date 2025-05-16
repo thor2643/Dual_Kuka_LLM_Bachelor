@@ -7,6 +7,7 @@ import copy
 
 # Internal modules
 from utils.graph_states import ToolExecutionState
+from utils.filter_functions import filter_function_call
 from janise.janise import LLMNode
 
 # Langchain imports
@@ -30,8 +31,7 @@ class LanggraphManager(LLMNode):
         super().__init__()
 
         # Define the tools available to the LLM
-        self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
-                      StructuredTool.from_function(self.find_object), 
+        self.tools = [StructuredTool.from_function(self.find_object), 
                       StructuredTool.from_function(self.manipulate_right_gripper), 
                       StructuredTool.from_function(self.manipulate_left_gripper), 
                       StructuredTool.from_function(self.move_to_pose),
@@ -257,22 +257,29 @@ class LanggraphManager(LLMNode):
         # Define model nodes
         self.task_detector_model = self.model.bind_tools(self.task_detector_tools, tool_choice="required")
         self.correction_model = self.model.bind_tools(self.tools)
-        self.plan_tool_call_model = self.model.bind_tools(self.tools, tool_choice="required")
+        self.bound_model_real = self.model.bind_tools(self.tools, tool_choice="required")
+        self.think_model_real = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
 
         self.real_workflow = StateGraph(ToolExecutionState)
         self.real_config = {"configurable": {"thread_id": "real_1"}, 'recursion_limit': 300}
         self.real_memory = MemorySaver()
 
+        # Define keys to remove per function_name
+        self.keys_to_remove = {
+            "pick_up_object": ["pose"],
+            "move_to_pose": ["pose"],
+        }
+
         self.real_workflow.add_node("init_real", self.init_real_execution)
+        self.real_workflow.add_node("socrates_real", self.model_Socrates_real)
         self.real_workflow.add_node("plan_tool_call", self.plan_tool_call)
         self.real_workflow.add_node("execute_tool", self.tool_node)  
         self.real_workflow.add_node("success_detector", self.call_success_detector)
-        self.real_workflow.add_node("error_corrector", self.call_error_corrector)
         self.real_workflow.add_node("detector_action", self.task_detector_tool_node)
-        self.real_workflow.add_node("corrector_action", self.tool_node)
 
         self.real_workflow.add_edge(START, "init_real")
-        self.real_workflow.add_edge("init_real", "plan_tool_call")
+        self.real_workflow.add_edge("init_real", "socrates_real")
+        self.real_workflow.add_edge("socrates_real", "plan_tool_call")
         self.real_workflow.add_edge("plan_tool_call", "execute_tool")
         self.real_workflow.add_edge("execute_tool", "success_detector")
 
@@ -285,12 +292,8 @@ class LanggraphManager(LLMNode):
             # Next, we pass in the function that will determine which node is called next.
             self.check_successful_task,
             # Next, we pass in the path map - all the possible nodes this edge could go to
-            ["error_corrector", "plan_tool_call", END],
+            ["socrates_real", END],
         )
-
-        #TODO: Add a condition to check if the task was successful
-        self.real_workflow.add_edge("error_corrector", "corrector_action")
-        self.real_workflow.add_edge("corrector_action", "success_detector")
 
         # Finally, we compile it!
         # This compiles it into a LangChain Runnable,
@@ -324,55 +327,14 @@ class LanggraphManager(LLMNode):
 
         self.initial_prompt_corrector = SystemMessage(content = self.prompts["initial_prompt_corrector"])
 
+        self.initial_prompt_Socrates_real = SystemMessage(content = self.prompts["initial_prompt_Socrates_real"])
+
+        self.initial_prompt_bound_model_real = SystemMessage(content = self.prompts["initial_prompt_janise_real"])
+
+
         # Append the initial prompt to the message state
         self.real_workflow_manager.update_state(self.real_config, {"messages": self.initial_prompt_success_detector})
 
-        # Make the prompt template for the executor model
-        # Define the prompt template
-        self.plan_tool_call_prompt = PromptTemplate(
-            input_variables=["current_function", "sim_tool_calls", "real_tool_calls"],
-            template="""
-                    You are a robot task corrector.
-
-                    You are given:
-                    - The planned function call and its arguments.
-                    - The prior simulation outputs that were available when the function call was made.
-                    - Fresh real-world observations.
-
-                    Adjust the arguments for the real world, considering that small offsets or modifications may have been applied during planning.
-
-                    Only adjust values if necessary.
-
-                    The function to call is:
-                    {current_function}
-
-                    Simulated function calls and return values until now:
-                    {sim_tool_calls}
-
-                    Real-world function calls and return values until now:
-                    {real_tool_calls}
-
-                    You must call the same function as the current function but adjust the arguments to be valid in the real world.
-
-                    Always provide reasoning for your decision before calling the tool.
-
-                    Output ONLY valid JSON in the following format:
-
-                    ```json
-                    [
-                        {{
-                            "name": "find_object",
-                            "args": {{"object_name": "bottle"}},
-                            "id": "call_001",
-                            "type": "tool_call"
-                        }}
-                    ]
-
-                """    
-                # Use the correct API structure to call the respective tool.    
-        )
-
-        # If a tool is to be called, the action node is called otherwise the Janise node is called
 
     def sim_should_continue(self, state: MessagesState):
         """Return the next node to execute."""
@@ -523,7 +485,7 @@ class LanggraphManager(LLMNode):
         # Check if the model has called the "detected_failure" or "detected_success" function
         if tool.name == "detected_failure":
             self.get_logger().info("Detected failure")
-            return "error_corrector"
+            return "socrates_real" # We need to run socrates without updating the state to fix the current tool call
         elif tool.name == "detected_success":
             self.get_logger().info("Detected success")
 
@@ -548,12 +510,16 @@ class LanggraphManager(LLMNode):
             
             state['real_tools_results'][f"function_call_{self.function_call_id}"] = tool_message
 
-            self.function_call_id += 1
-
             self.real_workflow_manager.update_state(self.real_config, {"real_tools_results": state["real_tools_results"]})
 
+            state["tools_left"].pop(f"function_call_{self.function_call_id}")
+
+            self.real_workflow_manager.update_state(self.real_config, {"tools_left": state["tools_left"]})
+
+            self.function_call_id += 1
+
             if tools_available:
-                return "plan_tool_call" # We need to plan the next tool call
+                return "socrates_real" # We need to plan the next tool call
             else: 
                 return END
  
@@ -599,34 +565,6 @@ class LanggraphManager(LLMNode):
         response.name = "sim_subtask_judge"
 
         return {"messages": response}
-
-
-
-
-
-    """
-        # We append the initial prompt to Janise
-        state_shortened = {"messages": [self.initial_prompt_success_detector]}
-
-        # Check if the last message is a HumanMessage or ToolMessage
-        last_message = state["messages"][-1]
-        
-        if isinstance(last_message, HumanMessage):
-            state_shortened["messages"].append(last_message)
-        elif isinstance(last_message, ToolMessage):
-            # A tool message must be preceeded by an AI message containg the tool call
-            state_shortened["messages"].append(state["messages"][-2])
-            state_shortened["messages"].append(last_message)
-
-        response = self.task_detector_model.invoke(state_shortened["messages"])
-
-        # We return a list, because this will get added to the existing list
-        response.name = "Success_Detector"
-
-        state["messages"].append(response)
-
-        return state
-    """
     
     @traceable
     def call_error_corrector(self, state: ToolExecutionState):
@@ -799,6 +737,10 @@ class LanggraphManager(LLMNode):
             with open(tool_calls_path, 'r') as file:
                 tool_calls = json.load(file)
 
+
+            state["task_description"] = copy.deepcopy(tool_calls["task_description"])
+            # Remove the first item (task description) from the dictionary
+            tool_calls.pop(next(iter(tool_calls)))
             state["tool_list"] = tool_calls
             state["tools_left"] = copy.deepcopy(tool_calls)  # Independent copy for modification
             state["real_tools_results"] = {}
@@ -813,62 +755,93 @@ class LanggraphManager(LLMNode):
         
         self.function_call_id = 1
 
+        filtered_tools = {}
+
+        for tool_name, tool_details in state["tools_left"].items():
+            filtered_tool = filter_function_call(tool_details, self.keys_to_remove)
+            filtered_tools[tool_name] = filtered_tool
+
+        state["messages"].append(HumanMessage(content=f"The task is: {state['task_description']}. The tool calls are: {filtered_tools}"))
+
+        # Update the workflow state
+        """
+        self.real_workflow_manager.update_state(self.real_config, {
+            "task_description": state["task_description"],
+            "tool_list": state["tool_list"],
+            "tools_left": state["tools_left"],
+            "real_tools_results": state["real_tools_results"],
+            "messages": state["messages"]
+        })
+        """
+
         return state
-
-    @traceable
-    def plan_tool_call(self, state: ToolExecutionState):
-        # Get the tool call details from the state
-        tool_call_key = list(state["tools_left"].keys())[0]
-        current_tool_call = state["tools_left"][tool_call_key]
-
-        print(state["tool_list"].items())
-
-        # Extract all key-value pairs from the dictionary before the tool_call_key
-        tool_call_dict = {}
-        for k, v in state["tool_list"].items():
-            print(f"Key: {k}, Value: {v}")
-            if k == tool_call_key:
-                # Stop extracting when we reach the tool_call_key
-                print(f"Reached tool call key: {tool_call_key}")
-                break
-            tool_call_dict[k] = v
-
-        print(f"Tool call dict: {tool_call_dict}")
-
-        # Convert the extracted dictionary to a string
-        simulated_tool_calls = json.dumps(tool_call_dict, indent=4)
-
-        if self.function_call_id > 1:
-            real_tool_calls = json.dumps(state["real_tools_results"], indent=4)
-        else:
-            real_tool_calls = "None called yet"
-
-        # Create a new message with the tool call details
-        formatted_prompt = self.plan_tool_call_prompt.format(
-                                                            current_function=current_tool_call,
-                                                            sim_tool_calls=simulated_tool_calls,
-                                                            real_tool_calls=real_tool_calls
-                                                        )
     
-        self.get_logger().info(f"Formatted prompt: {formatted_prompt}")
+    def model_Socrates_real(self, state: ToolExecutionState):
+        # We append an image to the CoT message     
+        #self.get_logger().info(f"The state is {state}")  
 
-        message = SystemMessage(
-            content=formatted_prompt
+        # Get image of cell (Either simulated or real)
+        image = self.get_image()
+
+        tools = list(state["tools_left"].items())[:4] if len(state["tools_left"]) > 4 else list(state["tools_left"].items())
+        filtered_tools = {}
+
+        # Filter arguments to only include the ones that are not in the keys_to_remove
+        for tool in tools:
+            function_desc = filter_function_call(tool[1], self.keys_to_remove)
+
+            filtered_tools[tool[0]] = function_desc
+
+        Socrates_prompt = f"""The task at hand: {state["task_description"]}. 
+
+                            The current tool calling step from the simulation plus the suceeding 3 tools call(s):
+                            {filtered_tools}. 
+
+                            Now provide guidance to Janise based on the image and the current function calling steps."""
+        
+        print("The prompt is", Socrates_prompt)
+
+        message = HumanMessage(
+            content=[
+                {"type": "text", "text": Socrates_prompt},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image}",},
+                },
+            ]
         )
 
-        # Invoke the model with the tool call details
-        response = self.plan_tool_call_model.invoke([message])
+        # We must replace the system message for Janise with the system message for Socrates
+        state["messages"][0] = self.initial_prompt_Socrates_real
+        state["messages"].append(message)
+
+        # But it cannot analyze the image and the chat history at the same time
+        response = self.think_model_real.invoke(state["messages"])
+
+        # Delete the image from history to save tokens
+        state["messages"].pop()
+
+        # Convert to Human message, such that Janise does not think she answered herself.
+        #response_human = HumanMessage(content=response_2.text())
+        response.name = "Socrates"
 
         # We return a list, because this will get added to the existing list
-        response.name = "Plan_Tool_Call"
+        return {"messages": response}
+    
+    @traceable
+    def plan_tool_call(self, state: ToolExecutionState):
+        # We append the initial prompt to Janise
+        state["messages"][0] = self.initial_prompt_bound_model_real
 
-        # Append the response to the message state
-        state["messages"].append(response)
+        # Append the initial prompt to the message state
+        self.real_workflow_manager.update_state(self.sim_config, {"messages": state["messages"]})
 
-        state["tools_left"].pop(tool_call_key)  # Remove the tool call from the list of tools left
+        response = self.bound_model_real.invoke(state["messages"])
+        # We return a list, because this will get added to the existing list
+        response.name = "Janise"
 
-
-        return state
+        return {"messages": response}
+    
     
     def real_system(self, request, response):
         """Runs the tool list created by the Isaac Sim pipeline.
@@ -879,7 +852,7 @@ class LanggraphManager(LLMNode):
         # Check if the function call was successful and correct if necessary
         state = ToolExecutionState()
 
-        print("The state is", state)
+        #print("The state is", state)
         #state["messages"] = [self.initial_prompt]
         for event in self.real_workflow_manager.stream(state, self.real_config, stream_mode="values"):
             event["messages"][-1].pretty_print()

@@ -319,7 +319,7 @@ class LLMNode(Node):
                  
         else:
             T_cam_world = np.array([
-                [-0.999997441,  0.000171622184, -0.00225565295,  0.526974339],
+                [-0.999997441,  0.000171622184, -0.00225565295,  0.536974339],
                 [ 0.00178189958,  0.674050369, -0.738683237,  0.992486794],
                 [ 0.00139364928, -0.738685367, -0.674048950,  0.636035468],
                 [ 0,                 0 ,             0 ,           1         ]
@@ -769,7 +769,7 @@ class LLMNode(Node):
             self.get_logger().error("Failed to execute grasp trajectory")
             return execute_response # Previously returned: "Failed to execute grasp trajectory"
         
-        return "Pick up function run successfully"
+        return "Object has successfully been picked up"
 
     def move_to_pose(self, pose: list, arm: str) -> bool:
         """
