@@ -595,11 +595,11 @@ private:
           {"a_3f_finger_2_joint_3",            2},
           {"a_3f_finger_2_joint_1",            3},
           {"a_3f_finger_middle_joint_1",       4},
-          // index 5 is for a_3f_finger_2_joint_2 — not used in target_position
+          {"a_3f_finger_1_joint_2",            5},
           {"a_3f_palm_finger_2_joint",         6},
           {"a_3f_finger_1_joint_3",            7},
-          {"a_3f_finger_1_joint_1",            8}
-          // index 9 is for a_3f_finger_middle_joint_2 — not used in target_position
+          {"a_3f_finger_1_joint_1",            8},
+          {"a_3f_finger_middle_joint_2",       9} 
         };
         
         const double POSITION_TOLERANCE = 0.7581;
