@@ -13,9 +13,9 @@
 #include <string>
 #include <sstream>
 #include <map>
-#include <cmath>  
+#include <cmath> 
 #include <fstream>
-#include <nlohmann/json.hpp> 
+#include <nlohmann/json.hpp>
 
 using namespace Eigen;
 
@@ -103,6 +103,11 @@ private:
   const moveit::core::JointModelGroup* joint_model_group_right;
   const moveit::core::JointModelGroup* joint_model_group_left;
   moveit::core::RobotModelPtr kinematic_model;
+
+  moveit::planning_interface::MoveGroupInterface::Plan plan_3f_closed;
+  moveit::planning_interface::MoveGroupInterface::Plan plan_3f_open;
+  moveit::planning_interface::MoveGroupInterface::Plan plan_2f_closed;
+  moveit::planning_interface::MoveGroupInterface::Plan plan_2f_open;
 
   sensor_msgs::msg::JointState::SharedPtr current_joint_state;
 
@@ -326,17 +331,24 @@ private:
 
     // Planning parameters
     move_group_interface->setNumPlanningAttempts(3);
-    
-    move_group_interface->setMaxVelocityScalingFactor(0.1); // (% of the maximum speed)
-    move_group_interface->setMaxAccelerationScalingFactor(0.3); // (% of the maximum acceleration)
     move_group_interface->setPathConstraints(constraints);
     move_group_interface->setStartStateToCurrentState(); // Ensure that the planner has the current state of the robot
+
+    // Speed limit
+    if(load_use_sim()) {
+      move_group_interface->setMaxVelocityScalingFactor(0.5); // 50% of the max velocity
+      move_group_interface->setMaxAccelerationScalingFactor(0.5); // 50% of the max acceleration
+    } else {
+      move_group_interface->setMaxVelocityScalingFactor(0.1); // 10% of the max velocity
+      move_group_interface->setMaxAccelerationScalingFactor(0.1); // 10% of the max acceleration
+    }
     
     // Cartesian path planning
     std::vector<geometry_msgs::msg::Pose> waypoints;
     waypoints.push_back(target_pose);
     double eef_step = 0.005;  // Step size for end-effector
     double jump_threshold = 5; // If the jump is bigger than this, it will be considered invalid
+    
     moveit_msgs::msg::RobotTrajectory trajectory;
 
     // Fraction is how big a precentage of the path that was successfully planned
@@ -514,10 +526,12 @@ private:
       const std::shared_ptr<project_interfaces::srv::GripperMoveit::Response> response) {
       // This service is to ensure that the grippers in rviz / moveit mirrors the state of the real grippers.
       RCLCPP_INFO(this->get_logger(), "Received gripper command for: %s, Width: %f", request->gripper_name.c_str(), request->width);
+      RCLCPP_INFO(this->get_logger(), "Load use sim: %d", load_use_sim());
+
+      //moveit::planning_interface::MoveGroupInterface::Plan *gripper_plan;
      
-      if (request->gripper_name == "3f") {       
+      if (request->gripper_name == "3f") {   
         // The 3 joints of interest span form 0 to 65 degrees, and the width is between 0 to 167 mm. We scale the angle to the inverse of the width
-        
         //float start_angle = std::cos(25.0/180.0*3.14);
         //double angle = std::acos((request->width / 167) * start_angle + (1-start_angle)) - 25/180*3.14;
         double angle = 65 * ((167-request->width) / 167) / 180.0 * 3.14;
@@ -539,8 +553,17 @@ private:
             move_group_3f->setJointValueTarget(gripper_joint_names[i], target_position[gripper_joint_names[i]]);
           }
         }
-
         move_group_3f->setStartStateToCurrentState();
+
+        /*
+        if (request->width < 60) {
+          *gripper_plan = &plan_3f_closed;
+        } else {
+          *gripper_plan = &plan_3f_open;
+        }
+        bool success = (move_group_3f->plan(*gripper_plan) == moveit::core::MoveItErrorCode::SUCCESS);'
+        */
+        
         move_group_3f->move();
 
         // Wait for the move to complete and joint values to be updated
@@ -756,8 +779,28 @@ private:
     return T;
   }
 
-}; // class RobotControllerService
+  bool load_use_sim(){
+    // Reads config.json to determine if the simulation is used
+    bool use_sim;
+  
+    std::ifstream file("src/robutler/config.json"); 
+    nlohmann::json json_data;
+    file >> json_data;  // Parse the JSON file into a JSON object
+  
+    // Access JSON data
+    if (json_data.contains("use_sim")) {
+      bool use_sim = json_data["use_sim"];
+      RCLCPP_INFO(rclcpp::get_logger("load_use_sim"), "use_sim: %s", use_sim ? "true" : "false");
+    } else {
+      RCLCPP_WARN(rclcpp::get_logger("load_use_sim"), "Key 'use_sim' not found in config.json");
+      return false;
+    }
+    
+    return use_sim; 
+  }
 
+}; // class RobotControllerService
+ 
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);

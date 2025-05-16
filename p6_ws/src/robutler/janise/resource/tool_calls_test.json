@@ -1,1 +1,69 @@
-{}
+{
+    "function_call_1": {
+        "function_name": "find_object",
+        "args": {
+            "object_name": "bottle"
+        },
+        "return_values": "\"{'bottle 1': {'centre_object': {'x': 0.305, 'y': 0.225, 'z': 0.126}, 'size_object': {11467}, 'grasps': {'Top down grasp': {'centre': {'x': 0.296, 'y': 0.215, 'z': 0.192}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': -7.288}}}}, 'bottle 2': {'centre_object': {'x': 0.023, 'y': 0.566, 'z': -0.016}, 'size_object': {4094}, 'grasps': {'Top down grasp': {'centre': {'x': 0.009, 'y': 0.558, 'z': 0.002}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': 55.576}}}}}\""
+    },
+    "function_call_2": {
+        "function_name": "move_to_pose",
+        "args": {
+            "pose": [
+                0.9,
+                0.3,
+                0.3,
+                0,
+                0,
+                0
+            ],
+            "arm": "left"
+        },
+        "return_values": "\"true\""
+    },
+    "function_call_3": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [
+                0.296,
+                0.215,
+                0.192,
+                0,
+                0,
+                -7.288
+            ],
+            "arm": "right",
+            "object_width": 60
+        },
+        "return_values": "\"Pick up function run successfully\""
+    },
+    "function_call_4": {
+        "function_name": "get_predefined_locations_and_poses",
+        "args": {},
+        "return_values": "\"{\\\"HOME_RIGHT_ARM\\\": {\\\"x\\\": \\\"0.1\\\", \\\"y\\\": \\\"0.3\\\", \\\"z\\\": \\\"0.3\\\", \\\"roll\\\": \\\"0\\\", \\\"pitch\\\": \\\"0\\\", \\\"yaw\\\": \\\"0\\\"}, \\\"HOME_LEFT_ARM\\\": {\\\"x\\\": \\\"0.9\\\", \\\"y\\\": \\\"0.3\\\", \\\"z\\\": \\\"0.3\\\", \\\"roll\\\": \\\"0\\\", \\\"pitch\\\": \\\"0\\\", \\\"yaw\\\": \\\"0\\\"}, \\\"ORGANIC_DROP\\\": {\\\"x\\\": \\\"0.49\\\", \\\"y\\\": \\\"0.25\\\", \\\"z\\\": \\\"0.3\\\", \\\"roll\\\": \\\"0\\\", \\\"pitch\\\": \\\"0\\\", \\\"yaw\\\": \\\"90\\\"}, \\\"RECYCLE_DROP\\\": {\\\"x\\\": \\\"0.38\\\", \\\"y\\\": \\\"0.25\\\", \\\"z\\\": \\\"0.3\\\", \\\"roll\\\": \\\"0\\\", \\\"pitch\\\": \\\"0\\\", \\\"yaw\\\": \\\"90\\\"}, \\\"WASTE_DROP\\\": {\\\"x\\\": \\\"0.60\\\", \\\"y\\\": \\\"0.25\\\", \\\"z\\\": \\\"0.3\\\", \\\"roll\\\": \\\"0\\\", \\\"pitch\\\": \\\"0\\\", \\\"yaw\\\": \\\"90\\\"}}\""
+    },
+    "function_call_5": {
+        "function_name": "move_to_pose",
+        "args": {
+            "pose": [
+                0.45,
+                0.2,
+                0.3,
+                0,
+                0,
+                0
+            ],
+            "arm": "right"
+        },
+        "return_values": "\"true\""
+    },
+    "function_call_6": {
+        "function_name": "manipulate_right_gripper",
+        "args": {
+            "width": 167,
+            "speed": 110,
+            "force": 15
+        },
+        "return_values": "\"robotiq_3f_gripper_ros2_interfaces.srv.Robotiq3FGripperOutputService_Response(success=True, log='Gripper opened')\""
+    }
+}
