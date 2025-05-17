@@ -1,0 +1,26 @@
+{
+    "Task": "Pick up the screwdriver, STOP AFTER THAT",
+    "function_call_1": {
+        "function_name": "find_object",
+        "args": {
+            "object_name": "screwdriver"
+        },
+        "return_values": "{'screwdriver 1': {'centre_object': {'x': 0.545, 'y': 0.277, 'z': 0.014}, 'size_object': {4618}, 'grasps': {'Top down grasp': {'centre': {'x': 0.634, 'y': 0.305, 'z': 0.018}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': 17.938}}}}}"
+    },
+    "function_call_2": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [
+                0.634,
+                0.305,
+                0.018,
+                0.0,
+                0.0,
+                17.938
+            ],
+            "arm": "left",
+            "object_width": 20
+        },
+        "return_values": "Pick up function run successfully"
+    }
+}
