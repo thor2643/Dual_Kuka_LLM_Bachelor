@@ -589,7 +589,7 @@ class LLMNode(Node):
                         'y': round(detected_obj.center_of_object.y,3),
                         'z': round(detected_obj.center_of_object.z,3)
                     },
-                    'size_object': {detected_obj.size_object},
+                    'size_object': {detected_obj.size_area},
                     'grasps': {}
                 }
 
