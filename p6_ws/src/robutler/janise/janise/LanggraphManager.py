@@ -665,13 +665,26 @@ class LanggraphManager(LLMNode):
     def model_Socrates(self, state: MessagesState):
         # We append an image to the CoT message     
         #self.get_logger().info(f"The state is {state}")  
+        self.get_logger().info(f"The current right gripper state is: {self.right_gripper_state}")
+        self.get_logger().info(f"The current left gripper state is: {self.left_gripper_state}")
+
+        # Get current state of the arms.
+        transform_right = self.tf_buffer.lookup_transform('world', 'a_3f_tool0', rclpy.time.Time())
+        translation_right = transform_right.transform.translation
+        rotation_right = transform_right.transform.rotation
+        transform_left = self.tf_buffer.lookup_transform('world', '2f_tool0', rclpy.time.Time())
+        translation_left = transform_left.transform.translation
+        rotation_left = transform_right.transform.rotation
 
         # Get image of cell (Either simulated or real)
         image = self.get_image()
 
         message = HumanMessage(
             content=[
-                {"type": "text", "text": """Here is an overview of the workspace. Please provide guidance to Janise based on this image.
+                {"type": "text", "text": f"""The right arm is at pose (x:{translation_right.x}, y:{translation_right.y}, z:{translation_right.z}). 
+                 The left arm is a t pose (x:{translation_left.x}, y:{translation_left.y}, z:{translation_left.z}).
+                 Right gripper state: {self.right_gripper_state}, Left gripper state: {self.left_gripper_state}. 
+                 Here is an overview of the workspace. Please provide guidance to Janise based on this image.
                 """},
                 {
                     "type": "image_url",

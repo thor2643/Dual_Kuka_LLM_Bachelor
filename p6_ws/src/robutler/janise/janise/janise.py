@@ -74,7 +74,7 @@ class LLMNode(Node):
         self._3f_input_registers = Robotiq3FGripperInputRegisters()
         self._3f_input_subscription = self.create_subscription(Robotiq3FGripperInputRegisters, "Robotiq3FGripper/InputRegisters", self.update_register, 10)
 
-        # Moveit gripper client
+        # Moveit gripper clientNone
         self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
         self._gripper_req = GripperMoveit.Request()
 
@@ -127,10 +127,6 @@ class LLMNode(Node):
         if not os.path.exists(self.conversation_log_folder):
             os.makedirs(self.conversation_log_folder)
 
-        # The path to the tool calls JSON file
-        self.tool_calls_path = 'src/robutler/janise/resource/tool_calls_test.json'
-        self.user_prompt = None
-
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
@@ -142,7 +138,15 @@ class LLMNode(Node):
         #'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
         #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
 
+         # Cell state
+        self.right_gripper_state = "Open"
+        self.left_gripper_state = "Open"
+
+        # Finale tool list
         self.sim_tool_list = {}
+        self.tool_calls_path = 'src/robutler/janise/resource/tool_calls.json'
+
+        self.user_prompt = None
 
     #######################################################################################
     # --------------------------------- EXTRA FUNCTIONS --------------------------------- #
@@ -708,7 +712,7 @@ class LLMNode(Node):
         if arm == 'left':
             gripper_response = self.manipulate_left_gripper(width=85)
         else:
-            gripper_response = self.manipulate_right_gripper(width=167)
+            gripper_response = self.manipulate_left_gripper(width=167)
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to open gripper")
@@ -863,14 +867,19 @@ class LLMNode(Node):
                 self.get_logger().info("Gripper succesfully grasped object")
                 response2.log = "Gripper succesfully grasped object"
                 response2.success = True
+                self.right_gripper_state = "Holding object"
+
             elif width == 167:
                 self.get_logger().info("Gripper opened")
                 response2.log = "Gripper opened"
                 response2.success = True
+                self.right_gripper_state = "Open"
+
             else:
                 self.get_logger().error("Gripper failed to grasp object")
                 response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
                 response2.success = False
+                self.right_gripper_state = "Closed, holding no object"
             return response2
         else:
             self._3f_controller.output_registers.r_act = 1  # Active Gripper
@@ -890,14 +899,17 @@ class LLMNode(Node):
                 self.get_logger().info("Gripper succesfully grasped object")
                 response1.log = "Gripper succesfully grasped object"
                 response1.success = True
+                self.right_gripper_state = "Holding object"
             elif width == 167:
                 self.get_logger().info("Gripper opened")
                 response1.log = "Gripper opened"
                 response1.success = True
+                self.right_gripper_state = "Open"
             else:
                 self.get_logger().error("Gripper failed to grasp object")
                 response1.log = "Gripper did not detect any object when closing, make sure the object is still present."
                 response1.success = False
+                self.right_gripper_state = "Closed, holding no object"
 
             return response1
 
@@ -954,14 +966,17 @@ class LLMNode(Node):
                 self.get_logger().info("Gripper succesfully grasped object")
                 response2.log = "Gripper succesfully grasped object"
                 response2.success = True
+                self.left_gripper_state = "Holding object"
             elif width == 85:
                 self.get_logger().info("Gripper opened")
                 response2.log = "Gripper opened"
                 response2.success = True
+                self.left_gripper_state = "Open"
             else:
                 self.get_logger().error("Gripper failed to grasp object")
                 response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
                 response2.success = False
+                self.left_gripper_state = "Closed, holding no object"
             return response2
         else:
             self._2f_req.width = float(width)   # Opening in millimeters. Must be between 0 and 85 mm.
@@ -974,6 +989,13 @@ class LLMNode(Node):
             self.get_logger().info("Real gripper command sent")
 
             response1 = self.wait_future(future1, timeout=15)
+
+            if "An object was grasped." == response1.log:
+                self.left_gripper_state = "Holding object"
+            elif "Gripper is open." == response1.log:
+                self.left_gripper_state = "Open"
+            elif "Gripper did not detect any object when closing, make sure the object is still present." == response1.log:
+                self.left_gripper_state = "Closed, holding no object"
 
             return response1
     

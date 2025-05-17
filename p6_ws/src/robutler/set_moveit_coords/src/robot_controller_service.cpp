@@ -609,14 +609,18 @@ private:
         
         const double POSITION_TOLERANCE = 0.4;
         response->success = true;
-        response->log = "3F gripper move succeeded and verified.";
-        
+        if (request->width < 80) {
+          response->log = "Closening of 3F gripper succeeded and verified.";
+        } else {
+          response->log = "Opening of 3F gripper succeeded and verified.";
+        }
+
         for (const auto& [joint_name, target] : target_position) {
           auto it = gripper_3f_index_map.find(joint_name);
           if (it != gripper_3f_index_map.end()) {
             double actual = _3f_joint_values_mock[it->second];
             double error = std::abs(actual - target);
-        
+            
             RCLCPP_INFO(this->get_logger(), "Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
                         joint_name.c_str(), target, actual, error);
             RCLCPP_INFO(this->get_logger(), "POSITION: %.4f, Error: %.4f", POSITION_TOLERANCE, error);
