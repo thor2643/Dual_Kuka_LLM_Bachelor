@@ -31,12 +31,12 @@ class LanggraphManager(LLMNode):
         super().__init__()
 
         # Define the tools available to the LLM
-        self.tools = [StructuredTool.from_function(self.get_predefined_locations_and_poses), 
-                      StructuredTool.from_function(self.find_object), 
+        self.tools = [StructuredTool.from_function(self.find_object), 
                       StructuredTool.from_function(self.manipulate_right_gripper), 
                       StructuredTool.from_function(self.manipulate_left_gripper), 
                       StructuredTool.from_function(self.move_to_pose),
-                      StructuredTool.from_function(self.pick_up_object)]
+                      StructuredTool.from_function(self.pick_up_object),
+                      StructuredTool.from_function(self.drop_off_object_at_pose), ]
         
         self.task_detector_tools = [StructuredTool.from_function(self.detected_failure), 
                                    StructuredTool.from_function(self.detected_success)]
