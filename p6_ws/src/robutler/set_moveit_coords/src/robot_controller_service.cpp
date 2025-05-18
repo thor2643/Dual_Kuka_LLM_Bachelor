@@ -80,7 +80,7 @@ public:
         "gripper_moveit", std::bind(&RobotControllerService::handle_gripper_service, this, std::placeholders::_1, std::placeholders::_2));
 
     joint_state_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
-      "joint_states", 10, std::bind(&RobotControllerService::joint_state_callback, this, std::placeholders::_1));
+      "joint_states", 1, std::bind(&RobotControllerService::joint_state_callback, this, std::placeholders::_1));
 
   
     // Print the pose
@@ -133,7 +133,7 @@ private:
         joint_values_right.resize(7);
         joint_values_left.resize(7);
         _3f_joint_values_mock.resize(10);
-        _2f_joint_values_mock.resize(1);
+        _2f_joint_values_mock.resize(3);
 
         for (size_t i = 0; i < msg->name.size(); ++i) {
             if (msg->name[i].find("right_") != std::string::npos) {
@@ -154,6 +154,9 @@ private:
               else if (msg->name[i] == "left_A6") joint_values_left[5] = msg->position[i];
               else if (msg->name[i] == "left_A7") joint_values_left[6] = msg->position[i];
               else if (msg->name[i] == "left_2f_robotiq_85_left_knuckle_joint") _2f_joint_values_mock[0] = msg->position[i];
+              else if (msg->name[i] == "left_2f_robotiq_85_left_finger_tip_joint") _2f_joint_values_mock[1] = msg->position[i];
+              else if (msg->name[i] == "left_2f_robotiq_85_left_finger_joint") _2f_joint_values_mock[2] = msg->position[i];
+              
             }
             if (msg->name[i].find("a_") != std::string::npos) {
               if (msg->name[i] == "a_3f_palm_finger_1_joint") _3f_joint_values_mock[0] = msg->position[i];
@@ -393,7 +396,7 @@ private:
 
           if (error_code == moveit::core::MoveItErrorCode::FAILURE){
             RCLCPP_ERROR(this->get_logger(), "The planning failed due to an unspecified error.");
-            response->log = "The planning failed due to an unspecified error. It is likely that the other arm is in the way or that the target position is unreachable.";
+            response->log = "The planning failed due to an unspecified error. This can be caused by one of the following issues: The other arm is in the way, The target position is unreachable by that arm. Perhaps move the other arm away or use it to grasp instead.";
             
           } else if (error_code == moveit::core::MoveItErrorCode::PLANNING_FAILED){
             RCLCPP_ERROR(this->get_logger(), "The planner was unable to find a valid trajectory.");
@@ -588,13 +591,21 @@ private:
         
         move_group_2f->execute(*gripper_plan);
         */
-        move_group_3f->move();
-
+          
+        if (move_group_3f->move() == moveit::core::MoveItErrorCode::SUCCESS){
+          RCLCPP_INFO(this->get_logger(), "3F gripper move succeeded");
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "3F gripper move failed");
+          response->success = false;
+          response->log = "3f gripper move failed";
+          return; 
+        }
+        
         // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(100));
+        rclcpp::sleep_for(std::chrono::milliseconds(500));
 
         static const std::unordered_map<std::string, size_t> gripper_3f_index_map = {
-          {"a_3f_palm_finger_1_joint",         0},
+          {"a_3f_palm_finger_1_joint",         0},  
           {"a_3f_finger_middle_joint_3",       1},
           {"a_3f_finger_2_joint_3",            2},
           {"a_3f_finger_2_joint_1",            3},
@@ -607,13 +618,16 @@ private:
           {"a_3f_finger_2_joint_2",            10},
         };
         
-        const double POSITION_TOLERANCE = 0.4;
+        const double POSITION_TOLERANCE = 0.5;
+        
         response->success = true;
         if (request->width < 80) {
           response->log = "Closening of 3F gripper succeeded and verified.";
         } else {
           response->log = "Opening of 3F gripper succeeded and verified.";
         }
+
+        rclcpp::spin_some(this->get_node_base_interface());
 
         for (const auto& [joint_name, target] : target_position) {
           auto it = gripper_3f_index_map.find(joint_name);
@@ -672,19 +686,29 @@ private:
         }
         move_group_2f->execute(*gripper_plan);
         */
-        move_group_2f->move();
+       
+        if (move_group_2f->move() == moveit::core::MoveItErrorCode::SUCCESS){
+          RCLCPP_INFO(this->get_logger(), "2F gripper move succeeded");
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "2F gripper move failed");
+          response->success = false;
+          response->log = "2f gripper move failed";
+          return;
+        }
         
         // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(100));
+        rclcpp::sleep_for(std::chrono::milliseconds(500));
 
         static const std::unordered_map<std::string, size_t> gripper_2f_index_map = {
-          {"left_2f_robotiq_85_left_knuckle_joint", 0}
+          {"left_2f_robotiq_85_left_finger_tip_joint", 0},
+          {"left_2f_robotiq_85_left_knuckle_joint", 1},
+          {"left_2f_robotiq_85_left_finger_tip_joint", 2},
         };
         
-        const double POSITION_TOLERANCE = 0.5;
+        const double POSITION_TOLERANCE = 0.4;
         bool within_tolerance = true;
         
-        auto it = gripper_2f_index_map.find(joint_name);
+        auto it = gripper_2f_index_map.find("left_2f_robotiq_85_left_knuckle_joint");
         if (it != gripper_2f_index_map.end() && it->second < _2f_joint_values_mock.size()) {
           double actual = _2f_joint_values_mock[it->second];
           double error = std::abs(actual - angle);

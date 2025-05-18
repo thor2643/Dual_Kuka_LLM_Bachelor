@@ -174,7 +174,7 @@ class LanggraphManager(LLMNode):
         
 
         # Setting a thread_id helps the model remember the context of the conversation
-        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 500}
+        self.sim_config = {"configurable": {"thread_id": 1}, 'recursion_limit': 1000}
 
         self.initial_prompt_Janise = SystemMessage(content = self.prompts["initial_prompt_janise"])
 
@@ -419,6 +419,11 @@ class LanggraphManager(LLMNode):
     def clear_history(self, state: MessagesState):
         """ Removes all but: initial prompts, user query prompt, and the latest message by the error explainer. """
         self.get_logger().error("Clearing history, please reset the environment")
+        self.right_gripper_state = "Open"
+        self.left_gripper_state = "Open"
+
+        self.move_to_pose([0.1,0.3,0.3,0,0,0], "right") 
+        self.move_to_pose([0.9,0.3,0.3,0,0,0], "left") 
         
         input("Press Enter to continue...")
 
@@ -462,7 +467,7 @@ class LanggraphManager(LLMNode):
         tool_name = tool[0]["name"]
 
         if tool_name == "detected_failure":
-            human_message = HumanMessage(content="The prevoius tool call was rejected by the subtask judge, it was not successful, please correct it.")
+            human_message = HumanMessage(content="The prevoius tool call was incorrect, please adjust the parameters or consider another approach.")
             return {"messages": [human_message]} 
         
         elif tool_name == "detected_success":   

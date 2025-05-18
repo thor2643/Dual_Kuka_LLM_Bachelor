@@ -712,7 +712,7 @@ class LLMNode(Node):
         if arm == 'left':
             gripper_response = self.manipulate_left_gripper(width=85)
         else:
-            gripper_response = self.manipulate_left_gripper(width=167)
+            gripper_response = self.manipulate_right_gripper(width=167)
 
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to open gripper")
@@ -721,7 +721,7 @@ class LLMNode(Node):
         # Now plan the movement to the approach pose
         plan_response = self.plan_robot_trajectory(pose_approach, arm)
         if plan_response is None or not plan_response.success:
-            self.get_logger().error("Failed to plan approach trajectory")
+            self.get_logger().error("Failed to plan approach trajectory, it is possible the grasp is too low, consider moving it up 0.01")
             return plan_response # Previously returned: "Failed to plan approach trajectory"
         
         # The execute the planned trajectory
@@ -731,13 +731,21 @@ class LLMNode(Node):
             return execute_response # Previously returned: "Failed to execute approach trajectory"
         
         # Now plan the movement to the pose
-        if load_use_sim():
-            if pose[2] >= 0.03:  # if center point is more than 3 cm above the table
-                pose[2] -= 0.02  # Move down 2 cm for both grippers
-            elif pose[2] < 0.03:
-                pose[2] -= 0.015
-            elif pose[2] < 0.02:
-                pose[2] = 0.08
+        if load_use_sim(): 
+            if arm == 'left':
+                if pose[2] >= 0.03:  # if center point is more than 3 cm above the table
+                    pose[2] -= 0.02  # Move down 2 cm for both grippers
+                elif pose[2] < 0.03:
+                    pose[2] = 0.01
+                #elif pose[2] < 0.02:
+                #    pose[2] = 0.08
+            else:
+                if pose[2] >= 0.045:  # if center point is more than 3 cm above the table
+                    pose[2] -= 0.02  # Move down 2 cm for both grippers
+                elif pose[2] < 0.045:
+                    pose[2] = 0.022 # was 0.022
+                #elif pose[2] < 0.02:
+                #    pose[2] = 0.01
 
         plan_response = self.plan_robot_trajectory(pose, arm)
         if plan_response is None or not plan_response.success:
@@ -758,7 +766,7 @@ class LLMNode(Node):
             gripper_response = self.manipulate_right_gripper(width=0)
 
         if gripper_response is None or not gripper_response.success:
-            self.get_logger().error("Failed to close gripper")
+            self.get_logger().error("Failed to close gripper, consider grasping a bit higher up")
             return gripper_response # Previously returned: "Failed to close gripper"
         
         # At last lift the object to avoid collision when moving away
@@ -772,6 +780,15 @@ class LLMNode(Node):
         if execute_response is None or not execute_response.success:
             self.get_logger().error("Failed to execute grasp trajectory")
             return execute_response # Previously returned: "Failed to execute grasp trajectory"
+        
+        if arm == 'left':
+            gripper_response = self.manipulate_left_gripper(width=0)
+        else:
+            gripper_response = self.manipulate_right_gripper(width=0)
+
+        if gripper_response is None or not gripper_response.success:
+            self.get_logger().error("Failed to close gripper")
+            return gripper_response # Previously returned: "Failed to close gripper"
         
         return "Object picked up successfully"
     
@@ -967,21 +984,35 @@ class LLMNode(Node):
         self._gripper_req.width = float(width)   
         self._gripper_req.gripper_name = "3f"
 
+        
+
         if load_use_sim():
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
-            if response2.success is False:
-                self.get_logger().info("Gripper succesfully grasped object")
-                response2.log = "Gripper succesfully grasped object"
-                response2.success = True
-                self.right_gripper_state = "Holding object"
+            
+            while(response2 == None):
+                self.get_logger().info(f"Gripper response failed, trying agian")
 
-            elif width == 167:
+                future2 = self._gripper_client.call_async(self._gripper_req)
+                response2 = self.wait_future(future2, timeout=15)
+                
+                self.get_logger().info(f"Gripper response is: {response2}")
+
+            if width == 167:
                 self.get_logger().info("Gripper opened")
                 response2.log = "Gripper opened"
                 response2.success = True
                 self.right_gripper_state = "Open"
-
+            elif response2.success is False and response2.log == "3f gripper move failed":
+                self.get_logger().error("Gripper failed to plan")
+                response2.log = "Gripper failed to plan close movement, try picking up 0.005 higher up."
+                response2.success = False
+                self.right_gripper_state = "Open"
+            elif response2.success is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+                self.right_gripper_state = "Holding object"
             else:
                 self.get_logger().error("Gripper failed to grasp object")
                 response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
@@ -1051,13 +1082,14 @@ class LLMNode(Node):
 
         # The real gripper 
         if width < 0 or width > 85:
-            self.get_logger().error('Requested right gripper width exceeds gripper capabilities')
+            self.get_logger().error(f' WIDTH: {width}')
+            self.get_logger().error('Requested left gripper width exceeds gripper capabilities')
             return 'Requested gripper width exceeds gripper capabilities'
         if speed < 20 or speed > 150:
-            self.get_logger().error('Requested right gripper speed exceeds gripper capabilities')
+            self.get_logger().error('Requested left gripper speed exceeds gripper capabilities')
             return 'Requested right gripper speed exceeds gripper capabilities'
         if force < 20 or force > 235:
-            self.get_logger().error('Requested right gripper force exceeds gripper capabilities')
+            self.get_logger().error('Requested left gripper force exceeds gripper capabilities')
             return 'Requested right gripper force exceeds gripper capabilities'
 
         # Rviz gripper
@@ -1069,16 +1101,21 @@ class LLMNode(Node):
             self.get_logger().info("Simulated gripper command sent")
             future2 = self._gripper_client.call_async(self._gripper_req)
             response2 = self.wait_future(future2, timeout=15)
-            if response2.success is False:
-                self.get_logger().info("Gripper succesfully grasped object")
-                response2.log = "Gripper succesfully grasped object"
-                response2.success = True
-                self.left_gripper_state = "Holding object"
-            elif width == 85:
+            if width == 85:
                 self.get_logger().info("Gripper opened")
                 response2.log = "Gripper opened"
                 response2.success = True
                 self.left_gripper_state = "Open"
+            elif response2.success is False and response2.log == "2f gripper move failed":
+                self.get_logger().info("Gripper could not plan close")
+                response2.log = "Left gripper failed to plan close movement, try picking up 0.005 higher up."
+                response2.success = False
+                self.left_gripper_state = "Open"
+            elif response2.success is False:
+                self.get_logger().info("Gripper succesfully grasped object")
+                response2.log = "Gripper succesfully grasped object"
+                response2.success = True
+                self.left_gripper_state = "Holding object"
             else:
                 self.get_logger().error("Gripper failed to grasp object")
                 response2.log = "Gripper did not detect any object when closing, make sure the object is still present."
@@ -1099,10 +1136,13 @@ class LLMNode(Node):
 
             if "An object was grasped." == response1.log:
                 self.left_gripper_state = "Holding object"
+                
             elif "Gripper is open." == response1.log:
                 self.left_gripper_state = "Open"
+                
             elif "Gripper did not detect any object when closing, make sure the object is still present." == response1.log:
                 self.left_gripper_state = "Closed, holding no object"
+                
 
             return response1
     

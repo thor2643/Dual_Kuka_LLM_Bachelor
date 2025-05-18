@@ -218,6 +218,34 @@
       </state_interface>
     </joint>
 
+    <joint name="left_2f_robotiq_85_left_finger_tip_joint">
+      <param name="max_velocity">2</param>
+      <command_interface name="position">
+        <param name="min">-0.5333</param>
+        <param name="max">-0.05</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+
+    <joint name="left_2f_robotiq_85_right_finger_tip_joint">
+      <param name="max_velocity">2</param>
+      <command_interface name="position">
+        <param name="min">-0.5333</param>
+        <param name="max">-0.05</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+
     <!-- Hardware setup fpr 3f gripper -->
     <joint name="a_3f_finger_1_joint_1">
       <param name="max_velocity">1.23</param>
