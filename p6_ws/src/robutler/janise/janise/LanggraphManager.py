@@ -755,7 +755,7 @@ class LanggraphManager(LLMNode):
     @traceable
     def init_real_execution(self, state: ToolExecutionState):
         # Read the tool list from the tool_calls.json file
-        tool_calls_path = 'src/robutler/janise/tool_calls.json'
+        tool_calls_path = 'src/robutler/janise/resource/tool_calls_success.json'
 
         try:
             with open(tool_calls_path, 'r') as file:
@@ -810,13 +810,24 @@ class LanggraphManager(LLMNode):
         tools = list(state["tools_left"].items())[:4] if len(state["tools_left"]) > 4 else list(state["tools_left"].items())
         filtered_tools = {}
 
+        # Get current state of the arms.
+        transform_right = self.tf_buffer.lookup_transform('world', 'a_3f_tool0', rclpy.time.Time())
+        translation_right = transform_right.transform.translation
+        transform_left = self.tf_buffer.lookup_transform('world', '2f_tool0', rclpy.time.Time())
+        translation_left = transform_left.transform.translation
+
         # Filter arguments to only include the ones that are not in the keys_to_remove
         for tool in tools:
             function_desc = filter_function_call(tool[1], self.keys_to_remove)
 
             filtered_tools[tool[0]] = function_desc
 
-        Socrates_prompt = f"""The task at hand: {state["task_description"]}. 
+        Socrates_prompt = f"""The right arm is at pose (x:{round(translation_right.x,3)}, y:{round(translation_right.y,3)}, z:{round(translation_right.z,3)}). 
+                            The left arm is a t pose (x:{round(translation_left.x,3)}, y:{round(translation_left.y,3)}, z:{round(translation_left.z,3)}).
+                            Right gripper state: {self.right_gripper_state}, Left gripper state: {self.left_gripper_state}. 
+                            Here is an overview of the workspace. Please provide guidance to Janise based on this image.
+                            
+                            The task at hand: {state["task_description"]}. 
 
                             The current tool calling step from the simulation plus the suceeding 3 tools call(s):
                             {filtered_tools}. 
@@ -966,7 +977,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = True #load_use_sim()
+        sim = False #load_use_sim()
 
         if sim:
             response = self.sim_system(request, response)

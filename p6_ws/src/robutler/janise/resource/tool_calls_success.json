@@ -1,5 +1,5 @@
 {
-    "Task": "Sort the cans and apples",
+    "task_description": "Sort the cans and apples",
     "function_call_1": {
         "function_name": "find_object",
         "args": {
