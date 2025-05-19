@@ -618,7 +618,7 @@ private:
           {"a_3f_finger_2_joint_2",            10},
         };
         
-        const double POSITION_TOLERANCE = 0.5;
+        const double POSITION_TOLERANCE = 0.2;
         
         response->success = true;
         if (request->width < 80) {
@@ -627,7 +627,7 @@ private:
           response->log = "Opening of 3F gripper succeeded and verified.";
         }
 
-        rclcpp::spin_some(this->get_node_base_interface());
+        //rclcpp::spin_some(this->get_node_base_interface());
 
         for (const auto& [joint_name, target] : target_position) {
           auto it = gripper_3f_index_map.find(joint_name);

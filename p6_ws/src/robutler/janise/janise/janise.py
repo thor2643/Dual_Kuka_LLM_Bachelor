@@ -781,14 +781,15 @@ class LLMNode(Node):
             self.get_logger().error("Failed to execute grasp trajectory")
             return execute_response # Previously returned: "Failed to execute grasp trajectory"
         
-        if arm == 'left':
-            gripper_response = self.manipulate_left_gripper(width=0)
-        else:
-            gripper_response = self.manipulate_right_gripper(width=0)
 
-        if gripper_response is None or not gripper_response.success:
-            self.get_logger().error("Failed to close gripper")
-            return gripper_response # Previously returned: "Failed to close gripper"
+        #if arm == 'left':
+        #    gripper_response = self.manipulate_left_gripper(width=0)
+        #else:
+        #    gripper_response = self.manipulate_right_gripper(width=0)
+
+        #if gripper_response is None or not gripper_response.success:
+        #    self.get_logger().error("Failed to close gripper")
+        #    return gripper_response # Previously returned: "Failed to close gripper"
         
         return "Object picked up successfully"
     
