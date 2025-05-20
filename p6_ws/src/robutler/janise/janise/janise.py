@@ -734,16 +734,16 @@ class LLMNode(Node):
         if load_use_sim(): 
             if arm == 'left':
                 if pose[2] >= 0.03:  # if center point is more than 3 cm above the table
-                    pose[2] -= 0.02  # Move down 2 cm for both grippers
+                    pose[2] -= 0.025  # Move down 2 cm for both grippers
                 elif pose[2] < 0.03:
-                    pose[2] = 0.01
+                    pose[2] = 0.001 # was 0.01
                 #elif pose[2] < 0.02:
                 #    pose[2] = 0.08
             else:
                 if pose[2] >= 0.045:  # if center point is more than 3 cm above the table
                     pose[2] -= 0.02  # Move down 2 cm for both grippers
                 elif pose[2] < 0.045:
-                    pose[2] = 0.022 # was 0.022
+                    pose[2] = 0.015 # was 0.022
                 #elif pose[2] < 0.02:
                 #    pose[2] = 0.01
 

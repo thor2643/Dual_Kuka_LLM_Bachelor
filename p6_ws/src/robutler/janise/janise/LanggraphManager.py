@@ -425,7 +425,23 @@ class LanggraphManager(LLMNode):
         self.move_to_pose([0.1,0.3,0.3,0,0,0], "right") 
         self.move_to_pose([0.9,0.3,0.3,0,0,0], "left") 
         
-        input("Press Enter to continue...")
+        user_input = input("Do you want to save? (y/n): ").strip().lower()
+        if user_input == "y":
+            self.get_logger().info("User pressed y, continuing")
+
+            self.sim_tool_list = {
+            "Task": self.user_prompt,
+            **self.sim_tool_list
+            }
+        
+            # Write the tool calls to the JSON file
+            try:
+                with open(self.tool_calls_path, 'w') as file:
+                    json.dump(self.sim_tool_list, file, indent=4)
+                    self.get_logger().info(f"Tool list written to: {self.tool_calls_path}")
+            except Exception as e:
+                self.get_logger().error(f"Error writing to file: {e}")
+
 
         messages = state["messages"]
         self.sim_tool_list = {}
@@ -767,7 +783,7 @@ class LanggraphManager(LLMNode):
 
         state["messages"].pop() # Remove the image message
         
-        response.content = f"During previous atempts to solve the task, the following mistake(s) was detected: {response.text()}"
+        response.content = f"During previous attempts to solve the task, the following mistake(s) was detected: {response.text()}"
         
         # We return a list, because this will get added to the existing list
         return {"messages": response} 
