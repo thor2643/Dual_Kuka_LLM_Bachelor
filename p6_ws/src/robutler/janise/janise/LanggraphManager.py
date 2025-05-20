@@ -37,7 +37,15 @@ class LanggraphManager(LLMNode):
                       StructuredTool.from_function(self.manipulate_left_gripper), 
                       StructuredTool.from_function(self.move_to_pose),
                       StructuredTool.from_function(self.pick_up_object),
-                      StructuredTool.from_function(self.drop_off_object_at_pose), ]
+                      StructuredTool.from_function(self.drop_off_object_at_pose)]
+        
+        self.tools_real = [StructuredTool.from_function(self.find_object), 
+                      StructuredTool.from_function(self.manipulate_right_gripper), 
+                      StructuredTool.from_function(self.manipulate_left_gripper), 
+                      StructuredTool.from_function(self.move_to_pose),
+                      StructuredTool.from_function(self.pick_up_object),
+                      StructuredTool.from_function(self.drop_off_object_at_pose),
+                      StructuredTool.from_function(self.task_complete)]
         
         self.task_detector_tools = [StructuredTool.from_function(self.detected_failure), 
                                    StructuredTool.from_function(self.detected_success)]
@@ -45,6 +53,7 @@ class LanggraphManager(LLMNode):
         self.all_tools = self.tools + self.task_detector_tools
                 
         self.tool_node = ToolNode(self.tools)
+        self.tool_node_real = ToolNode(self.tools_real)
         self.task_detector_tool_node = ToolNode(self.task_detector_tools)
 
         # Load prompts from an external YAML file
@@ -258,11 +267,11 @@ class LanggraphManager(LLMNode):
         # Define model nodes
         self.task_detector_model = self.model.bind_tools(self.task_detector_tools, tool_choice="required")
         self.correction_model = self.model.bind_tools(self.tools)
-        self.bound_model_real = self.model.bind_tools(self.tools, tool_choice="required")
-        self.think_model_real = self.model.bind_tools(self.tools, tool_choice='none') # Forced to not call any tools
+        self.bound_model_real = self.model.bind_tools(self.tools_real, tool_choice="required")
+        self.think_model_real = self.model.bind_tools(self.tools_real, tool_choice='none') # Forced to not call any tools
 
         self.real_workflow = StateGraph(ToolExecutionState)
-        self.real_config = {"configurable": {"thread_id": "real_1"}, 'recursion_limit': 300}
+        self.real_config = {"configurable": {"thread_id": "real_1"}, 'recursion_limit': 500}
         self.real_memory = MemorySaver()
 
         # Define keys to remove per function_name
@@ -282,7 +291,16 @@ class LanggraphManager(LLMNode):
         self.real_workflow.add_edge("init_real", "socrates_real")
         self.real_workflow.add_edge("socrates_real", "plan_tool_call")
         self.real_workflow.add_edge("plan_tool_call", "execute_tool")
-        self.real_workflow.add_edge("execute_tool", "success_detector")
+
+        self.real_workflow.add_conditional_edges(
+            # First, we define the start node. We use `agent`.
+            # This means these are the edges taken after the `agent` node is called.
+            "execute_tool",
+            # Next, we pass in the function that will determine which node is called next.
+            self.check_completed_task,
+            # Next, we pass in the path map - all the possible nodes this edge could go to
+            ["success_detector", END],
+        )
 
         self.real_workflow.add_edge("success_detector", "detector_action")
 
@@ -537,6 +555,20 @@ class LanggraphManager(LLMNode):
         # If no relevant function call, finish
         return END
     
+    def check_completed_task(self, state: ToolExecutionState):
+        """Determines whether the error corrector should be called or not."""
+        self.get_logger().info("Checking if task was successful")
+
+        tool = state["messages"][-1]
+
+        # Check if the model has called the "detected_failure" or "detected_success" function
+        if tool.name == "task_complete":
+            self.get_logger().info("Task complete")
+            return END
+        else:
+            self.get_logger().info("Task not complete")
+            return "success_detector"
+    
     @traceable
     def call_success_detector(self, state: ToolExecutionState):
         # Get image of cell (Either simulated or real)
@@ -755,7 +787,7 @@ class LanggraphManager(LLMNode):
     @traceable
     def init_real_execution(self, state: ToolExecutionState):
         # Read the tool list from the tool_calls.json file
-        tool_calls_path = 'src/robutler/janise/resource/tool_calls_success.json'
+        tool_calls_path = 'src/robutler/janise/resource/System_3_tool_calls.json'
 
         try:
             with open(tool_calls_path, 'r') as file:
@@ -977,7 +1009,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = False #load_use_sim()
+        sim = True #load_use_sim()
 
         if sim:
             response = self.sim_system(request, response)

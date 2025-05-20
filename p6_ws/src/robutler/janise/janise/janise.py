@@ -1146,4 +1146,11 @@ class LLMNode(Node):
                 
 
             return response1
+        
+    def task_complete(self) -> bool:
+        """
+        If the task has been compeleted before the tool list is empty call this function to return to the user. 
+        """
+        
+        return True
     
