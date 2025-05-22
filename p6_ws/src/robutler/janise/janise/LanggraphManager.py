@@ -787,7 +787,7 @@ class LanggraphManager(LLMNode):
     @traceable
     def init_real_execution(self, state: ToolExecutionState):
         # Read the tool list from the tool_calls.json file
-        tool_calls_path = 'src/robutler/janise/resource/System_3_tool_calls.json'
+        tool_calls_path = 'src/robutler/janise/resource/run_5_size.json'
 
         try:
             with open(tool_calls_path, 'r') as file:

@@ -1,0 +1,167 @@
+{
+    "task_description": "Sort the Lego by size. Drop-off point for left bowl is [0.95, 0.4, 0.25, 0, 0, 0] and drop-off point for right bowl is [0.05, 0.4, 0.25, 0, 0, 0]. Big Legoes with a size over 0.0016 go in the left bowl and small Legoes with a size under 0.0016 go in the right bowl",
+    "function_call_1": {
+        "function_name": "find_object",
+        "args": {
+            "object_name": "Lego"
+        },
+        "return_values": "{'Lego 1': {'centre_object': {'x': 0.674, 'y': 0.296, 'z': 0.028}, 'size_object': {0.0026929634623229504}, 'grasps': {'Top down grasp': {'centre': {'x': 0.684, 'y': 0.269, 'z': 0.011}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': -88.816}}}}, 'Lego 2': {'centre_object': {'x': 0.559, 'y': 0.139, 'z': 0.032}, 'size_object': {0.0024922650773078203}, 'grasps': {'Top down grasp': {'centre': {'x': 0.571, 'y': 0.126, 'z': 0.016}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': -0.284}}}}, 'Lego 3': {'centre_object': {'x': 0.415, 'y': 0.204, 'z': 0.03}, 'size_object': {0.0015354370698332787}, 'grasps': {'Top down grasp': {'centre': {'x': 0.427, 'y': 0.193, 'z': 0.014}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': 89.786}}}}, 'Lego 4': {'centre_object': {'x': 0.309, 'y': 0.273, 'z': 0.026}, 'size_object': {0.0015052645467221737}, 'grasps': {'Top down grasp': {'centre': {'x': 0.311, 'y': 0.259, 'z': 0.01}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': 82.791}}}}, 'Lego 5': {'centre_object': {'x': 0.497, 'y': 0.364, 'z': 0.02}, 'size_object': {0.00240642623975873}, 'grasps': {'Top down grasp': {'centre': {'x': 0.51, 'y': 0.35, 'z': 0.007}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': -45.461}}}}}"
+    },
+    "function_call_2": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [
+                0.684,
+                0.269,
+                0.011,
+                0,
+                0,
+                -88.816
+            ],
+            "arm": "left"
+        },
+        "return_values": "Object picked up successfully"
+    },
+    "function_call_3": {
+        "function_name": "drop_off_object_at_pose",
+        "args": {
+            "pose": [
+                0.95,
+                0.4,
+                0.25,
+                0,
+                0,
+                0
+            ],
+            "arm": "left"
+        },
+        "return_values": "Object dropped off successfully"
+    },
+    "function_call_4": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [
+                0.571,
+                0.126,
+                0.016,
+                0,
+                0,
+                -0.284
+            ],
+            "arm": "left"
+        },
+        "return_values": "Object picked up successfully"
+    },
+    "function_call_5": {
+        "function_name": "drop_off_object_at_pose",
+        "args": {
+            "pose": [
+                0.95,
+                0.4,
+                0.25,
+                0,
+                0,
+                0
+            ],
+            "arm": "left"
+        },
+        "return_values": "Object dropped off successfully"
+    },
+    "function_call_6": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [
+                0.51,
+                0.35,
+                0.007,
+                0,
+                0,
+                -45.461
+            ],
+            "arm": "left"
+        },
+        "return_values": "Object picked up successfully"
+    },
+    "function_call_7": {
+        "function_name": "drop_off_object_at_pose",
+        "args": {
+            "pose": [
+                0.95,
+                0.4,
+                0.25,
+                0,
+                0,
+                0
+            ],
+            "arm": "left"
+        },
+        "return_values": "Object dropped off successfully"
+    },
+    "function_call_8": {
+        "function_name": "find_object",
+        "args": {
+            "object_name": "Lego"
+        },
+        "return_values": "{'Lego 1': {'centre_object': {'x': 0.426, 'y': 0.204, 'z': 0.03}, 'size_object': {0.0014873683685436845}, 'grasps': {'Top down grasp': {'centre': {'x': 0.427, 'y': 0.193, 'z': 0.014}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': -89.794}}}}, 'Lego 2': {'centre_object': {'x': 0.308, 'y': 0.271, 'z': 0.031}, 'size_object': {0.00151736568659544}, 'grasps': {'Top down grasp': {'centre': {'x': 0.311, 'y': 0.259, 'z': 0.01}, 'orientation': {'roll': 0.0, 'pitch': 0.0, 'yaw': 83.766}}}}}"
+    },
+    "function_call_9": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [
+                0.427,
+                0.193,
+                0.014,
+                0,
+                0,
+                -89.794
+            ],
+            "arm": "right"
+        },
+        "return_values": "Object picked up successfully"
+    },
+    "function_call_10": {
+        "function_name": "drop_off_object_at_pose",
+        "args": {
+            "pose": [
+                0.05,
+                0.4,
+                0.25,
+                0,
+                0,
+                0
+            ],
+            "arm": "right"
+        },
+        "return_values": "Object dropped off successfully"
+    },
+    "function_call_11": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [
+                0.311,
+                0.259,
+                0.01,
+                0,
+                0,
+                83.766
+            ],
+            "arm": "right"
+        },
+        "return_values": "Object picked up successfully"
+    },
+    "function_call_12": {
+        "function_name": "drop_off_object_at_pose",
+        "args": {
+            "pose": [
+                0.05,
+                0.4,
+                0.25,
+                0,
+                0,
+                0
+            ],
+            "arm": "right"
+        },
+        "return_values": "Object dropped off successfully"
+    }
+}
