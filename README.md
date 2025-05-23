@@ -1,5 +1,5 @@
 # Dual_Kuka_LLM_Bachelor
-This repository contains the source code for our bachelor project in robotics at Aalborg University, and explores the integration of ... to make automation more intuitive for operators. The GitHub contains all the code produced throughout the project period, from ... to ...
+This repository contains the source code for our bachelor's project in robotics at Aalborg University, and explores the integration of multiple foundation models (LLM Agent, VLM high-level planner, LLM/VLM error correctors + success detectors) to produce a generalist robot cell capable of performing tasks provided by operators. The GitHub contains all the code produced throughout the project period, from February 1st to May 28th
 
 This project is a continuation of the work performed during the 5th semester. The GitHub page for the 5th semester project can be found here: 
 - [P5 Project](https://github.com/thor2643/P5-Kuka-Dual-Arm)
@@ -45,7 +45,7 @@ Before starting the installation of this project, we recommend grabbing a snack 
     sudo apt install python3-vcstool
     ```
 
-4. Installing python libraries
+4. Installing Python libraries
 
     ```shell
     cd ~/Dual_Kuka_LLM_Bachelor
@@ -90,7 +90,7 @@ Before starting the installation of this project, we recommend grabbing a snack 
     ```
 
 ## Contributors
-This project was developed by group 660 at Aalborg University, during their Robotics Bachelor. Every member of the group can be found listed below, alongside their GitHub pages:
+This project was developed by Group 660 at Aalborg University, under the supervision of Dimitris Chrysostomou and Chen Li, during their Robotics Bachelor's. Every member of the group can be found listed below, alongside their GitHub pages:
 
 <section id="sec_contributors">
 <table>
