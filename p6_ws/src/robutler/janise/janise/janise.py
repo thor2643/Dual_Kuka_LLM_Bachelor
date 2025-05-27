@@ -323,7 +323,7 @@ class LLMNode(Node):
                  
         else:
             T_cam_world = np.array([
-                [-0.999997441,  0.000171622184, -0.00225565295,  0.526974339],
+                [-0.999997441,  0.000171622184, -0.00225565295,  0.536974339],
                 [ 0.00178189958,  0.674050369, -0.738683237,  0.992486794],
                 [ 0.00139364928, -0.738685367, -0.674048950,  0.636035468],
                 [ 0,                 0 ,             0 ,           1         ]
@@ -638,8 +638,8 @@ class LLMNode(Node):
                     roll, pitch, yaw = Rotation.from_matrix(T_new[:3,:3]).as_euler('xyz', degrees=True)
                     roll, pitch, yaw = [flip_if_near_180(a) for a in [roll, pitch, yaw]]
 
-                    if pose[2] < 0:
-                        pose_new[2] = 0.003
+                    if pose_new[2] < 0.008:
+                        pose_new[2] = 0.008
 
                     if j == 0:
                         grasp_name = 'Top down grasp'
@@ -1146,4 +1146,11 @@ class LLMNode(Node):
                 
 
             return response1
+        
+    def task_complete(self) -> bool:
+        """
+        If the task has been compeleted before the tool list is empty call this function to return to the user. 
+        """
+        
+        return True
     

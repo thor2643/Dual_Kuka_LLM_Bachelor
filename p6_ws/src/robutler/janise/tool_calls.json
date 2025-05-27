@@ -1,11 +1,13 @@
 { 
+    "task_description": "pick up two bottles and place them on the right side of the table",
     "function_call_1": {
         "function_name": "find_object",
         "args": {
             "object_name": "bottle"
         },
         "return_values": {
-            "bottle 1": {"center_object": {"x": 0.539, "y": 0.11, "z": 0.126}, "grasps": {"grasp 0": {"center": {"x": 0.4, "y": 0.15, "z": 0.161}, "orientation": {"roll": 0, "pitch": 0, "yaw": 0}, "width": 0.022}}}
+            "bottle 1": {"center_object": {"x": 0.439, "y": 0.11, "z": 0.126}, "grasps": {"grasp 0": {"center": {"x": 0.4, "y": 0.15, "z": 0.161}, "orientation": {"roll": 0, "pitch": 0, "yaw": 0}, "width": 0.022}}},
+            "bottle 2": {"center_object": {"x": 0.639, "y": 0.35, "z": 0.147}, "grasps": {"grasp 0": {"center": {"x": 0.6, "y": 0.35, "z": 0.161}, "orientation": {"roll": 0, "pitch": 0, "yaw": 0}, "width": 0.022}}}
         }
     },
     "function_call_2": {
@@ -19,21 +21,53 @@
         }
     },
     "function_call_3": {
-        "function_name": "get_predefined_locations_and_poses",
-        "args": {},
-        "return_values": {
-            "HOME_RIGHT_ARM": {"x": "0.1", "y": "0.3", "z": "0.3", "roll": "0", "pitch": "0", "yaw": "0"},
-            "HOME_LEFT_ARM": {"x": "0.9", "y": "0.3", "z": "0.3", "roll": "0", "pitch": "0", "yaw": "0"}
-        }
-    },
-    "function_call_4": {
         "function_name": "move_to_pose",
         "args": {
-            "pose": [0.1, 0.3, 0.3, 0, 0, 0],
+            "pose": [0.1, 0.3, 0.16, 0, 0, 0],
             "arm": "right"
         },
         "return_values": {
             "success": true
         }
-    } 
+    },
+    "function_call_4": {
+        "function_name": "manipulate_right_gripper",
+        "args": {
+            "width": 167,
+            "arm": "right"
+        },
+        "return_values": {
+            "success": true
+        }
+    },
+    "function_call_5": {
+        "function_name": "pick_up_object",
+        "args": {
+            "pose": [0.6, 0.35, 0.161, 0, 0, 0],
+            "arm": "right"
+        },
+        "return_values": {
+            "success": true
+        }
+    },
+    "function_call_6": {
+        "function_name": "move_to_pose",
+        "args": {
+            "pose": [0.1, 0.4, 0.16, 0, 0, 0],
+            "arm": "right"
+        },
+        "return_values": {
+            "success": true
+        }
+    },
+    "function_call_7": {
+        "function_name": "manipulate_right_gripper",
+        "args": {
+            "width": 167,
+            "arm": "right"
+        },
+        "return_values": {
+            "success": true
+        }
+    }
 }
