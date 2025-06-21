@@ -557,7 +557,35 @@ class ObjectDetector(Node):
             
         self.image_publisher.publish(self.realsense_camera.bridge.cv2_to_imgmsg(image_copy))
         self.get_logger().info(f'Grasps found for {response.object_count} objects. Object detector Done.\n')
+        response = self.sort_response_by_x_values(response, object)
         return response
+    
+    def sort_response_by_x_values(self, response, object_name):
+        """
+        Sorts the DetectedObject list in the response by the x-coordinate
+        of the first grasp in each object. Reconstructs the response so
+        the DetectedObject entries are ordered accordingly.
+
+        Assumes that each DetectedObject has at least one grasp.
+        """
+
+        # Sort by the x-position of the first grasp
+        sorted_objects = sorted(response.detected_objects, key=lambda obj: obj.grasps[0].position.x)
+
+        # Construct new response object
+        new_response = type(response)()
+        new_response.object_count = response.object_count
+
+        for i, obj in enumerate(sorted_objects):
+            new_obj = DetectedObject()
+            new_obj.name = f"{object_name} {i+1}"
+            new_obj.center_of_object = obj.center_of_object
+            new_obj.size_area = obj.size_area
+            new_obj.grasps = obj.grasps  
+            new_response.detected_objects.append(new_obj)
+
+        return new_response
+
     
     def grasp_prediction(self, point_cloud_masked, num_candidates):
         ################################################################
