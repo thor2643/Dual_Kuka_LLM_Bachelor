@@ -888,7 +888,7 @@ class LLMNode(Node):
             angle_1 = 65 * 1 / 180.0 * 3.14
             joint_name = "a_3f_finger_middle_joint_1"
 
-            POSITION_TOLERANCE = 0.05
+            POSITION_TOLERANCE = 0.01
             within_tolerance = False
 
             actual = self._3f_joint_values_mock[4] # This is the middle finger joint 1 value
