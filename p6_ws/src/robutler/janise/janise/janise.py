@@ -774,12 +774,22 @@ class LLMNode(Node):
             self.get_logger().error("Failed to close gripper, consider grasping a bit higher up")
             return gripper_response # Previously returned: "Failed to close gripper"
         
+        # If we are in simulation, we need to check if the gripper is fully closed, meaning the object is not grasped.
         if load_use_sim():
-            # in simulation we check if gripper is fully closed or not
+            check_response = None
             if arm == 'left':
                 self._check_gripper_request.arm = 'left'
+                while(check_response == None):
+                    future2 = self._check_gripper_client.call_async(self._check_gripper_request)
+                    check_response = self.wait_future(future2, timeout=15)
             else:
-                self._check_gripper_request.arm = 'left'
+                self._check_gripper_request.arm = 'right'
+                while(check_response == None):
+                    future2 = self._check_gripper_client.call_async(self._check_gripper_request)
+                    check_response = self.wait_future(future2, timeout=15)
+            if check_response.success == False:
+                self.get_logger().error("Gripper is fully closed, object nor succesfully grasped")
+                return "The object was not grasped! Consider calling find object again to find the object and retry the pickup."
         
         # At last lift the object to avoid collision when moving away
         plan_response = self.plan_robot_trajectory(pose_depart, arm)
