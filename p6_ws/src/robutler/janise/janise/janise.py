@@ -840,15 +840,15 @@ class LLMNode(Node):
             )
 
             gripper_response.success = False
-            self.left_gripper_state = "Closed, not holding object"
+            self.left_gripper_state = "Closed, not holding object. Consider moving the arm away and seach for the object again"
             if error > POSITION_TOLERANCE:
                 within_tolerance = True
                 gripper_response.success = True
                 self.left_gripper_state = "Holding object"
 
             if not within_tolerance:
-                self.get_logger().error("Failed to grasp object with left gripper, consider grasping a bit higher up")
-                return "Failed to grasp object with left gripper, consider grasping a bit higher up"
+                self.get_logger().error("Failed to grasp object with left gripper")
+                return "Failed to grasp object with left gripper."
             if within_tolerance:
                 self.get_logger().info("Object picked up successfully with left gripper")
 
@@ -867,7 +867,7 @@ class LLMNode(Node):
             )
             
             gripper_response.success = False
-            self.right_gripper_state = "Closed, not holding object"
+            self.right_gripper_state = "Closed, not holding object. Consider moving the arm away and seach for the object again"
 
             if error > POSITION_TOLERANCE:
                 within_tolerance = True
@@ -875,8 +875,8 @@ class LLMNode(Node):
                 self.right_gripper_state = "Holding object"
         
             if not within_tolerance:
-                self.get_logger().error("Failed to grasp object with right gripper, consider grasping a bit higher up")
-                return "Failed to grasp object with right gripper, consider grasping a bit higher up"
+                self.get_logger().error("Failed to grasp object with right gripper")
+                return "Failed to grasp object with right gripper"
             if within_tolerance:
                 self.get_logger().info("Object picked up successfully with right gripper")
 
