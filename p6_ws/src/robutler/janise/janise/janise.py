@@ -839,8 +839,12 @@ class LLMNode(Node):
                 f"2F Joint {joint_name} | Target: {angle:.3f} | Actual: {actual:.3f} | Error: {error:.4f}"
             )
 
+            gripper_response.success = False
+            self.left_gripper_state = "Closed, not holding object"
             if error > POSITION_TOLERANCE:
                 within_tolerance = True
+                gripper_response.success = True
+                self.left_gripper_state = "Holding object"
 
             if not within_tolerance:
                 self.get_logger().error("Failed to grasp object with left gripper, consider grasping a bit higher up")
@@ -861,10 +865,15 @@ class LLMNode(Node):
             self.get_logger().info(
                 f"3F Joint {joint_name} | Target: {angle_1:.3f} | Actual: {actual:.3f} | Error: {error:.4f}"
             )
+            
+            gripper_response.success = False
+            self.right_gripper_state = "Closed, not holding object"
 
             if error > POSITION_TOLERANCE:
                 within_tolerance = True
-
+                gripper_response.success = True
+                self.right_gripper_state = "Holding object"
+        
             if not within_tolerance:
                 self.get_logger().error("Failed to grasp object with right gripper, consider grasping a bit higher up")
                 return "Failed to grasp object with right gripper, consider grasping a bit higher up"
