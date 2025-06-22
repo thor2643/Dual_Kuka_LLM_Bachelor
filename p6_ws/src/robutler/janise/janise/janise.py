@@ -825,10 +825,47 @@ class LLMNode(Node):
             return execute_response # Previously returned: "Failed to execute grasp trajectory"
         
         # Add a check for if object was grasped successfully
-        if arm == 'left':
-            self.get_logger().info(self._2f_joint_values_mock)
-        else:
-            self.get_logger().info(self._3f_joint_values_mock)
+        if arm == 'left' and load_use_sim():
+            angle = 45 * (80 / 85) / 180.0 * 3.14  # Degrees to radians
+            joint_name = "left_2f_robotiq_85_left_knuckle_joint"
+
+            POSITION_TOLERANCE = 0.4
+            within_tolerance = True
+
+            actual = self._2f_joint_values_mock[0]
+            error = abs(actual - angle)
+
+            self.get_logger().info(
+                f"2F Joint {joint_name} | Target: {angle:.3f} | Actual: {actual:.3f} | Error: {error:.4f}"
+            )
+
+            if error > POSITION_TOLERANCE:
+                within_tolerance = False
+
+            if not within_tolerance:
+                self.get_logger().error("Failed to grasp object with left gripper, consider grasping a bit higher up")
+                return "Failed to grasp object with left gripper, consider grasping a bit higher up"
+
+        elif arm == 'right' and load_use_sim():
+            angle_1 = 65 * 1 / 180.0 * 3.14
+            joint_name = "a_3f_finger_middle_joint_1"
+
+            POSITION_TOLERANCE = 0.4
+            within_tolerance = True
+
+            actual = self._3f_joint_values_mock[4] # This is the middle finger joint 1 value
+            error = abs(actual - angle_1)
+
+            self.get_logger().info(
+                f"2F Joint {joint_name} | Target: {angle_1:.3f} | Actual: {actual:.3f} | Error: {error:.4f}"
+            )
+
+            if error > POSITION_TOLERANCE:
+                within_tolerance = False
+
+            if not within_tolerance:
+                self.get_logger().error("Failed to grasp object with right gripper, consider grasping a bit higher up")
+                return "Failed to grasp object with right gripper, consider grasping a bit higher up"
 
         #if arm == 'left':
         #    gripper_response = self.manipulate_left_gripper(width=0)
