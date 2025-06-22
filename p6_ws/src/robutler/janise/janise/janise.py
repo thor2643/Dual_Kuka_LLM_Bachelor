@@ -716,7 +716,7 @@ class LLMNode(Node):
 
         # First we calculate the approach pose
         T_approach = np.eye(4)
-        T_approach[2, 3] = 0.05 # Place approach 5 cm along grasp z-axis
+        T_approach[2, 3] = 0.12 # Place approach 5 cm along grasp z-axis
 
         R_pose = Rotation.from_euler('xyz', [pose[3], pose[4], pose[5]], degrees=True).as_matrix()
         T_pose = np.eye(4)
@@ -734,7 +734,7 @@ class LLMNode(Node):
 
         pose_approach = [x, y, z, roll, pitch, yaw]
         pose_depart = pose.copy()
-        pose_depart[2] += 0.1 # Move up 10 cm
+        pose_depart[2] += 0.15 # Move up 10 cm
 
         # print(f"New pose to pick up object: {pose}")
 
