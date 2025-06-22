@@ -132,7 +132,7 @@ private:
 
         joint_values_right.resize(7);
         joint_values_left.resize(7);
-        _3f_joint_values_mock.resize(11);
+        _3f_joint_values_mock.resize(11); 
         _2f_joint_values_mock.resize(3);
 
         for (size_t i = 0; i < msg->name.size(); ++i) {
@@ -695,7 +695,7 @@ private:
         }
         
         // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(5000));
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
 
         static const std::unordered_map<std::string, size_t> gripper_2f_index_map = {
           {"left_2f_robotiq_85_left_finger_tip_joint", 0},
