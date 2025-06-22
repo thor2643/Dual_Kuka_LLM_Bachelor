@@ -597,7 +597,7 @@ class LLMNode(Node):
         future = self.detector_client.call_async(self.detector_req)
 
         # Wait for the result
-        response = self.wait_future(future, timeout=125)
+        response = self.wait_future(future, timeout=250)
 
         # Check if the response is valid or if it timeouted
         if response is None:
@@ -740,7 +740,11 @@ class LLMNode(Node):
         Returns:
             bool: True if the object was successfully picked up, False otherwise.
         """
-        if object_name != "":
+        if pose_input != [0] and len(pose_input) == 6:
+            # If pose is provided, we use it directly
+            pose = pose_input
+            pass
+        elif object_name != "":
             if object_name not in self.objects:
                 self.get_logger().error(f"Object '{object_name}' does not exist in the objects dictionary. Please use find_object first.")
                 return f"Object '{object_name}' does not exist in the objects dictionary. Make sure the object has been returned by find_object."
@@ -748,11 +752,6 @@ class LLMNode(Node):
             pose = self.objects[object_name]
 
             self.get_logger().info(f"Object '{object_name}' found in the objects dictionary. Using its pose: {pose}")
-
-        elif pose_input != [0] and len(pose_input) == 6:
-            # If pose is provided, we use it directly
-            pose = pose_input
-            pass
         else:
             self.get_logger().error("Neither object_name nor pose is provided.")
             return "Neither object_name nor a valid pose is provided. Please provide either an object name or a pose."
