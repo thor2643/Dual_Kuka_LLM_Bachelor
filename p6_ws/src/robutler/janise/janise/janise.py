@@ -42,6 +42,7 @@ from project_interfaces.srv import ExecuteMoveCommand
 from project_interfaces.srv import PromptJanice
 from project_interfaces.srv import GetCurrentPose
 from project_interfaces.srv import GripperMoveit
+from project_interfaces.srv import CheckGripper
 from project_interfaces.srv import GetObjectInfo, PlanMoveCommand, ExecuteMoveCommand, PromptJanice, GetCurrentPose
 from project_interfaces.msg import TransformMatrix, Grasp6D, DetectedObject
 from robotiq_3f_gripper_ros2_interfaces.srv import Robotiq3FGripperOutputService
@@ -77,6 +78,10 @@ class LLMNode(Node):
         # Moveit gripper clientNone
         self._gripper_client = self.create_client(GripperMoveit, 'gripper_moveit', callback_group=client_cb_group) 
         self._gripper_req = GripperMoveit.Request()
+
+        # Check gripper client
+        self._check_gripper_client = self.create_client(CheckGripper, 'check_gripper', callback_group=client_cb_group) 
+        self._check_gripper_req = CheckGripper.Request()
 
         #Object detector service client
         self.detector_client = self.create_client(GetObjectInfo, 'get_object_info', callback_group=client_cb_group)
@@ -130,7 +135,7 @@ class LLMNode(Node):
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
+            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '180'},
         } 
         
         #'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
@@ -768,6 +773,13 @@ class LLMNode(Node):
         if gripper_response is None or not gripper_response.success:
             self.get_logger().error("Failed to close gripper, consider grasping a bit higher up")
             return gripper_response # Previously returned: "Failed to close gripper"
+        
+        if load_use_sim():
+            # in simulation we check if gripper is fully closed or not
+            if arm == 'left':
+                self._check_gripper_request.arm = 'left'
+            else:
+                self._check_gripper_request.arm = 'left'
         
         # At last lift the object to avoid collision when moving away
         plan_response = self.plan_robot_trajectory(pose_depart, arm)

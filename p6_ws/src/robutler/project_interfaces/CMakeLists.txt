@@ -30,6 +30,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GripperMoveit.srv"
+  "srv/CheckGripper.srv"
   "msg/Grasp6D.msg"
   "msg/DetectedObject.msg"
   "msg/TransformMatrix.msg"

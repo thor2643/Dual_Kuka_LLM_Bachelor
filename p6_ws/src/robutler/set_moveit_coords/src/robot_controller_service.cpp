@@ -79,6 +79,9 @@ public:
     gripper_service = this->create_service<project_interfaces::srv::GripperMoveit>(
         "gripper_moveit", std::bind(&RobotControllerService::handle_gripper_service, this, std::placeholders::_1, std::placeholders::_2));
 
+    check_gripper_service = this->create_service<project_interfaces::srv::CheckGripper>(
+        "check_gripper", std::bind(&RobotControllerService::handle_check_gripper, this, std::placeholders::_1, std::placeholders::_2));
+
     joint_state_subscriber = this->create_subscription<sensor_msgs::msg::JointState>(
       "joint_states", 1, std::bind(&RobotControllerService::joint_state_callback, this, std::placeholders::_1));
 
@@ -524,7 +527,34 @@ private:
      
     //}
     
-    
+    void handle_check_gripper(const std::shared_ptr<project_interfaces::srv::CheckGripper::Request> request,
+      const std::shared_ptr<project_interfaces::srv::CheckGripper::Response> response) {
+      // This service returns False if the desired gripper is fully closed.
+      RCLCPP_INFO(this->get_logger(), "Received gripper check command for: %s", request->gripper_name.c_str());
+      if (request->gripper_name == "3f") {
+        // Check if the 3F gripper is fully closed
+        if (_3f_joint_values_mock[0] < -0.1 && _3f_joint_values_mock[1] < -0.1 && _3f_joint_values_mock[2] < -0.1) {
+          response->is_closed = true;
+          RCLCPP_INFO(this->get_logger(), "3F gripper is fully closed");
+        } else {
+          response->is_closed = false;
+          RCLCPP_INFO(this->get_logger(), "3F gripper is not fully closed");
+        }
+      } else if (request->gripper_name == "2f") {
+        // Check if the 2F gripper is fully closed
+        if (_2f_joint_values_mock[0] < -0.1 && _2f_joint_values_mock[1] < -0.1) {
+          response->is_closed = true;
+          RCLCPP_INFO(this->get_logger(), "2F gripper is fully closed");
+        } else {
+          response->is_closed = false;
+          RCLCPP_INFO(this->get_logger(), "2F gripper is not fully closed");
+        }
+      } else {
+        response->is_closed = false;
+        RCLCPP_ERROR(this->get_logger(), "Invalid gripper name specified: %s", request->gripper_name.c_str());
+      }
+      
+    }
 
     void handle_gripper_service(const std::shared_ptr<project_interfaces::srv::GripperMoveit::Request> request,
       const std::shared_ptr<project_interfaces::srv::GripperMoveit::Response> response) {
