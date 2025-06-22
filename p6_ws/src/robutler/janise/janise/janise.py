@@ -50,7 +50,7 @@ from robotiq_2f_85_interfaces.srv import Robotiq2F85GripperCommand
 from project_interfaces.srv import GetImage
 from project_interfaces.srv import GetSimCameraData
 from geometry_msgs.msg import TransformStamped
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, JointState
 
 class LLMNode(Node):
     def __init__(self):
@@ -115,6 +115,11 @@ class LLMNode(Node):
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
+        # Subscriber to the robot's joint values (Needed for grasp success check)
+        self._3f_joint_values_mock = [0.0] * 11
+        self._2f_joint_values_mock = [0.0] * 3
+        self.joint_values_subscription = self.create_subscription(JointState, 'joint_states', self.joint_values_callback, 1)
+
         # Get current time and date from OS and format it for log file differentiation
         self.current_time = os.popen('date +"%Y-%m-%d_%H-%M-%S"').read().strip()
         self.get_logger().info(f"Current time and date: {self.current_time}")
@@ -129,8 +134,8 @@ class LLMNode(Node):
 
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
-            'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
+            'HOME_RIGHT_ARM': {'x': '0', 'y': '0.15', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
+            'HOME_LEFT_ARM': {'x': '1', 'y': '0.15', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
         } 
 
         self.objects = {}
@@ -154,6 +159,44 @@ class LLMNode(Node):
     # --------------------------------- EXTRA FUNCTIONS --------------------------------- #
     #######################################################################################
 
+    def joint_values_callback(self, msg):
+        # Reset joint arrays
+        self._3f_joint_values_mock = [0.0] * 11
+        self._2f_joint_values_mock = [0.0] * 3
+
+        for i, joint_name in enumerate(msg.name):
+            # 2F gripper joints
+            if joint_name == "left_2f_robotiq_85_left_knuckle_joint":
+                self._2f_joint_values_mock[0] = msg.position[i]
+            elif joint_name == "left_2f_robotiq_85_left_finger_tip_joint":
+                self._2f_joint_values_mock[1] = msg.position[i]
+            elif joint_name == "left_2f_robotiq_85_left_finger_joint":
+                self._2f_joint_values_mock[2] = msg.position[i]
+
+            # 3F gripper joints
+            elif joint_name == "a_3f_palm_finger_1_joint":
+                self._3f_joint_values_mock[0] = msg.position[i]
+            elif joint_name == "a_3f_finger_middle_joint_3":
+                self._3f_joint_values_mock[1] = msg.position[i]
+            elif joint_name == "a_3f_finger_2_joint_3":
+                self._3f_joint_values_mock[2] = msg.position[i]
+            elif joint_name == "a_3f_finger_2_joint_1":
+                self._3f_joint_values_mock[3] = msg.position[i]
+            elif joint_name == "a_3f_finger_middle_joint_1":
+                self._3f_joint_values_mock[4] = msg.position[i]
+            elif joint_name == "a_3f_finger_2_joint_2":
+                self._3f_joint_values_mock[5] = msg.position[i]
+            elif joint_name == "a_3f_palm_finger_2_joint":
+                self._3f_joint_values_mock[6] = msg.position[i]
+            elif joint_name == "a_3f_finger_1_joint_3":
+                self._3f_joint_values_mock[7] = msg.position[i]
+            elif joint_name == "a_3f_finger_1_joint_1":
+                self._3f_joint_values_mock[8] = msg.position[i]
+            elif joint_name == "a_3f_finger_middle_joint_2":
+                self._3f_joint_values_mock[9] = msg.position[i]
+            elif joint_name == "a_3f_finger_1_joint_2":
+                self._3f_joint_values_mock[10] = msg.position[i]
+    
     def get_image(self):
         # Returns the resized image from the camera, either from simulation or the real one.
 
@@ -811,6 +854,61 @@ class LLMNode(Node):
             self.get_logger().error("Failed to execute grasp trajectory")
             return execute_response # Previously returned: "Failed to execute grasp trajectory"
         
+        # Add a check for if object was grasped successfully
+        if arm == 'left' and load_use_sim():
+            angle = 45 * (80 / 85) / 180.0 * 3.14  # Degrees to radians
+            joint_name = "left_2f_robotiq_85_left_knuckle_joint"
+
+            POSITION_TOLERANCE = 0.1
+            within_tolerance = False
+
+            actual = self._2f_joint_values_mock[0]
+            error = abs(actual - angle)
+
+            self.get_logger().info(
+                f"2F Joint {joint_name} | Target: {angle:.3f} | Actual: {actual:.3f} | Error: {error:.4f}"
+            )
+
+            gripper_response.success = False
+            self.left_gripper_state = "Closed, not holding object. Consider moving the arm away and seach for the object again"
+            if error > POSITION_TOLERANCE:
+                within_tolerance = True
+                gripper_response.success = True
+                self.left_gripper_state = "Holding object"
+
+            if not within_tolerance:
+                self.get_logger().error("Failed to grasp object with left gripper")
+                return "Failed to grasp object with left gripper."
+            if within_tolerance:
+                self.get_logger().info("Object picked up successfully with left gripper")
+
+        elif arm == 'right' and load_use_sim():
+            angle_1 = 65 * 1 / 180.0 * 3.14
+            joint_name = "a_3f_finger_middle_joint_1"
+
+            POSITION_TOLERANCE = 0.1
+            within_tolerance = False
+
+            actual = self._3f_joint_values_mock[4] # This is the middle finger joint 1 value
+            error = abs(actual - angle_1)
+
+            self.get_logger().info(
+                f"3F Joint {joint_name} | Target: {angle_1:.3f} | Actual: {actual:.3f} | Error: {error:.4f}"
+            )
+            
+            gripper_response.success = False
+            self.right_gripper_state = "Closed, not holding object. Consider moving the arm away and seach for the object again"
+
+            if error > POSITION_TOLERANCE:
+                within_tolerance = True
+                gripper_response.success = True
+                self.right_gripper_state = "Holding object"
+        
+            if not within_tolerance:
+                self.get_logger().error("Failed to grasp object with right gripper")
+                return "Failed to grasp object with right gripper"
+            if within_tolerance:
+                self.get_logger().info("Object picked up successfully with right gripper")
 
         #if arm == 'left':
         #    gripper_response = self.manipulate_left_gripper(width=0)
@@ -912,9 +1010,9 @@ class LLMNode(Node):
         
         # Move the arm to home position
         if arm == 'left':
-            pose_home = [0.9, 0.3, 0.3, 0, 0, 0]
+            pose_home = [1, 0.15, 0.3, 0, 0, 0]
         else:
-            pose_home = [0.1, 0.3, 0.3, 0, 0, 0]
+            pose_home = [0, 0.15, 0.3, 0, 0, 0]
 
         # First plan the movement to the pose
         plan_response = self.plan_robot_trajectory(pose_home, arm)

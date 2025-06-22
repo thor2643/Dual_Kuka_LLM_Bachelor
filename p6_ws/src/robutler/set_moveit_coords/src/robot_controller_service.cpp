@@ -132,7 +132,7 @@ private:
 
         joint_values_right.resize(7);
         joint_values_left.resize(7);
-        _3f_joint_values_mock.resize(10);
+        _3f_joint_values_mock.resize(11); 
         _2f_joint_values_mock.resize(3);
 
         for (size_t i = 0; i < msg->name.size(); ++i) {
@@ -169,7 +169,7 @@ private:
               else if (msg->name[i] == "a_3f_finger_1_joint_3") _3f_joint_values_mock[7] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_1_joint_1") _3f_joint_values_mock[8] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_middle_joint_2") _3f_joint_values_mock[9] = msg->position[i];
-              else if (msg->name[i] == "a_3f_finger_1_joint_2") _3f_joint_values_mock[7] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_2") _3f_joint_values_mock[10] = msg->position[i];
             }
         }
     }
@@ -602,7 +602,7 @@ private:
         }
         
         // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(500));
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
 
         static const std::unordered_map<std::string, size_t> gripper_3f_index_map = {
           {"a_3f_palm_finger_1_joint",         0},  
@@ -617,7 +617,7 @@ private:
           {"a_3f_finger_middle_joint_2",       9},
           {"a_3f_finger_2_joint_2",            10},
         };
-        
+       
         const double POSITION_TOLERANCE = 0.2;
         
         response->success = true;
@@ -627,14 +627,12 @@ private:
           response->log = "Opening of 3F gripper succeeded and verified.";
         }
 
-        //rclcpp::spin_some(this->get_node_base_interface());
-
         for (const auto& [joint_name, target] : target_position) {
           auto it = gripper_3f_index_map.find(joint_name);
           if (it != gripper_3f_index_map.end()) {
             double actual = _3f_joint_values_mock[it->second];
             double error = std::abs(actual - target);
-            
+
             RCLCPP_INFO(this->get_logger(), "Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
                         joint_name.c_str(), target, actual, error);
             RCLCPP_INFO(this->get_logger(), "POSITION: %.4f, Error: %.4f", POSITION_TOLERANCE, error);
@@ -697,7 +695,7 @@ private:
         }
         
         // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(500));
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
 
         static const std::unordered_map<std::string, size_t> gripper_2f_index_map = {
           {"left_2f_robotiq_85_left_finger_tip_joint", 0},
