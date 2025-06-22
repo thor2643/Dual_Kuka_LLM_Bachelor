@@ -600,57 +600,7 @@ private:
           response->log = "3f gripper move failed";
           return; 
         }
-        
-        // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(500));
-
-        static const std::unordered_map<std::string, size_t> gripper_3f_index_map = {
-          {"a_3f_palm_finger_1_joint",         0},  
-          {"a_3f_finger_middle_joint_3",       1},
-          {"a_3f_finger_2_joint_3",            2},
-          {"a_3f_finger_2_joint_1",            3},
-          {"a_3f_finger_middle_joint_1",       4},
-          {"a_3f_finger_1_joint_2",            5},
-          {"a_3f_palm_finger_2_joint",         6},
-          {"a_3f_finger_1_joint_3",            7},
-          {"a_3f_finger_1_joint_1",            8},
-          {"a_3f_finger_middle_joint_2",       9},
-          {"a_3f_finger_2_joint_2",            10},
-        };
-        
-        const double POSITION_TOLERANCE = 0.2;
-        
-        response->success = true;
-        if (request->width < 80) {
-          response->log = "Closening of 3F gripper succeeded and verified.";
-        } else {
-          response->log = "Opening of 3F gripper succeeded and verified.";
-        }
-
-        //rclcpp::spin_some(this->get_node_base_interface());
-
-        for (const auto& [joint_name, target] : target_position) {
-          auto it = gripper_3f_index_map.find(joint_name);
-          if (it != gripper_3f_index_map.end()) {
-            double actual = _3f_joint_values_mock[it->second];
-            double error = std::abs(actual - target);
-            
-            RCLCPP_INFO(this->get_logger(), "Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
-                        joint_name.c_str(), target, actual, error);
-            RCLCPP_INFO(this->get_logger(), "POSITION: %.4f, Error: %.4f", POSITION_TOLERANCE, error);
-        
-            if (error > POSITION_TOLERANCE) {
-              response->success = false;
-              response->log = "Gripper joint values out of tolerance.";
-              break;
-            }
-          } else {
-            RCLCPP_WARN(this->get_logger(), "Joint %s not in index map!", joint_name.c_str());
-            response->success = false;
-            response->log = "Gripper joint values could not be verified (missing joint).";
-            break;  // Conservative fallback
-          }
-        }
+      
 
       } else if (request->gripper_name == "2f") {
       
@@ -694,43 +644,6 @@ private:
           response->success = false;
           response->log = "2f gripper move failed";
           return;
-        }
-        
-        // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(500));
-
-        static const std::unordered_map<std::string, size_t> gripper_2f_index_map = {
-          {"left_2f_robotiq_85_left_finger_tip_joint", 0},
-          {"left_2f_robotiq_85_left_knuckle_joint", 1},
-          {"left_2f_robotiq_85_left_finger_tip_joint", 2},
-        };
-        
-        const double POSITION_TOLERANCE = 0.4;
-        bool within_tolerance = true;
-        
-        auto it = gripper_2f_index_map.find("left_2f_robotiq_85_left_knuckle_joint");
-        if (it != gripper_2f_index_map.end() && it->second < _2f_joint_values_mock.size()) {
-          double actual = _2f_joint_values_mock[it->second];
-          double error = std::abs(actual - angle);
-        
-          RCLCPP_INFO(this->get_logger(), "2F Joint %s | Target: %.3f | Actual: %.3f | Error: %.4f",
-                      joint_name.c_str(), angle, actual, error);
-        
-          if (error > POSITION_TOLERANCE) {
-            within_tolerance = false;
-          }
-        } else {
-          RCLCPP_WARN(this->get_logger(), "2F joint %s not found in mock data!", joint_name.c_str());
-          within_tolerance = false;
-        }
-        
-        // Set response
-        if (within_tolerance) {
-          response->success = true;
-          response->log = "2F gripper move succeeded and verified.";
-        } else {
-          response->success = false;
-          response->log = "2F gripper did not reach desired joint position accurately.";
         }
 
       } else {
