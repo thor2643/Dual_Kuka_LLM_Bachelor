@@ -869,15 +869,18 @@ class LLMNode(Node):
             )
 
             gripper_response.success = False
-            self.left_gripper_state = "Closed, not holding object. Consider moving the arm away and seach for the object again"
+            
             if error > POSITION_TOLERANCE:
                 within_tolerance = True
                 gripper_response.success = True
                 self.left_gripper_state = "Holding object"
+            else:
+                gripper_response = self.manipulate_left_gripper(width=85)
+                self.left_gripper_state = "Open, not holding object"
 
             if not within_tolerance:
                 self.get_logger().error("Failed to grasp object with left gripper")
-                return "Failed to grasp object with left gripper."
+                return "The grasp failed, consider moving the arm away and search for the object again."
             if within_tolerance:
                 self.get_logger().info("Object picked up successfully with left gripper")
 
@@ -885,7 +888,7 @@ class LLMNode(Node):
             angle_1 = 65 * 1 / 180.0 * 3.14
             joint_name = "a_3f_finger_middle_joint_1"
 
-            POSITION_TOLERANCE = 0.1
+            POSITION_TOLERANCE = 0.05
             within_tolerance = False
 
             actual = self._3f_joint_values_mock[4] # This is the middle finger joint 1 value
@@ -896,16 +899,18 @@ class LLMNode(Node):
             )
             
             gripper_response.success = False
-            self.right_gripper_state = "Closed, not holding object. Consider moving the arm away and seach for the object again"
 
             if error > POSITION_TOLERANCE:
                 within_tolerance = True
                 gripper_response.success = True
                 self.right_gripper_state = "Holding object"
+            else:
+                gripper_response = self.manipulate_right_gripper(width=167)
+                self.right_gripper_state = "Open, not holding object"
         
             if not within_tolerance:
                 self.get_logger().error("Failed to grasp object with right gripper")
-                return "Failed to grasp object with right gripper"
+                return "The grasp failed, consider moving the arm away and search for the object again."
             if within_tolerance:
                 self.get_logger().info("Object picked up successfully with right gripper")
 
