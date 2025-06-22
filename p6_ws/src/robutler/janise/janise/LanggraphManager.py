@@ -594,7 +594,8 @@ class LanggraphManager(LLMNode):
 
         # Loop through the messages in reverse order to find the last AI message (This is beacuse janise can make multiple tool calls)
         for i in range(1, len(state["messages"])):
-            if isinstance(state["messages"][-i], AIMessage): 
+            if isinstance(state["messages"][-i], AIMessage):                   
+
                 self.get_logger().info(f"Number of tool calls made by action model: {i-1}")
 
                 judge_tool_info.append(state["messages"][-i].tool_calls)
@@ -603,6 +604,10 @@ class LanggraphManager(LLMNode):
                 # Add every tool call result to the tool_info list       
                 for j in range(i-1):
                     judge_tool_info.append(state["messages"][-i+j+1])
+
+                socrates_thoughts = state["messages"][-i-1].content
+
+                self.get_logger().info(f"Socrates toughts: ----------> {socrates_thoughts}")
 
                 break
      
