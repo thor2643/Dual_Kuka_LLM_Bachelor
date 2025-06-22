@@ -188,6 +188,7 @@ class ObjectDetector(Node):
         self.point_cloud = None
         self.transformation_matrix = None
         self.generate_general_grasp = False
+        self.blocked_points = [[0.95, 0.4,0.25], [0.05, 0.4,0.25]]  # List of points for containers
         
         #YOLO and SAM results
         self.yolo_results = None
@@ -390,6 +391,11 @@ class ObjectDetector(Node):
                 mean_depth = np.mean(z_values[(z_values > 0) & (~np.isnan(z_values))])
                 size_object = size_pixel * (mean_depth**2/(self.camera_info[0]*self.camera_info[4]))
                 grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
+                # Check if the grasp is near a blocked zone(container)
+                if hasattr(self, "blocked_points") and self.is_near_blocked_zone(grasps[0][:3], self.blocked_points):
+                    self.get_logger().info(f"Skipping object at {grasps[0][:3]} due to proximity to blocked area")
+                    continue
+
                 all_grasps.extend(grasps)
 
                 detected_object = DetectedObject()
@@ -467,6 +473,10 @@ class ObjectDetector(Node):
                 mean_depth = np.mean(z_values[(z_values > 0) & (~np.isnan(z_values))])
                 size_object = size_pixel * (mean_depth**2/(self.camera_info[0]*self.camera_info[4]))
                 grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
+                # Check if the grasp is near a blocked zone(container)
+                if hasattr(self, "blocked_points") and self.is_near_blocked_zone(grasps[0][:3], self.blocked_points):
+                    self.get_logger().info(f"Skipping object at {grasps[0][:3]} due to proximity to blocked area")
+                    continue
                 all_grasps.extend(grasps)
 
                 detected_object = DetectedObject()
@@ -563,14 +573,14 @@ class ObjectDetector(Node):
     def sort_response_by_x_values(self, response, object_name):
         """
         Sorts the DetectedObject list in the response by the x-coordinate
-        of the first grasp in each object. Reconstructs the response so
+        of the first grasp in each object. If it has the same x-value it is sorted by y-values. Reconstructs the response so
         the DetectedObject entries are ordered accordingly.
 
         Assumes that each DetectedObject has at least one grasp.
         """
 
         # Sort by the x-position of the first grasp
-        sorted_objects = sorted(response.detected_objects, key=lambda obj: obj.grasps[0].position.x)
+        sorted_objects = sorted(response.detected_objects, key=lambda obj: (obj.grasps[0].position.x, obj.grasps[0].position.y))
 
         # Construct new response object
         new_response = type(response)()
@@ -585,7 +595,24 @@ class ObjectDetector(Node):
             new_response.detected_objects.append(new_obj)
 
         return new_response
+    
+    def is_near_blocked_zone(self, center, blocked_points, threshold=0.12):
+        """
+        Check if a given center point is within `threshold` meters of any blocked point.
+        
+        Args:
+            center (np.ndarray): 3D position (x, y, z) of the object.
+            blocked_points (List[np.ndarray]): List of 3D positions to avoid.
+            threshold (float): Distance threshold in meters.
 
+        Returns:
+            bool: True if center is near any blocked point, False otherwise.
+        """
+        center_xy = np.array(center[:2])  # Convert to numpy array (X,Y only)
+        for pt in blocked_points:
+            if np.linalg.norm(center_xy - pt[:2]) < threshold:
+                return True
+        return False
     
     def grasp_prediction(self, point_cloud_masked, num_candidates):
         ################################################################
