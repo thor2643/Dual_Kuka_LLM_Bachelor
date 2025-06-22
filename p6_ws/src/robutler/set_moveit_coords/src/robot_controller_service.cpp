@@ -132,7 +132,7 @@ private:
 
         joint_values_right.resize(7);
         joint_values_left.resize(7);
-        _3f_joint_values_mock.resize(10);
+        _3f_joint_values_mock.resize(11);
         _2f_joint_values_mock.resize(3);
 
         for (size_t i = 0; i < msg->name.size(); ++i) {
@@ -169,7 +169,7 @@ private:
               else if (msg->name[i] == "a_3f_finger_1_joint_3") _3f_joint_values_mock[7] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_1_joint_1") _3f_joint_values_mock[8] = msg->position[i];
               else if (msg->name[i] == "a_3f_finger_middle_joint_2") _3f_joint_values_mock[9] = msg->position[i];
-              else if (msg->name[i] == "a_3f_finger_1_joint_2") _3f_joint_values_mock[7] = msg->position[i];
+              else if (msg->name[i] == "a_3f_finger_1_joint_2") _3f_joint_values_mock[10] = msg->position[i];
             }
         }
     }
