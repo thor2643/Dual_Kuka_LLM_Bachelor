@@ -1,5 +1,5 @@
 {
-    "Task": "Sort the Lego by size. Drop-off point for left bowl is [0.95, 0.4, 0.25, 0, 0, 0] and drop-off point for right bowl is [0.05, 0.4, 0.25, 0, 0, 0]. Big Legoes with a size over 0.0019 go in the left bowl and small Legoes with a size under 0.0019 go in the right bowl",
+    "task_description": "Sort the Lego by size. Drop-off point for left bowl is [0.95, 0.4, 0.25, 0, 0, 0] and drop-off point for right bowl is [0.05, 0.4, 0.25, 0, 0, 0]. Big Legoes with a size over 0.0015 go in the left bowl and small Legoes with a size under 0.0015 go in the right bowl",
     "function_call_1": {
         "function_name": "find_object",
         "args": {
