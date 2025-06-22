@@ -392,9 +392,10 @@ class ObjectDetector(Node):
                 size_object = size_pixel * (mean_depth**2/(self.camera_info[0]*self.camera_info[4]))
                 grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
                 # Check if the grasp is near a blocked zone(container)
-                if hasattr(self, "blocked_points") and self.is_near_blocked_zone(grasps[0][:3], self.blocked_points):
-                    self.get_logger().info(f"Skipping object at {grasps[0][:3]} due to proximity to blocked area")
-                    continue
+                if grasps is not None or len(grasps) != 0:
+                    if hasattr(self, "blocked_points") and self.is_near_blocked_zone(grasps[0][:2], self.blocked_points):
+                        self.get_logger().info(f"Skipping object at {grasps[0][:2]} due to proximity to blocked area")
+                        continue
 
                 all_grasps.extend(grasps)
 
@@ -474,9 +475,11 @@ class ObjectDetector(Node):
                 size_object = size_pixel * (mean_depth**2/(self.camera_info[0]*self.camera_info[4]))
                 grasps = self.grasp_prediction(point_cloud_masked, num_candidates=1) # num_candidates is the number of grasps to be generated
                 # Check if the grasp is near a blocked zone(container)
-                if hasattr(self, "blocked_points") and self.is_near_blocked_zone(grasps[0][:3], self.blocked_points):
-                    self.get_logger().info(f"Skipping object at {grasps[0][:3]} due to proximity to blocked area")
-                    continue
+
+                if grasps is not None or len(grasps) != 0:
+                    if hasattr(self, "blocked_points") and self.is_near_blocked_zone(grasps[0][:2], self.blocked_points):
+                        self.get_logger().info(f"Skipping object at {grasps[0][:2]} due to proximity to blocked area")
+                        continue
                 all_grasps.extend(grasps)
 
                 detected_object = DetectedObject()
