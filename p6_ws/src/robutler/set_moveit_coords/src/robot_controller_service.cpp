@@ -8,6 +8,7 @@
 #include "project_interfaces/srv/execute_move_command.hpp"
 #include "project_interfaces/srv/get_current_pose.hpp"
 #include "project_interfaces/srv/gripper_moveit.hpp"
+#include "project_interfaces/srv/check_gripper.hpp"
 
 //#include <moveit_visual_tools/moveit_visual_tools.h>
 #include <string>
@@ -99,6 +100,7 @@ private:
   rclcpp::Service<project_interfaces::srv::ExecuteMoveCommand>::SharedPtr execute_service;
   rclcpp::Service<project_interfaces::srv::GetCurrentPose>::SharedPtr get_pose_service;
   rclcpp::Service<project_interfaces::srv::GripperMoveit>::SharedPtr gripper_service;
+  rclcpp::Service<project_interfaces::srv::CheckGripper>::SharedPtr check_gripper_service;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_subscriber;
   
   moveit::planning_interface::MoveGroupInterface::Plan plan_right;
@@ -530,29 +532,40 @@ private:
     void handle_check_gripper(const std::shared_ptr<project_interfaces::srv::CheckGripper::Request> request,
       const std::shared_ptr<project_interfaces::srv::CheckGripper::Response> response) {
       // This service returns False if the desired gripper is fully closed.
-      RCLCPP_INFO(this->get_logger(), "Received gripper check command for: %s", request->gripper_name.c_str());
-      if (request->gripper_name == "3f") {
-        // Check if the 3F gripper is fully closed
-        if (_3f_joint_values_mock[0] < -0.1 && _3f_joint_values_mock[1] < -0.1 && _3f_joint_values_mock[2] < -0.1) {
-          response->is_closed = true;
-          RCLCPP_INFO(this->get_logger(), "3F gripper is fully closed");
+      if (request->arm == "right") {
+        auto actual = _3f_joint_values_mock[4];
+        double tolerance = 0.1; // Tolerance for checking if the gripper is closed
+        double target_position = 65 / 180.0 * 3.14; // The target position for the gripper to be considered closed
+
+        RCLCPP_INFO(this->get_logger(), "Actual joint value for 3f: %f", actual);
+        RCLCPP_INFO(this->get_logger(), "Target position for 3f: %f", target_position);
+
+        if (actual > target_position - tolerance) {
+          RCLCPP_INFO(this->get_logger(), "Gripper is closed");
+          response->success = false;
         } else {
-          response->is_closed = false;
-          RCLCPP_INFO(this->get_logger(), "3F gripper is not fully closed");
+          RCLCPP_INFO(this->get_logger(), "Gripper is open");
+          response->success = true;
         }
-      } else if (request->gripper_name == "2f") {
-        // Check if the 2F gripper is fully closed
-        if (_2f_joint_values_mock[0] < -0.1 && _2f_joint_values_mock[1] < -0.1) {
-          response->is_closed = true;
-          RCLCPP_INFO(this->get_logger(), "2F gripper is fully closed");
+
+      } else if (request->arm == "left") {
+        auto actual = _2f_joint_values_mock[0];
+        double tolerance = 0.1; // Tolerance for checking if the gripper is closed
+        double target_position = 45*(80/85) / 180 *3.14; // The target position for the gripper to be considered closed
+
+        RCLCPP_INFO(this->get_logger(), "Actual joint value for 2f: %f", actual);
+        RCLCPP_INFO(this->get_logger(), "Target position for 2f: %f", target_position);
+
+        if (actual > target_position - tolerance) {
+          RCLCPP_INFO(this->get_logger(), "Gripper is closed");
+          response->success = false;
         } else {
-          response->is_closed = false;
-          RCLCPP_INFO(this->get_logger(), "2F gripper is not fully closed");
+          RCLCPP_INFO(this->get_logger(), "Gripper is open");
+          response->success = true;
         }
-      } else {
-        response->is_closed = false;
-        RCLCPP_ERROR(this->get_logger(), "Invalid gripper name specified: %s", request->gripper_name.c_str());
       }
+
+      return;
       
     }
 

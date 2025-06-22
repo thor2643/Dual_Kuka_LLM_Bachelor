@@ -770,26 +770,27 @@ class LLMNode(Node):
         else:
             gripper_response = self.manipulate_right_gripper(width=0)
 
-        if gripper_response is None or not gripper_response.success:
-            self.get_logger().error("Failed to close gripper, consider grasping a bit higher up")
-            return gripper_response # Previously returned: "Failed to close gripper"
         
         # If we are in simulation, we need to check if the gripper is fully closed, meaning the object is not grasped.
         if load_use_sim():
             check_response = None
             if arm == 'left':
-                self._check_gripper_request.arm = 'left'
+                self._check_gripper_req.arm = 'left'
                 while(check_response == None):
-                    future2 = self._check_gripper_client.call_async(self._check_gripper_request)
+                    future2 = self._check_gripper_client.call_async(self._check_gripper_req)
                     check_response = self.wait_future(future2, timeout=15)
             else:
-                self._check_gripper_request.arm = 'right'
+                self._check_gripper_req.arm = 'right'
                 while(check_response == None):
-                    future2 = self._check_gripper_client.call_async(self._check_gripper_request)
+                    future2 = self._check_gripper_client.call_async(self._check_gripper_req)
                     check_response = self.wait_future(future2, timeout=15)
             if check_response.success == False:
                 self.get_logger().error("Gripper is fully closed, object nor succesfully grasped")
                 return "The object was not grasped! Consider calling find object again to find the object and retry the pickup."
+        else:
+            if gripper_response is None or not gripper_response.success:
+                self.get_logger().error("Failed to close gripper, consider grasping a bit higher up")
+                return gripper_response # Previously returned: "Failed to close gripper"
         
         # At last lift the object to avoid collision when moving away
         plan_response = self.plan_robot_trajectory(pose_depart, arm)
