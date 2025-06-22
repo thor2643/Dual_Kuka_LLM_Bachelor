@@ -132,17 +132,19 @@ class LLMNode(Node):
             'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
             'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
         } 
-        
+
+        self.objects = {}
+
         #'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
         #'RECYCLE_DROP': {'x': '0.38', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
         #'WASTE_DROP': {'x': '0.60', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
         #'TAKE_IMAGE': {'x': '0.42', 'y': '0.83', 'z': '0.5', 'roll': '-3', 'pitch': '-43', 'yaw': '-83'},
 
-         # Cell state
+        # Cell state
         self.right_gripper_state = "Open"
         self.left_gripper_state = "Open"
 
-        # Finale tool list
+        # Final tool list
         self.sim_tool_list = {}
         self.tool_calls_path = 'src/robutler/janise/resource/tool_calls.json'
 
@@ -597,6 +599,9 @@ class LLMNode(Node):
                     'grasps': {}
                 }
 
+                # Instantiate or clear the object in the objects dictionary
+                self.objects[object_name] = {}
+
                 # Debugging information
                 # self.get_logger().info(f"Grasping poses: {detected_obj.grasps}")
 
@@ -659,31 +664,56 @@ class LLMNode(Node):
                         }#,
                         #'width': round(grasp.grasp_width,3)
                     }
-        # print(f"\nThe object detection service returned the following objects: {self.objects_on_table}\n")
+
+                # Update the objects dictionary with the first grasp pose (top down grasp)
+                self.objects[object_name] = [self.objects_on_table[object_name]['grasps']['Top down grasp']['centre']['x'],
+                                             self.objects_on_table[object_name]['grasps']['Top down grasp']['centre']['y'],
+                                             self.objects_on_table[object_name]['grasps']['Top down grasp']['centre']['z'],
+                                             self.objects_on_table[object_name]['grasps']['Top down grasp']['orientation']['roll'],
+                                             self.objects_on_table[object_name]['grasps']['Top down grasp']['orientation']['pitch'],
+                                             self.objects_on_table[object_name]['grasps']['Top down grasp']['orientation']['yaw']
+                                             ]
+    
 
         return self.objects_on_table
     
     #@tool
-    def pick_up_object(self, pose: list, arm: str, object_width: int=0) -> bool:
+    def pick_up_object(self, arm: str, object_name: str="", pose_input: list=[0], object_width: int=0) -> bool:
         """
         Picks up an object by planning and executing a trajectory and closing the gripper.
         This function first opens the gripper, then plans a trajectory to an approach pose,
         executes the trajectory, closes the gripper to pick up the object, and finally lifts the object 10 cm
         to avoid collision when moving away. The function also handles the gripper width for the object.
+        The pose is retrieved from a global dictionary `self.objects` that contains the objects found by the object detector.
+        If the object is not found in the dictionary i.e. find_object has not returned the object name, it returns an error message. 
+        Notice that you have the possibility to specify the pose of the object to pick up, but it is not recommended as the pose is retrieved from the object detector.
+        Using the pose argument is only recommended to be used when the object has been moved and you want to pick it up from a different pose than the one returned by the object detector.
         Args:
-            pose (list): A list of 6 floating-point numbers representing the desired pose of the robot arm.
-                         The first three numbers correspond to the x, y, z position in meters, and the last 
-                         three numbers represent the roll, pitch, and yaw angles in degrees.
             arm (str): Specifies which arm to use ('left' or 'right').
+            object_name (str): The name of the object to pick up.
+            pose (list, optional): The pose of the object to pick up. Defaults to [0].
             object_width (int, optional): Width of the object to grip in millimeters. Defaults to 0 mm.
-            
+
         Returns:
             bool: True if the object was successfully picked up, False otherwise.
         """
-        if len(pose) != 6:
-            self.get_logger().error("Pose must be a list of 6 elements")
-            return "Pose must be a list of 6 elements: [x, y, z, roll, pitch, yaw]"
-        
+        if object_name != "":
+            if object_name not in self.objects:
+                self.get_logger().error(f"Object '{object_name}' does not exist in the objects dictionary. Please use find_object first.")
+                return f"Object '{object_name}' does not exist in the objects dictionary. Make sure the object has been returned by find_object."
+
+            pose = self.objects[object_name]
+
+            self.get_logger().info(f"Object '{object_name}' found in the objects dictionary. Using its pose: {pose}")
+
+        elif pose_input != [0] and len(pose_input) == 6:
+            # If pose is provided, we use it directly
+            pose = pose_input
+            pass
+        else:
+            self.get_logger().error("Neither object_name nor pose is provided.")
+            return "Neither object_name nor a valid pose is provided. Please provide either an object name or a pose."
+
         # First we calculate the approach pose
         T_approach = np.eye(4)
         T_approach[2, 3] = 0.05 # Place approach 5 cm along grasp z-axis

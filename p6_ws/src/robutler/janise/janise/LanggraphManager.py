@@ -276,8 +276,8 @@ class LanggraphManager(LLMNode):
 
         # Define keys to remove per function_name
         self.keys_to_remove = {
-            "pick_up_object": ["pose"],
-            "move_to_pose": ["pose"],
+            #"pick_up_object": ["pose"],
+            #"move_to_pose": ["pose"],
         }
 
         self.real_workflow.add_node("init_real", self.init_real_execution)
@@ -803,7 +803,7 @@ class LanggraphManager(LLMNode):
     @traceable
     def init_real_execution(self, state: ToolExecutionState):
         # Read the tool list from the tool_calls.json file
-        tool_calls_path = 'src/robutler/janise/resource/run_5_size.json'
+        tool_calls_path = 'src/robutler/janise/resource/Real_Modification_Test.json'
 
         try:
             with open(tool_calls_path, 'r') as file:
@@ -1025,7 +1025,7 @@ class LanggraphManager(LLMNode):
 
             return response
 
-        sim = True #load_use_sim()
+        sim = False #load_use_sim()
 
         if sim:
             response = self.sim_system(request, response)
