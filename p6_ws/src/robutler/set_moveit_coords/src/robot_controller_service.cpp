@@ -602,14 +602,7 @@ private:
         }
         
         // Wait for the move to complete and joint values to be updated
-        rclcpp::sleep_for(std::chrono::milliseconds(5000));
-
-        // Spin the node to process joint state updates
-        RCLCPP_INFO(this->get_logger(), "Waiting for joint state updates...");
-        auto start_time = std::chrono::steady_clock::now();
-        while (std::chrono::steady_clock::now() - start_time < std::chrono::seconds(2)) {
-            rclcpp::spin_some(this->get_node_base_interface());
-        }
+        rclcpp::sleep_for(std::chrono::milliseconds(100));
 
         static const std::unordered_map<std::string, size_t> gripper_3f_index_map = {
           {"a_3f_palm_finger_1_joint",         0},  
@@ -625,7 +618,6 @@ private:
           {"a_3f_finger_2_joint_2",            10},
         };
        
-
         const double POSITION_TOLERANCE = 0.2;
         
         response->success = true;
@@ -634,7 +626,6 @@ private:
         } else {
           response->log = "Opening of 3F gripper succeeded and verified.";
         }
-
 
         for (const auto& [joint_name, target] : target_position) {
           auto it = gripper_3f_index_map.find(joint_name);
