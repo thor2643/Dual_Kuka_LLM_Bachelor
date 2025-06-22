@@ -403,8 +403,8 @@ class LanggraphManager(LLMNode):
         self.right_gripper_state = "Open"
         self.left_gripper_state = "Open"
 
-        self.move_to_pose([0.1,0.3,0.3,0,0,0], "right") 
-        self.move_to_pose([0.9,0.3,0.3,0,0,0], "left") 
+        self.move_to_pose([0,0.15,0.3,0,0,0], "right") 
+        self.move_to_pose([1,0.15,0.3,0,0,0], "left") 
         
         user_input = input("Do you want to save? (y/n): ").strip().lower()
         if user_input == "y":

@@ -129,8 +129,8 @@ class LLMNode(Node):
 
         # Define the locations in the environment
         self.coordinates = { # Predefined poses for different locations
-            'HOME_RIGHT_ARM': {'x': '0.1', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
-            'HOME_LEFT_ARM': {'x': '0.9', 'y': '0.3', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
+            'HOME_RIGHT_ARM': {'x': '0', 'y': '0.15', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
+            'HOME_LEFT_ARM': {'x': '1', 'y': '0.15', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '0'},
         } 
         
         #'ORGANIC_DROP': {'x': '0.49', 'y': '0.25', 'z': "0.3", 'roll': '0', 'pitch': '0', 'yaw': '90'},
@@ -882,9 +882,9 @@ class LLMNode(Node):
         
         # Move the arm to home position
         if arm == 'left':
-            pose_home = [0.9, 0.3, 0.3, 0, 0, 0]
+            pose_home = [1, 0.15, 0.3, 0, 0, 0]
         else:
-            pose_home = [0.1, 0.3, 0.3, 0, 0, 0]
+            pose_home = [0, 0.15, 0.3, 0, 0, 0]
 
         # First plan the movement to the pose
         plan_response = self.plan_robot_trajectory(pose_home, arm)
